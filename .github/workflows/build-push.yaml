@@ -1,11 +1,12 @@
 name: Build docker image
 on:
   push:
-      branches:
-        - master
+    branches:
+      - master
 jobs:
-  git-sync:
+  build-push:
     name: build-push
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v2
