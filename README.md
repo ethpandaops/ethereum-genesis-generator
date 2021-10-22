@@ -2,8 +2,12 @@
 Create a ethereum consensus layer testnet genesis and expose it via a webserver for testing purposes
 
 ```sh
-docker build -t skylenet/ethereum-genesis-cl:latest .
+# Running with a default config (Check the config-example directory)
+docker run -it -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-cl:latest
 
-
-docker run -it -v $PWD/data:/data -p 127.0.0.1:8000:8000 ethereum-genesis-cl:latest
+# Overwriting the config files
+docker run -it -v $PWD/data:/data -p 127.0.0.1:8000:8000 \
+  -v $PWD/yourconfig.yaml:/config/config.yaml \
+  -v $PWD/yourmnemonics.yaml:/config/mnemonics.yaml \
+  skylenet/ethereum-genesis-cl:latest
 ```
