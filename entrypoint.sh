@@ -9,6 +9,9 @@ if ! [ -f "/data/genesis.ssz" ]; then
     # Replace MIN_GENESIS_TIME on config
     cp /config/config.yaml /data/config.yaml
     sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${TIMESTAMP}/" /data/config.yaml
+    # Create deposit_contract.txt and deploy_block.txt
+    grep DEPOSIT_CONTRACT_ADDRESS /data/config.yaml | cut -d " " -f2 > /data/deposit_contract.txt
+    echo "0" > /data/deploy_block.txt
     # Generate genesis
     /usr/local/bin/eth2-testnet-genesis phase0 \
       --config /data/config.yaml \
