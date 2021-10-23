@@ -14,8 +14,9 @@ if ! [ -f "/data/genesis.ssz" ]; then
       --config /data/config.yaml \
       --eth1-block "${ETH1_BLOCK}" \
       --mnemonics /config/mnemonics.yaml \
-      --timestamp "${TIMESTAMP}"
-    mv genesis.ssz tranches /data
+      --timestamp "${TIMESTAMP}" \
+      --tranches-dir /data/tranches \
+      --state-output /data/genesis.ssz
 else
     echo "genesis already exists. skipping generation"
 fi
