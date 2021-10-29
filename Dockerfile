@@ -1,5 +1,6 @@
 FROM golang:1.17 as builder
-RUN go install github.com/protolambda/eth2-testnet-genesis@latest
+RUN go install github.com/protolambda/eth2-testnet-genesis@latest && \
+    go install github.com/protolambda/eth2-val-tools@latest
 
 FROM debian:latest
 ENV TIMESTAMP_DELAY_SECONDS=180
@@ -12,6 +13,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-genesis
+COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
 COPY config-example /config
 COPY entrypoint.sh .
 ENTRYPOINT [ "/app/entrypoint.sh" ]
