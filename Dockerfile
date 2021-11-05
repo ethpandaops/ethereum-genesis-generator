@@ -1,6 +1,8 @@
 FROM golang:1.17 as builder
-RUN go install github.com/protolambda/eth2-testnet-genesis@latest && \
-    go install github.com/protolambda/eth2-val-tools@latest
+RUN git clone https://github.com/skylenet/eth2-testnet-genesis.git \
+    && cd eth2-testnet-genesis && git checkout faster-validator-creation \
+    && go install . \
+    && go install github.com/protolambda/eth2-val-tools@latest
 
 FROM debian:latest
 ENV TIMESTAMP_DELAY_SECONDS=180
