@@ -42,6 +42,7 @@ Relevant for the CL genesis:
 
 Name | Default | Description
 ---- |-------- | ----
+SERVER_PORT | 8000 | Web server port
 CL_TIMESTAMP_DELAY_SECONDS | 300 | The genesis timestamp will be the current time + CL_TIMESTAMP_DELAY_SECONDS
 
 ### Available tools within the image

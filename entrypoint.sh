@@ -1,6 +1,7 @@
 #!/bin/bash -e
 CL_ETH1_BLOCK="${CL_ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
 CL_TIMESTAMP_DELAY_SECONDS="${CL_TIMESTAMP_DELAY_SECONDS:-300}"
+SERVER_PORT="${SERVER_PORT:-8000}"
 NOW=$(date +%s)
 CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 
@@ -56,10 +57,10 @@ case $1 in
     ;;
   *)
     set +x
-    echo "Usage: `basename $0` [all|cl|el]"
+    echo "Usage: [all|cl|el]"
     exit 1
     ;;
 esac
 
 # Start webserver
-cd /data && exec python -m SimpleHTTPServer 8000
+cd /data && exec python -m SimpleHTTPServer "$SERVER_PORT"
