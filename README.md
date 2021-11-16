@@ -7,9 +7,9 @@ Create a ethereum consensus/execution layer testnet genesis and expose it via a 
 Running with the default configuration. Check the [config-example](config-example) directory.
 
 ```sh
-docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest       # Create EL+CL genesis
-docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest --cl  # Just CL
-docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest --el  # Just EL
+docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest all # Create EL+CL genesis
+docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest cl  # Just CL
+docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 skylenet/ethereum-genesis-generator:latest el  # Just EL
 ```
 
 You can overwrite configuration files and apply your own by using volume mounts:
@@ -20,22 +20,29 @@ docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 \
   -v $PWD/cl-config.yaml:/config/cl/config.yaml \
   -v $PWD/cl-mnemonics.yaml:/config/cl/mnemonics.yaml \
   -v $PWD/el-config.yaml:/config/el/genesis-config.yaml \
-  skylenet/ethereum-genesis-generator:latest
+  skylenet/ethereum-genesis-generator:latest all
 
 # Just creating the EL genesis
 docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 \
   -v $PWD/el-config.yaml:/config/el/genesis-config.yaml \
-  skylenet/ethereum-genesis-generator:latest --el
+  skylenet/ethereum-genesis-generator:latest el
 
 # Just creating the CL genesis
 docker run -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 \
   -v $PWD/cl-config.yaml:/config/cl/config.yaml \
   -v $PWD/cl-mnemonics.yaml:/config/cl/mnemonics.yaml \
-  skylenet/ethereum-genesis-generator:latest --cl
+  skylenet/ethereum-genesis-generator:latest cl
 ```
 
 After that, access `http://localhost:8000` on your browser to see the genesis files
 
+### Environment variables
+
+Relevant for the CL genesis:
+
+Name | Default | Description
+---- |-------- | ----
+CL_TIMESTAMP_DELAY_SECONDS | 300 | The genesis timestamp will be the current time + CL_TIMESTAMP_DELAY_SECONDS
 
 ### Available tools within the image
 

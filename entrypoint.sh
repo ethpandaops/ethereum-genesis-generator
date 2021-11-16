@@ -1,11 +1,11 @@
-#!/bin/bash -xe
-ETH1_BLOCK="${ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
-TIMESTAMP_DELAY_SECONDS="${TIMESTAMP_DELAY_SECONDS:-300}"
+#!/bin/bash -e
+CL_ETH1_BLOCK="${CL_ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
+CL_TIMESTAMP_DELAY_SECONDS="${CL_TIMESTAMP_DELAY_SECONDS:-300}"
 NOW=$(date +%s)
-TIMESTAMP=$((NOW + TIMESTAMP_DELAY_SECONDS))
-
+CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 
 gen_el_config(){
+    set -x
     if ! [ -f "/data/el/geth.json" ]; then
         mkdir -p /data/el
         cp /config/el/genesis-config.yaml /apps/el-gen/genesis-config.yaml
@@ -18,6 +18,7 @@ gen_el_config(){
 }
 
 gen_cl_config(){
+    set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/cl/genesis.ssz" ]; then
         mkdir -p /data/cl
@@ -30,9 +31,9 @@ gen_cl_config(){
         # Generate genesis
         /usr/local/bin/eth2-testnet-genesis phase0 \
         --config /data/cl/config.yaml \
-        --eth1-block "${ETH1_BLOCK}" \
+        --eth1-block "${CL_ETH1_BLOCK}" \
         --mnemonics /config/cl/mnemonics.yaml \
-        --timestamp "${TIMESTAMP}" \
+        --timestamp "${CL_TIMESTAMP}" \
         --tranches-dir /data/cl/tranches \
         --state-output /data/cl/genesis.ssz
     else
@@ -46,14 +47,19 @@ gen_all_config(){
 }
 
 case $1 in
-  --el)
+  el)
     gen_el_config
     ;;
-  --cl)
+  cl)
     gen_cl_config
     ;;
-  *)
+  all)
     gen_all_config
+    ;;
+  *)
+    set +x
+    echo "Usage: `basename $0` [all|cl|el]"
+    exit 1
     ;;
 esac
 
