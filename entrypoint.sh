@@ -8,10 +8,8 @@ gen_el_config(){
     set -x
     if ! [ -f "/data/el/geth.json" ]; then
         mkdir -p /data/el
-        cp /config/el/genesis-config.yaml /apps/el-gen/genesis-config.yaml
-        cd /apps/el-gen
-        python3 genesis_geth.py      > /data/el/geth.json
-        python3 genesis_chainspec.py > /data/el/chainspec.json
+        python3 /apps/el-gen/genesis_geth.py /config/el/genesis-config.yaml      > /data/el/geth.json
+        python3 /apps/el-gen/genesis_chainspec.py /config/el/genesis-config.yaml > /data/el/chainspec.json
     else
         echo "el genesis already exists. skipping generation..."
     fi
