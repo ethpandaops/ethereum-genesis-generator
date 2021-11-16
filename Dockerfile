@@ -6,16 +6,19 @@ RUN git clone https://github.com/skylenet/eth2-testnet-genesis.git \
 
 FROM debian:latest
 ENV TIMESTAMP_DELAY_SECONDS=180
-WORKDIR /app
+WORKDIR /work
 VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y ca-certificates python && \
+    apt-get install --no-install-recommends -y \
+        ca-certificates build-essential python python3-dev python3-pip && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+COPY apps /apps
+RUN cd /apps/el-gen && pip3 install -r requirements.txt
 COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-genesis
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
 COPY config-example /config
 COPY entrypoint.sh .
-ENTRYPOINT [ "/app/entrypoint.sh" ]
+ENTRYPOINT [ "/work/entrypoint.sh" ]
