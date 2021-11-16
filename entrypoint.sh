@@ -23,7 +23,7 @@ gen_cl_config(){
         mkdir -p /data/cl
         # Replace MIN_GENESIS_TIME on config
         cp /config/cl/config.yaml /data/cl/config.yaml
-        sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${TIMESTAMP}/" /data/cl/config.yaml
+        sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/cl/config.yaml | cut -d " " -f2 > /data/cl/deposit_contract.txt
         echo "0" > /data/cl/deploy_block.txt
