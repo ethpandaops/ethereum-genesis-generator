@@ -8,9 +8,11 @@ CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 gen_el_config(){
     set -x
     if ! [ -f "/data/el/geth.json" ]; then
+        tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/el
-        python3 /apps/el-gen/genesis_geth.py /config/el/genesis-config.yaml      > /data/el/geth.json
-        python3 /apps/el-gen/genesis_chainspec.py /config/el/genesis-config.yaml > /data/el/chainspec.json
+        envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
+        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/el/geth.json
+        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/el/chainspec.json
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -20,18 +22,23 @@ gen_cl_config(){
     set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/cl/genesis.ssz" ]; then
+        tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/cl
+        # Replace environment vars in files
+        envsubst < /config/cl/config.yaml > /data/cl/config.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Replace MIN_GENESIS_TIME on config
-        cp /config/cl/config.yaml /data/cl/config.yaml
         sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/cl/config.yaml | cut -d " " -f2 > /data/cl/deposit_contract.txt
         echo "0" > /data/cl/deploy_block.txt
+        # Envsubst mnemonics
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         /usr/local/bin/eth2-testnet-genesis phase0 \
         --config /data/cl/config.yaml \
         --eth1-block "${CL_ETH1_BLOCK}" \
-        --mnemonics /config/cl/mnemonics.yaml \
+        --mnemonics $tmp_dir/mnemonics.yaml \
         --timestamp "${CL_TIMESTAMP}" \
         --tranches-dir /data/cl/tranches \
         --state-output /data/cl/genesis.ssz

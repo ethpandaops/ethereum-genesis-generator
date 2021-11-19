@@ -5,13 +5,12 @@ RUN git clone https://github.com/skylenet/eth2-testnet-genesis.git \
     && go install github.com/protolambda/eth2-val-tools@latest
 
 FROM debian:latest
-ENV TIMESTAMP_DELAY_SECONDS=180
 WORKDIR /work
 VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-        ca-certificates build-essential python python3-dev python3-pip && \
+        ca-certificates build-essential python python3-dev python3-pip gettext-base && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

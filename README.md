@@ -38,12 +38,12 @@ After that, access `http://localhost:8000` on your browser to see the genesis fi
 
 ### Environment variables
 
-Relevant for the CL genesis:
-
 Name | Default | Description
 ---- |-------- | ----
 SERVER_PORT | 8000 | Web server port
-CL_TIMESTAMP_DELAY_SECONDS | 300 | The genesis timestamp will be the current time + CL_TIMESTAMP_DELAY_SECONDS
+CL_TIMESTAMP_DELAY_SECONDS | 300 | The consensus layer genesis timestamp will be the current time + CL_TIMESTAMP_DELAY_SECONDS
+
+Besides that, you can also use ENV vars in your configuration files. These will be replaced during runtime.
 
 ### Available tools within the image
 
