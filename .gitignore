@@ -1,1 +1,12 @@
+# IntelliJ
+.idea
+*.iws
+*.iml
+*.ipr
+
+# VS Code
+*.vscode
+
+# Data folder
 data/*
+
