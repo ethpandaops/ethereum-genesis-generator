@@ -8,14 +8,12 @@ root_dirpath="$(dirname "${script_dirpath}")"
 # ==================================================================================================
 source "${script_dirpath}/_constants.env"
 
-MODULE_DIRNAME="kurtosis-module"
-
 # =============================================================================
 #                                 Main Code
 # =============================================================================
 # Checks if dockerignore file is in the root path
 if ! [ -f "${root_dirpath}"/.dockerignore ]; then
-  echo "Error: No .dockerignore file found in language root '${root_dirpath}'; this is required so Docker caching is enabled and your Kurtosis module builds remain quick" >&2
+  echo "Error: No .dockerignore file found in root '${root_dirpath}'; this is required so Docker caching is enabled and your Docker image builds remain quick" >&2
   exit 1
 fi
 
@@ -25,18 +23,12 @@ if ! docker_tag="$(bash "${get_docker_image_tag_script_filepath}")"; then
     exit 1
 fi
 
-# Run Go tests locally on the user's machine before building the Docker image
-if ! go test "${root_dirpath}/..."; then
-    echo "Error: Go tests failed " >&2
-    exit 1
-fi
-
 # Build Docker image
-dockerfile_filepath="${root_dirpath}/${MODULE_DIRNAME}/Dockerfile"
+dockerfile_filepath="${root_dirpath}/Dockerfile"
 image_name="${IMAGE_ORG_AND_REPO}:${docker_tag}"
-echo "Building Kurtosis module into a Docker image named '${image_name}'..."
+echo "Building Ethereum Genesis Generator into a Docker image named '${image_name}'..."
 if ! docker build -t "${image_name}" -f "${dockerfile_filepath}" "${root_dirpath}"; then
-  echo "Error: Docker build of the Kurtosis module failed" >&2
+  echo "Error: Docker build failed" >&2
   exit 1
 fi
-echo "Successfully built Docker image '${image_name}' containing the Ethereum Kurtosis module"
+echo "Successfully built Docker image '${image_name}' containing the Ethereum Genesis Generator"

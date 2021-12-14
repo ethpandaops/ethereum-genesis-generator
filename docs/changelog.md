@@ -1,6 +1,8 @@
 # TBD
-* Add build infra
-* The Geth + Lighthouse node inside of Kurtosis now syncs with merge-devnet-3!
+* Set `terminal total difficulty` property to enable --catalyst option in geth client
+* Added Circle CI configuration
+* Added `get-docker-image-tag` to automatically generate the Docker image tag
+* Added `build` script and to build Docker image
 
 # 0.1.0
-* Initial commit
+* Forked from https://github.com/skylenet/ethereum-genesis-generator
