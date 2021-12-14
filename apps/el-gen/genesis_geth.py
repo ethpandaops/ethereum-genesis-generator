@@ -25,7 +25,7 @@ out = {
         "istanbulBlock":0,
         "berlinBlock":0,
         "londonBlock":0,
-        #"terminalTotalDifficulty":int(data['terminal_total_difficulty'])
+        "terminalTotalDifficulty":int(data['terminal_total_difficulty'])
     },
     "alloc": {
         # Allocate 1 wei to all possible pre-compiles.

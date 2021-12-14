@@ -1,2 +1,17 @@
-README.md
+.circleci
+.git
+.github
+.gitignore
+.idea
+.vscode
+
+# Ignore Vim swapfiles
+*.swp
+
 LICENSE
+*.md
+
+scripts
+Dockerfile
+
+README.md

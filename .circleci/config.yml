@@ -1,0 +1,60 @@
+version: 2.1
+
+orbs:
+  kurtosis-docs-checker: kurtosis-tech/docs-checker@0.2.0
+
+executors:
+  ubuntu_vm:
+    machine:
+      image: ubuntu-1604:202007-01
+      # DO NOT USE THIS YET! This costs 200 credits *per job run* so is extremely expensive for the free plan, but we can turn it on one day if we get more credits
+      # docker_layer_caching: true
+
+# NOTE: Because CircleCI jobs run on separate machines from each other, we duplicate steps (like checkout) between jobs. This is because doing the "correct" DRY
+#  refactoring of, "one job for checkout, one job for build Docker image, etc." would require a) persisting files between jobs and b) persisting Docker images between
+#  jobs. Both are annoying (saving/loading workspaces require re-downloading the workspace over the network, and there doesn't seem to be a good way to do Docker
+#  images), so we run everything inside a single job.
+# See also: https://discuss.circleci.com/t/can-docker-images-be-preserved-between-jobs-in-a-workflow-without-a-manual-load-save/23388/12
+jobs:
+  push_artifacts:
+    executor: ubuntu_vm
+    steps:
+      - checkout
+
+      - run: echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin
+      - run: bash ./scripts/build.sh
+
+      - run: |
+          set -euo pipefail
+          source scripts/_constants.env
+          version_to_publish="$(bash "scripts/${GET_DOCKER_IMAGE_TAG_SCRIPT_FILENAME}")"
+          echo "Version that will be published: ${version_to_publish}"
+          image_name_with_version="${IMAGE_ORG_AND_REPO}:${version_to_publish}"
+          image_name_no_version="${IMAGE_ORG_AND_REPO}:latest"
+          docker tag "${image_name_with_version}" "${image_name_no_version}"
+          docker push "${image_name_with_version}"
+          docker push "${image_name_no_version}"
+
+workflows:
+  build:
+    jobs:
+      # -- PR check jobs ------------------------------------------
+      - kurtosis-docs-checker/check-docs:
+          markdown-link-check-config-json: "{}"
+          filters:
+            branches:
+              ignore:
+                - develop
+                - master
+      # -- End PR check jobs ---------------------------------------
+
+      # -- Artifact-publishing jobs --------------------------------
+      - push_artifacts:
+          context:
+            - docker-user
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]+\.[0-9]+\.[0-9]+$/
+      # -- End artifact-publishing jobs ----------------------------
