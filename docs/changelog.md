@@ -1,4 +1,5 @@
 # TBD
+* Empty commit to force CircleCI to rebuild the image
 
 # 0.1.1
 * Set `terminal total difficulty` property to enable --catalyst option in geth client
