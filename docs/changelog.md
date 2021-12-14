@@ -1,4 +1,6 @@
 # TBD
+
+# 0.1.2
 * Empty commit to force CircleCI to rebuild the image
 
 # 0.1.1
