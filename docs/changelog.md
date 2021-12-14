@@ -1,4 +1,6 @@
 # TBD
+
+# 0.1.1
 * Set `terminal total difficulty` property to enable --catalyst option in geth client
 * Added Circle CI configuration
 * Added `get-docker-image-tag` to automatically generate the Docker image tag
