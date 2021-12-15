@@ -1,4 +1,6 @@
 # TBD
+### Changes
+* Don't start a Python HTTP server with the entrypoint script - just do the genesis generation
 
 # 0.1.2
 * Empty commit to force CircleCI to rebuild the image

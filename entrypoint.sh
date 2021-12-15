@@ -68,6 +68,3 @@ case $1 in
     exit 1
     ;;
 esac
-
-# Start webserver
-cd /data && exec python -m SimpleHTTPServer "$SERVER_PORT"
