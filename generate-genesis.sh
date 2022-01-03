@@ -109,6 +109,11 @@ if ! genesis_timestamp="$(echo "${genesis_timestamp_property_lines}" | awk '{pri
     exit 1
 fi
 
+if ! cp "${cl_genesis_config_filepath}" "${cl_output_dirpath}"/; then
+    echo "Error: Couldn't copy CL genesis config file '${cl_genesis_config_filepath}' to CL genesis output directory '${cl_output_dirpath}'" >&2
+    exit 1
+fi
+
 # Generate CL genesis info
 if ! /usr/local/bin/eth2-testnet-genesis phase0 \
         --config "${cl_genesis_config_filepath}" \
