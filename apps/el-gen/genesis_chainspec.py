@@ -22,6 +22,7 @@ out = {
         "maximumExtraDataSize": "0xffff",
         "minGasLimit": "0x1388",
         "networkID": hex(int(data['chain_id'])),
+        "MergeForkIdTransition": hex(int(data['mergeForkBlock'])),
         "eip150Transition": "0x0",
         "eip158Transition": "0x0",
         "eip160Transition": "0x0",
@@ -120,6 +121,9 @@ if data["clique"]["enabled"]:
   out["engine"]["clique"] = { "params": { "period": 15, "epoch": 30000 }}
   signers = ''.join(str(i) for i in data["clique"]["signers"])
   out["genesis"]["extraData"] = ''.join(["0x", "0" * 64, signers, "0" *130])
+
+else:
+    out["engine"]["Ethash"] =  {"params": {"minimumDifficulty": "0x20000","difficultyBoundDivisor": "0x800","durationLimit": "0xd","blockReward": {"0x0": "0x1BC16D674EC80000" },"homesteadTransition": "0x0","eip100bTransition": "0x0","difficultyBombDelays": {} }}
 
 for key, value in data['eth1_premine'].items():
     acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')

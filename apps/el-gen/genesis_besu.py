@@ -25,7 +25,7 @@ out = {
         "istanbulBlock":0,
         "berlinBlock":0,
         "londonBlock":0,
-        "mergeForkBlock":int(data['mergeForkBlock']),
+        "preMergeForkBlock":int(data['mergeForkBlock']),
         "terminalTotalDifficulty":int(data['terminal_total_difficulty'])
     },
     "alloc": {
@@ -77,6 +77,7 @@ out = {
         }
     },
     "coinbase": "0x0000000000000000000000000000000000000000",
+    "baseFeePerGas": "0x3B9ACA00",
     "difficulty": "0x01",
     "extraData": "",
     "gasLimit": "0x400000",
@@ -86,17 +87,20 @@ out = {
     "timestamp": str(data['eth1_genesis_timestamp'])
 }
 
-if data["clique"]["enabled"]:
-  out["config"]["clique"] = {"period": 15,"epoch": 30000}
-  signers = ''.join(str(i) for i in data["clique"]["signers"])
-  out["extraData"] = ''.join(["0x", "0" * 64, signers, "0" *130])
-
 for key, value in data['eth1_premine'].items():
     acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')
     weival = value.replace('ETH', '0' * 18)
     out["alloc"][acct.address] = {"balance": weival}
 
-# Some hardcoded addrs
+if data["clique"]["enabled"]:
+    out["clique"] = { "params": { "blockPeriodSeconds": 15, "epoch": 30000 }}
+    signers = ''.join(str(i) for i in data["clique"]["signers"])
+    out["extraData"] = ''.join(["0x", "0" * 64, signers, "0" *130])
+
+else:
+    out["Ethash"] =  {}
+
+    # Some hardcoded addrs
 for key, value in data['eth1_premine_addrs'].items():
     weival = value.replace('ETH', '0' * 18)
     out["alloc"][key] = {"balance": weival}

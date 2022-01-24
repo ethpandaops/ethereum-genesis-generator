@@ -13,6 +13,7 @@ gen_el_config(){
         envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
         python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/el/geth.json
         python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/el/chainspec.json
+        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/el/besu.json
     else
         echo "el genesis already exists. skipping generation..."
     fi
