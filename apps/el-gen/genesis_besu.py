@@ -98,7 +98,7 @@ if data["clique"]["enabled"]:
     out["extraData"] = ''.join(["0x", "0" * 64, signers, "0" *130])
 
 else:
-    out["Ethash"] =  {}
+    out["config"]["ethash"] =  {}
 
     # Some hardcoded addrs
 for key, value in data['eth1_premine_addrs'].items():
