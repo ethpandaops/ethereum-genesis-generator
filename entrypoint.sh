@@ -5,6 +5,17 @@ SERVER_PORT="${SERVER_PORT:-8000}"
 NOW=$(date +%s)
 CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 
+gen_jwt_secret(){
+    set -x
+    if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
+        mkdir -p /data/el
+        openssl rand -hex 32 | tr -d "\n" > /data/el/jwtsecret
+        cp /data/el/jwtsecret /data/cl/jwtsecret
+    else
+        echo "JWT secret already exists. skipping generation..."
+    fi
+}
+
 gen_el_config(){
     set -x
     if ! [ -f "/data/el/geth.json" ]; then
@@ -51,6 +62,7 @@ gen_cl_config(){
 gen_all_config(){
     gen_el_config
     gen_cl_config
+    gen_jwt_secret
 }
 
 case $1 in
