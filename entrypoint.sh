@@ -9,7 +9,7 @@ gen_jwt_secret(){
     set -x
     if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
         mkdir -p /data/el
-        openssl rand -hex 32 | tr -d "\n" > /data/el/jwtsecret
+        echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/el/jwtsecret
         cp /data/el/jwtsecret /data/cl/jwtsecret
     else
         echo "JWT secret already exists. skipping generation..."
