@@ -1,9 +1,7 @@
 #!/bin/bash -e
-CL_ETH1_BLOCK="${CL_ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
-CL_TIMESTAMP_DELAY_SECONDS="${CL_TIMESTAMP_DELAY_SECONDS:-300}"
+
+source /config/values.env
 SERVER_PORT="${SERVER_PORT:-8000}"
-NOW=$(date +%s)
-CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 
 gen_jwt_secret(){
     set -x
@@ -43,7 +41,8 @@ gen_cl_config(){
         sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/cl/config.yaml | cut -d " " -f2 > /data/cl/deposit_contract.txt
-        echo "0" > /data/cl/deploy_block.txt
+        echo $DEPOSIT_CONTRACT_BLOCK > /data/cl/deploy_block.txt
+        echo $CL_ETH1_BLOCK > /data/cl/deposit_contract_block.txt
         # Envsubst mnemonics
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
