@@ -47,6 +47,7 @@ gen_cl_config(){
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         /usr/local/bin/eth2-testnet-genesis phase0 \
+        --preset-phase0 mainnet --preset-altair mainnet --preset-merge mainnet \
         --config /data/cl/config.yaml \
         --eth1-block "${CL_ETH1_BLOCK}" \
         --mnemonics $tmp_dir/mnemonics.yaml \
