@@ -39,7 +39,7 @@ gen_cl_config(){
         # Generate genesis
         /usr/local/bin/eth2-testnet-genesis phase0 \
         --preset-phase0 mainnet --preset-altair mainnet --preset-merge mainnet \
-        --config /data/cl/config.yaml \
+        --config /data/custom_config_data/config.yaml \
         --eth1-block "${CL_ETH1_BLOCK}" \
         --mnemonics $tmp_dir/mnemonics.yaml \
         --timestamp "${CL_TIMESTAMP}" \
