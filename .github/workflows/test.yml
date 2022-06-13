@@ -12,10 +12,10 @@ jobs:
         run: docker run --rm --entrypoint="sh" ethereum-genesis-generator -c "python3 /apps/el-gen/genesis_aura_posdao.py --miningAddresses 0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0 0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
       - name: Test AuRa POSDAO config file
         run: |
-          cat >config.yml <<EOL
+          cat >/config.yml <<EOL
           miningAddresses:
            - "0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"
            - "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
           EOL
 
-          docker run --rm --entrypoint="sh" ethereum-genesis-generator -c "python3 /apps/el-gen/genesis_aura_posdao.py config.yml"
+          docker run --rm --entrypoint="sh" ethereum-genesis-generator -c "python3 /apps/el-gen/genesis_aura_posdao.py /config.yml"
