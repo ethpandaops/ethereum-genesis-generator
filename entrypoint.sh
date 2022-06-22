@@ -1,6 +1,7 @@
 #!/bin/bash -e
 CL_ETH1_BLOCK="${CL_ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
 CL_TIMESTAMP_DELAY_SECONDS="${CL_TIMESTAMP_DELAY_SECONDS:-300}"
+CL_FORK="${CL_FORK:-phase0}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 NOW=$(date +%s)
 CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
@@ -40,14 +41,15 @@ gen_cl_config(){
         envsubst < /config/cl/config.yaml > /data/cl/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Replace MIN_GENESIS_TIME on config
-        sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml
+        sed "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml > /tmp/config.yaml
+	    mv /tmp/config.yaml /data/cl/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/cl/config.yaml | cut -d " " -f2 > /data/cl/deposit_contract.txt
         echo "0" > /data/cl/deploy_block.txt
         # Envsubst mnemonics
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
-        /usr/local/bin/eth2-testnet-genesis phase0 \
+        /usr/local/bin/eth2-testnet-genesis $CL_FORK \
         --config /data/cl/config.yaml \
         --eth1-block "${CL_ETH1_BLOCK}" \
         --mnemonics $tmp_dir/mnemonics.yaml \
