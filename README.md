@@ -42,6 +42,7 @@ Name | Default | Description
 ---- |-------- | ----
 SERVER_PORT | 8000 | Web server port
 CL_TIMESTAMP_DELAY_SECONDS | 300 | The consensus layer genesis timestamp will be the current time + CL_TIMESTAMP_DELAY_SECONDS
+CL_FORK | phase0 | Fork at genesis, one of `phase0, altair, merge`
 
 Besides that, you can also use ENV vars in your configuration files. These will be replaced during runtime.
 

@@ -1,6 +1,6 @@
 FROM golang:1.17 as builder
-RUN git clone https://github.com/skylenet/eth2-testnet-genesis.git \
-    && cd eth2-testnet-genesis && git checkout faster-validator-creation \
+RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
+    && cd eth2-testnet-genesis \
     && go install . \
     && go install github.com/protolambda/eth2-val-tools@latest
 
@@ -10,7 +10,7 @@ VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-        ca-certificates build-essential python python3-dev python3-pip gettext-base && \
+    ca-certificates build-essential python python3-dev python3-pip gettext-base && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
