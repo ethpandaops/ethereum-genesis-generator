@@ -1,0 +1,21 @@
+name: Test image
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker build --tag ethereum-genesis-generator .
+      - name: Test AuRa POSDAO CLI args
+        run: docker run --rm --entrypoint="sh" ethereum-genesis-generator -c "python3 /apps/el-gen/genesis_aura_posdao.py --miningAddresses 0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0 0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+      - name: Test AuRa POSDAO config file
+        run: |
+          cat >$PWD/config.yml <<EOL
+          miningAddresses:
+           - "0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"
+           - "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+          EOL
+
+          docker run --rm --entrypoint="sh" --volume=$PWD/config.yml:/config.yml ethereum-genesis-generator -c "python3 /apps/el-gen/genesis_aura_posdao.py /config.yml"
