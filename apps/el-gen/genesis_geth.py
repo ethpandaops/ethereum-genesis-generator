@@ -25,7 +25,7 @@ out = {
         "istanbulBlock":0,
         "berlinBlock":0,
         "londonBlock":0,
-        "mergeForkBlock":int(data['mergeForkBlock']),
+        "mergeNetsplitBlock":int(data['mergeForkBlock']),
         "terminalTotalDifficulty":int(data['terminal_total_difficulty'])
     },
     "alloc": {
