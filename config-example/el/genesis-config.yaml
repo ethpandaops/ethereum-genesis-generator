@@ -11,10 +11,3 @@ chain_id: 1337331
 deposit_contract_address: "0x4242424242424242424242424242424242424242"
 eth1_genesis_timestamp: 0
 mergeForkBlock: 0
-
-clique:
-  enabled: true
-  signers:
-    - 36d56343bc308d4ffaac2f793d121aba905fa6cc
-    - 5e762d4a3847cadaf40a4b0c39574b0ff6698c78
-    - 15d7acc1019fdf8ab4f0f7bd31ec1487ecb5a2bd
