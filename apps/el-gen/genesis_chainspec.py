@@ -22,7 +22,7 @@ out = {
         "maximumExtraDataSize": "0xffff",
         "minGasLimit": "0x1388",
         "networkID": hex(int(data['chain_id'])),
-        "MergeForkIdTransition": hex(int(data['mergeForkBlock'])),
+        "MergeForkIdTransition": "0x0",
         "eip150Transition": "0x0",
         "eip158Transition": "0x0",
         "eip160Transition": "0x0",
@@ -61,7 +61,7 @@ out = {
         },
         "difficulty": "0x01",
         "author": "0x0000000000000000000000000000000000000000",
-        "timestamp": hex(data['eth1_genesis_timestamp']),
+        "timestamp": hex(data['genesis_timestamp']),
         "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "extraData": "",
         "gasLimit": "0x400000"
@@ -117,21 +117,15 @@ out = {
     "nodes": []
 }
 
-if data["clique"]["enabled"]:
-  out["engine"]["clique"] = { "params": { "period": 15, "epoch": 30000 }}
-  signers = ''.join(str(i) for i in data["clique"]["signers"])
-  out["genesis"]["extraData"] = ''.join(["0x", "0" * 64, signers, "0" *130])
+out["engine"]["Ethash"] =  {}
 
-else:
-    out["engine"]["Ethash"] =  {"params": {"minimumDifficulty": "0x20000","difficultyBoundDivisor": "0x800","durationLimit": "0xd","blockReward": {"0x0": "0x1BC16D674EC80000" },"homesteadTransition": "0x0","eip100bTransition": "0x0","difficultyBombDelays": {} }}
-
-for key, value in data['eth1_premine'].items():
+for key, value in data['el_premine'].items():
     acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')
     weival = value.replace('ETH', '0' * 18)
     out["accounts"][acct.address] = {"balance": weival}
 
 # Some hardcoded addrs
-for key, value in data['eth1_premine_addrs'].items():
+for key, value in data['el_premine_addrs'].items():
     weival = value.replace('ETH', '0' * 18)
     out["accounts"][key] = {"balance": weival}
 

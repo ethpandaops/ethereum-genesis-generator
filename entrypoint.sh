@@ -1,19 +1,16 @@
 #!/bin/bash -e
-CL_ETH1_BLOCK="${CL_ETH1_BLOCK:-0x0000000000000000000000000000000000000000000000000000000000000000}"
-CL_TIMESTAMP_DELAY_SECONDS="${CL_TIMESTAMP_DELAY_SECONDS:-300}"
+source /config/values.env
 SERVER_PORT="${SERVER_PORT:-8000}"
-NOW=$(date +%s)
-CL_TIMESTAMP=$((NOW + CL_TIMESTAMP_DELAY_SECONDS))
 
 gen_el_config(){
     set -x
-    if ! [ -f "/data/el/geth.json" ]; then
+    if ! [ -f "/data/custom_config_data/geth.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-        mkdir -p /data/el
+        mkdir -p /data/custom_config_data
         envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/el/geth.json
-        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/el/chainspec.json
-        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/el/besu.json
+        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/custom_config_data/geth.json
+        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/chainspec.json
+        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/besu.json
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -22,27 +19,30 @@ gen_el_config(){
 gen_cl_config(){
     set -x
     # Consensus layer: Check if genesis already exists
-    if ! [ -f "/data/cl/genesis.ssz" ]; then
+    if ! [ -f "/data/custom_config_data/genesis.ssz" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-        mkdir -p /data/cl
+        mkdir -p /data/custom_config_data
         # Replace environment vars in files
-        envsubst < /config/cl/config.yaml > /data/cl/config.yaml
+        envsubst < /config/cl/config.yaml > /data/custom_config_data/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
         # Replace MIN_GENESIS_TIME on config
-        sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${CL_TIMESTAMP}/" /data/cl/config.yaml
+        sed -i "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${GENESIS_TIMESTAMP}/" /data/custom_config_data/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
-        grep DEPOSIT_CONTRACT_ADDRESS /data/cl/config.yaml | cut -d " " -f2 > /data/cl/deposit_contract.txt
-        echo "0" > /data/cl/deploy_block.txt
+        grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
+        echo $DEPOSIT_CONTRACT_BLOCK > /data/custom_config_data/deploy_block.txt
+        echo $CL_EXEC_BLOCK > /data/custom_config_data/deposit_contract_block.txt
+        echo $BEACON_STATIC_ENR > /data/custom_config_data/bootstrap_nodes.txt
+        echo "- $BEACON_STATIC_ENR" > /data/custom_config_data/boot_enr.txt
         # Envsubst mnemonics
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
-        /usr/local/bin/eth2-testnet-genesis phase0 \
-        --config /data/cl/config.yaml \
-        --eth1-block "${CL_ETH1_BLOCK}" \
+        /usr/local/bin/eth2-testnet-genesis merge \
+        --config /data/custom_config_data/config.yaml \
         --mnemonics $tmp_dir/mnemonics.yaml \
-        --timestamp "${CL_TIMESTAMP}" \
-        --tranches-dir /data/cl/tranches \
-        --state-output /data/cl/genesis.ssz
+        --eth1-config /data/custom_config_data/geth.json \
+        --tranches-dir /data/custom_config_data/tranches \
+        --state-output /data/custom_config_data/genesis.ssz
     else
         echo "cl genesis already exists. skipping generation..."
     fi

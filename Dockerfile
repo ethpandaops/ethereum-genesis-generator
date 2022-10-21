@@ -1,6 +1,6 @@
 FROM golang:1.17 as builder
-RUN git clone https://github.com/skylenet/eth2-testnet-genesis.git \
-    && cd eth2-testnet-genesis && git checkout faster-validator-creation \
+RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
+    && cd eth2-testnet-genesis \
     && go install . \
     && go install github.com/protolambda/eth2-val-tools@latest
 
