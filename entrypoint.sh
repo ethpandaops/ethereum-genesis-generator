@@ -2,6 +2,17 @@
 source /config/values.env
 SERVER_PORT="${SERVER_PORT:-8000}"
 
+gen_jwt_secret(){
+    set -x
+    if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
+        mkdir -p /data/el
+        echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/el/jwtsecret
+        cp /data/el/jwtsecret /data/cl/jwtsecret
+    else
+        echo "JWT secret already exists. skipping generation..."
+    fi
+}
+
 gen_el_config(){
     set -x
     if ! [ -f "/data/custom_config_data/geth.json" ]; then
@@ -51,6 +62,7 @@ gen_cl_config(){
 gen_all_config(){
     gen_el_config
     gen_cl_config
+    gen_jwt_secret
 }
 
 case $1 in

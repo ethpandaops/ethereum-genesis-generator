@@ -92,7 +92,7 @@ for key, value in data['el_premine'].items():
     weival = value.replace('ETH', '0' * 18)
     out["alloc"][acct.address] = {"balance": weival}
 
-out["Ethash"] =  {}
+out["config"]["ethash"] =  {}
 
     # Some hardcoded addrs
 for key, value in data['el_premine_addrs'].items():
