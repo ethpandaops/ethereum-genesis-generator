@@ -1,2 +1,2 @@
-- mnemonic: "giant issue aisle success illegal bike spike question tent bar rely arctic volcano long crawl hungry vocal artwork sniff fantasy very lucky have athlete"  # a 24 word BIP 39 mnemonic
-  count: 20000
+- mnemonic: "subway chief amazing later zoo taxi number ship cash desk spoon survey spike trend night huge fantasy matter scout already fence shallow feed final"  # a 24 word BIP 39 mnemonic
+  count: $MIN_GENESIS_ACTIVE_VALIDATOR_COUNT
