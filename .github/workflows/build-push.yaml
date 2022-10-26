@@ -25,7 +25,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          tags: skylenet/ethereum-genesis-generator:latest
+          tags: ethpandaops/ethereum-genesis-generator:latest
           push: true
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
