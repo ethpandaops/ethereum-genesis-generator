@@ -80,7 +80,7 @@ out = {
     "baseFeePerGas": "0x3B9ACA00",
     "difficulty": "0x01",
     "extraData": "",
-    "gasLimit": "0x400000",
+    "gasLimit": str(data['gas_limit']),
     "nonce": "0x1234",
     "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
