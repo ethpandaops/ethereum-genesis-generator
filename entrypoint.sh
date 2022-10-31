@@ -6,6 +6,7 @@ gen_jwt_secret(){
     set -x
     if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
         mkdir -p /data/el
+        mkdir -p /data/cl
         echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/el/jwtsecret
         cp /data/el/jwtsecret /data/cl/jwtsecret
     else
@@ -15,11 +16,11 @@ gen_jwt_secret(){
 
 gen_el_config(){
     set -x
-    if ! [ -f "/data/custom_config_data/geth.json" ]; then
+    if ! [ -f "/data/custom_config_data/genesis.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/custom_config_data
         envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/custom_config_data/geth.json
+        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/custom_config_data/genesis.json
         python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/chainspec.json
         python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/besu.json
     else
@@ -52,7 +53,7 @@ gen_cl_config(){
         /usr/local/bin/eth2-testnet-genesis merge \
         --config /data/custom_config_data/config.yaml \
         --mnemonics $tmp_dir/mnemonics.yaml \
-        --eth1-config /data/custom_config_data/geth.json \
+        --eth1-config /data/custom_config_data/genesis.json \
         --tranches-dir /data/custom_config_data/tranches \
         --state-output /data/custom_config_data/genesis.ssz
     else
