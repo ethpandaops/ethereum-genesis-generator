@@ -1,6 +1,6 @@
 chain_id: ${CHAIN_ID}
 deposit_contract_address: "${DEPOSIT_CONTRACT_ADDRESS}"
-mnemonic: ${EL_MNEMONIC}
+mnemonic: ${EL_AND_CL_MNEMONIC}
 el_premine:
   "m/44'/60'/0'/0/0": 1000000000ETH
   "m/44'/60'/0'/0/1": 1000000000ETH
