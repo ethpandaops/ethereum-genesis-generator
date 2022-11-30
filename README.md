@@ -13,7 +13,8 @@ docker run --rm -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 ethpandaop
 docker run --rm -it -u $UID -v $PWD/data:/data -p 127.0.0.1:8000:8000 ethpandaops/ethereum-genesis-generator:latest el  # Just EL
 ```
 
-You can overwrite configuration files and apply your own by using volume mounts:
+You can overwrite configuration files. To do so, please update the values in the `config-example/values.env` file
+apply it using the docker volume mount:
 
 ```sh
 # Overwriting the config files and generating the EL and CL genesis
