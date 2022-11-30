@@ -2,7 +2,8 @@ FROM golang:1.17 as builder
 RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
     && cd eth2-testnet-genesis \
     && go install . \
-    && go install github.com/protolambda/eth2-val-tools@latest
+    && go install github.com/protolambda/eth2-val-tools@latest \
+    && go install github.com/protolambda/zcli@latest
 
 FROM debian:latest
 WORKDIR /work
@@ -18,6 +19,7 @@ COPY apps /apps
 RUN cd /apps/el-gen && pip3 install -r requirements.txt
 COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-genesis
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
+COPY --from=builder /go/bin/zcli /usr/local/bin/zcli
 COPY config-example /config
 COPY entrypoint.sh .
 ENTRYPOINT [ "/work/entrypoint.sh" ]
