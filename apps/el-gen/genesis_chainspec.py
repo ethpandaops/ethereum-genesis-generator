@@ -50,7 +50,8 @@ out = {
         "eip1559Transition": "0x0",
         "eip3198Transition": "0x0",
         "eip3529Transition": "0x0",
-        "eip3541Transition": "0x0"
+        "eip3541Transition": "0x0",
+        "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
     },
     "genesis": {
         "seal": {
