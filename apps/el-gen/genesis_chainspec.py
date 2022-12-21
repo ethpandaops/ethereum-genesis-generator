@@ -53,8 +53,8 @@ out = {
         "eip3541Transition": "0x0",
         "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
         "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
-        "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12))
-        "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12))
+        "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+        "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
         "terminalTotalDifficulty":"0x0"
     },
     "genesis": {
