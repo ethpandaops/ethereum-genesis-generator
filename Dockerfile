@@ -1,4 +1,4 @@
-FROM golang:1.17 as builder
+FROM golang:1.19 as builder
 RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
     && cd eth2-testnet-genesis \
     && go install . \
