@@ -23,6 +23,8 @@ out = {
         "minGasLimit": "0x1388",
         "networkID": hex(int(data['chain_id'])),
         "MergeForkIdTransition": "0x0",
+        "maxCodeSize": "0x6000",
+        "maxCodeSizeTransition": "0x0",
         "eip150Transition": "0x0",
         "eip158Transition": "0x0",
         "eip160Transition": "0x0",
