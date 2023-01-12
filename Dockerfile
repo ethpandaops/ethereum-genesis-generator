@@ -1,6 +1,7 @@
 FROM golang:1.17 as builder
 RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
     && cd eth2-testnet-genesis \
+    && git checkout 48ff4d62fe33f7020f551a86610a7ea7b3fda9ab \
     && go install . \
     && go install github.com/protolambda/eth2-val-tools@latest
 
