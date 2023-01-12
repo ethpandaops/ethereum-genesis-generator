@@ -52,7 +52,7 @@ gen_cl_config(){
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
-          merge
+          bellatrix
           --config /data/custom_config_data/config.yaml
           --mnemonics $tmp_dir/mnemonics.yaml
           --eth1-config /data/custom_config_data/genesis.json
@@ -61,6 +61,9 @@ gen_cl_config(){
         )
         if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
           genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
+        fi
+        if [[ $SHADOW_FORK_RPC != "" ]]; then
+          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC)
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
         /usr/local/bin/zcli pretty bellatrix BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
