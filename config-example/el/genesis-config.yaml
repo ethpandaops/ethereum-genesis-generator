@@ -12,4 +12,4 @@ el_premine_addrs: {}
 genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
 capella_fork_epoch: ${CAPELLA_FORK_EPOCH}
-cancun_time: ${CANCUN_TIME}
+deneb_fork_epoch: ${DENEB_FORK_EPOCH}
