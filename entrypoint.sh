@@ -1,6 +1,7 @@
 #!/bin/bash -e
 source /config/values.env
 SERVER_PORT="${SERVER_PORT:-8000}"
+WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 
 gen_jwt_secret(){
     set -x
@@ -50,12 +51,23 @@ gen_cl_config(){
         # Envsubst mnemonics
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
-        /usr/local/bin/eth2-testnet-genesis merge \
-        --config /data/custom_config_data/config.yaml \
-        --mnemonics $tmp_dir/mnemonics.yaml \
-        --eth1-config /data/custom_config_data/genesis.json \
-        --tranches-dir /data/custom_config_data/tranches \
-        --state-output /data/custom_config_data/genesis.ssz
+        genesis_args=(
+          bellatrix
+          --config /data/custom_config_data/config.yaml
+          --mnemonics $tmp_dir/mnemonics.yaml
+          --eth1-config /data/custom_config_data/genesis.json
+          --tranches-dir /data/custom_config_data/tranches
+          --state-output /data/custom_config_data/genesis.ssz
+        )
+        if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
+          genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
+        fi
+        if [[ $SHADOW_FORK_RPC != "" ]]; then
+          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC)
+        fi
+        /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
+        /usr/local/bin/zcli pretty bellatrix BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
+        jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json > /data/custom_config_data/deposit_contract_block_hash.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi

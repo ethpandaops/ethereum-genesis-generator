@@ -23,6 +23,8 @@ out = {
         "minGasLimit": "0x1388",
         "networkID": hex(int(data['chain_id'])),
         "MergeForkIdTransition": "0x0",
+        "maxCodeSize": "0x6000",
+        "maxCodeSizeTransition": "0x0",
         "eip150Transition": "0x0",
         "eip158Transition": "0x0",
         "eip160Transition": "0x0",
@@ -50,7 +52,12 @@ out = {
         "eip1559Transition": "0x0",
         "eip3198Transition": "0x0",
         "eip3529Transition": "0x0",
-        "eip3541Transition": "0x0"
+        "eip3541Transition": "0x0",
+        "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+        "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+        "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+        "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+        "terminalTotalDifficulty":"0x0"
     },
     "genesis": {
         "seal": {
