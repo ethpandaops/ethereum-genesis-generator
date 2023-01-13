@@ -26,7 +26,9 @@ out = {
         "berlinBlock":0,
         "londonBlock":0,
         "mergeForkBlock":0,
-        "terminalTotalDifficulty":0
+        "terminalTotalDifficulty":0,
+        "shanghaiTime": int(data['shanghai_time']),
+        "shardingForkTime": int(data['cancun_time']),
     },
     "alloc": {
         # Allocate 1 wei to all possible pre-compiles.

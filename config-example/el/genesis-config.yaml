@@ -10,3 +10,5 @@ el_premine:
   "m/44'/60'/0'/0/5": 1000000000ETH
 el_premine_addrs: {}
 genesis_timestamp: ${GENESIS_TIMESTAMP}
+shanghai_time: ${SHANGHAI_TIME}
+cancun_time: ${CANCUN_TIME}
