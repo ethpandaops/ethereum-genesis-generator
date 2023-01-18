@@ -1114,7 +1114,7 @@ else:
             "timestamp": hex(data['genesis_timestamp']),
             "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
             "extraData": "",
-            "gasLimit": "0x400000"
+            "gasLimit": "0x17D7840"
         },
         "accounts": {
             # Allocate 1 wei to all possible pre-compiles.
