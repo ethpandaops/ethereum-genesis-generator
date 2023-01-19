@@ -31,7 +31,7 @@ elif int(data['chain_id']) == 5:
             "berlinBlock":4460644,
             "londonBlock":5062605,
             "mergeForkBlock":99999999,
-            "terminalTotalDifficulty":10790000,
+            "terminalTotalDifficulty":0,
             "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
             "trustedCheckpoint": {
                 "sectionIndex": 66,
@@ -347,7 +347,7 @@ elif int(data['chain_id']) == 11155111:
             "berlinBlock":0,
             "londonBlock":0,
             "mergeForkBlock":1735371,
-            "terminalTotalDifficulty":17000000000000000,
+            "terminalTotalDifficulty":0,
             "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
         },
         "alloc":{
