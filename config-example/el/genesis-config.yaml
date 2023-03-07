@@ -1,0 +1,14 @@
+chain_id: ${CHAIN_ID}
+deposit_contract_address: "${DEPOSIT_CONTRACT_ADDRESS}"
+mnemonic: ${EL_AND_CL_MNEMONIC}
+el_premine:
+  "m/44'/60'/0'/0/0": 1000000000ETH
+  "m/44'/60'/0'/0/1": 1000000000ETH
+  "m/44'/60'/0'/0/2": 1000000000ETH
+  "m/44'/60'/0'/0/3": 1000000000ETH
+  "m/44'/60'/0'/0/4": 1000000000ETH
+  "m/44'/60'/0'/0/5": 1000000000ETH
+el_premine_addrs: {}
+genesis_timestamp: ${GENESIS_TIMESTAMP}
+genesis_delay: ${GENESIS_DELAY}
+capella_fork_epoch: ${CAPELLA_FORK_EPOCH}
