@@ -8,7 +8,7 @@ CONFIG_NAME: testnet # needs to exist because of Prysm. Otherwise it conflicts w
 MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: $NUMBER_OF_VALIDATORS
 # Mar-01-2021 08:53:32 AM +UTC
 # This is an invalid valid and should be updated when you create the genesis
-MIN_GENESIS_TIME: $CL_TIMESTAMP
+MIN_GENESIS_TIME: $GENESIS_TIMESTAMP
 GENESIS_FORK_VERSION: $GENESIS_FORK_VERSION
 GENESIS_DELAY: $GENESIS_DELAY
 
