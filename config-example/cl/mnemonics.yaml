@@ -1,0 +1,2 @@
+- mnemonic: "${EL_AND_CL_MNEMONIC}"  # a 24 word BIP 39 mnemonic
+  count: $NUMBER_OF_VALIDATORS
