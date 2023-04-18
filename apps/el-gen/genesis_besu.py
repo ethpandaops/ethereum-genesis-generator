@@ -44,7 +44,9 @@ else:
             "londonBlock":0,
             "preMergeForkBlock":0,
             "terminalTotalDifficulty":0,
+            "depositContractAddress": data['deposit_contract_address'],
             "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
+            "experimentaleipstime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['eip6110_fork_epoch']) * 32 * 12),
         },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.

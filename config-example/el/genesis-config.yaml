@@ -12,3 +12,4 @@ el_premine_addrs: {}
 genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
 capella_fork_epoch: ${CAPELLA_FORK_EPOCH}
+eip6110_fork_epoch: ${EIP6110_FORK_EPOCH}
