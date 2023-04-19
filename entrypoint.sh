@@ -39,12 +39,9 @@ gen_cl_config(){
         envsubst < /config/cl/config.yaml > /data/custom_config_data/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
-        # Replace MIN_GENESIS_TIME on config
-        sed "s/^MIN_GENESIS_TIME:.*/MIN_GENESIS_TIME: ${GENESIS_TIMESTAMP}/" /data/custom_config_data/config.yaml > /tmp/config.yaml
-        mv /tmp/config.yaml /data/custom_config_data/config.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
-        echo $DEPOSIT_CONTRACT_BLOCK > /data/custom_config_data/deploy_block.txt
+        echo $CL_EXEC_BLOCK > /data/custom_config_data/deploy_block.txt
         echo $CL_EXEC_BLOCK > /data/custom_config_data/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/custom_config_data/bootstrap_nodes.txt
         echo "- $BEACON_STATIC_ENR" > /data/custom_config_data/boot_enr.txt
@@ -55,7 +52,6 @@ gen_cl_config(){
           bellatrix
           --config /data/custom_config_data/config.yaml
           --mnemonics $tmp_dir/mnemonics.yaml
-          --eth1-config /data/custom_config_data/genesis.json
           --tranches-dir /data/custom_config_data/tranches
           --state-output /data/custom_config_data/genesis.ssz
         )
@@ -63,7 +59,9 @@ gen_cl_config(){
           genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
         fi
         if [[ $SHADOW_FORK_RPC != "" ]]; then
-          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC)
+          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
+        else
+          genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
         /usr/local/bin/zcli pretty bellatrix BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
