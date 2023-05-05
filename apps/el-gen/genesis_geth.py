@@ -44,7 +44,7 @@ else:
             "londonBlock":0,
             "mergeForkBlock":0,
             "terminalTotalDifficulty":0,
-            "terminalTotalDifficultyPassed": true,
+            "terminalTotalDifficultyPassed": True,
             "shanghaiTime": 0,
         },
         "alloc": {
