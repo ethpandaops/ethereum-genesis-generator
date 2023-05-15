@@ -45,6 +45,7 @@ else:
             "mergeForkBlock":0,
             "terminalTotalDifficulty":0,
             "shanghaiTime": 0,
+            "terminalTotalDifficultyPassed": True,
         },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
@@ -115,4 +116,6 @@ else:
         out["alloc"][key] = {"balance": weival}
 
 out['config']['shanghaiTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)
+out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['dencun_fork_epoch']) * 32 * 12)
+out['config']['experimentaleipstime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['eip6110_fork_epoch']) * 32 * 12)
 print(json.dumps(out, indent='  '))

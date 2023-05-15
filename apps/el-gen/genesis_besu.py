@@ -46,6 +46,7 @@ else:
             "terminalTotalDifficulty":0,
             "depositContractAddress": data['deposit_contract_address'],
             "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
+            "cancunTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['dencun_fork_epoch']) * 32 * 12),
             "experimentaleipstime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['eip6110_fork_epoch']) * 32 * 12),
         },
         "alloc": {
