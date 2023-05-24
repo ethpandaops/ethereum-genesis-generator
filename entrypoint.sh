@@ -3,8 +3,11 @@ source /config/values.env
 SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 
-gen_jwt_secret(){
+gen_shared_files(){
     set -x
+    # Shared files
+    mkdir -p /data/custom_config_data
+    cp /apps/trusted_setup.txt /data/custom_config_data/trusted_setup.txt
     if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
         mkdir -p /data/el
         mkdir -p /data/cl
@@ -74,7 +77,7 @@ gen_cl_config(){
 gen_all_config(){
     gen_el_config
     gen_cl_config
-    gen_jwt_secret
+    gen_shared_files
 }
 
 case $1 in
