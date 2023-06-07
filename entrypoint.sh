@@ -1,5 +1,6 @@
 #!/bin/bash -e
 source /config/values.env
+SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 
@@ -99,4 +100,6 @@ case $1 in
 esac
 
 # Start webserver
-cd /data && exec python -m SimpleHTTPServer "$SERVER_PORT"
+if [ "$SERVER_ENABLED" = true ] ; then
+  cd /data && exec python -m SimpleHTTPServer "$SERVER_PORT"
+fi
