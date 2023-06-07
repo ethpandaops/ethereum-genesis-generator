@@ -45,8 +45,8 @@ else:
             "mergeForkBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
-            "shanghaiTime": 0,
-        },
+            "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
+    },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
             # See https://github.com/ethereum/EIPs/issues/716 "SpuriousDragon RIPEMD bug"
@@ -115,5 +115,5 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
 
-out['config']['shanghaiTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)
+out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['dencun_fork_epoch']) * 32 * 12)
 print(json.dumps(out, indent='  '))
