@@ -153,5 +153,5 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][key] = {"balance": weival}
 
-out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['dencun_fork_epoch']) * 32 * 12))
+out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * 12))
 print(json.dumps(out, indent='  '))
