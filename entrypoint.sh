@@ -7,7 +7,8 @@ gen_shared_files(){
     set -x
     # Shared files
     mkdir -p /data/custom_config_data
-    cp /apps/trusted_setup.txt /data/custom_config_data/trusted_setup.txt
+    wget -O /data/custom_config_data/trusted_setup.txt https://raw.githubusercontent.com/ethereum/c-kzg-4844/main/src/trusted_setup.txt
+    wget -O /data/custom_config_data/trusted_setup.json https://raw.githubusercontent.com/ethereum/consensus-specs/dev/presets/mainnet/trusted_setups/testing_trusted_setups.json
     if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
         mkdir -p /data/el
         mkdir -p /data/cl
