@@ -11,7 +11,7 @@ VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-    ca-certificates build-essential python python3-dev python3-pip gettext-base jq && \
+    ca-certificates build-essential python python3-dev python3-pip gettext-base jq wget && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
