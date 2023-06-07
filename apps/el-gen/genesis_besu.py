@@ -117,5 +117,5 @@ else:
         out["alloc"][key] = {"balance": weival}
 
 out['config']['ethash'] =  {}
-out['config']['cancunTime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['dencun_fork_epoch']) * 32 * 12)
+out['config']['cancunTime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * 12)
 print(json.dumps(out, indent='  '))
