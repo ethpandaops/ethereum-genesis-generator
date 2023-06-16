@@ -101,5 +101,5 @@ esac
 
 # Start webserver
 if [ "$SERVER_ENABLED" = true ] ; then
-  cd /data && exec python -m SimpleHTTPServer "$SERVER_PORT"
+  cd /data && exec python3 -m SimpleHTTPServer "$SERVER_PORT"
 fi
