@@ -45,7 +45,7 @@ else:
             "mergeForkBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
-            "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12),
+            "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])),
     },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
@@ -115,5 +115,5 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
 
-out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * 12)
+out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 print(json.dumps(out, indent='  '))

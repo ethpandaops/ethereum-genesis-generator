@@ -11,5 +11,6 @@ el_premine:
 el_premine_addrs: {}
 genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
+slot_duration_in_seconds: ${SLOT_DURATION_IN_SECONDS}
 capella_fork_epoch: ${CAPELLA_FORK_EPOCH}
 deneb_fork_epoch: ${DENEB_FORK_EPOCH}

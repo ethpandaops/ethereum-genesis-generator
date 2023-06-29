@@ -70,10 +70,10 @@ else:
             "eip3198Transition": "0x0",
             "eip3529Transition": "0x0",
             "eip3541Transition": "0x0",
-            "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
-            "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
-            "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
-            "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * 12)),
+            "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
+            "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
+            "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
+            "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
             "terminalTotalDifficulty":"0x0"
         },
         "genesis": {
@@ -153,5 +153,5 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][key] = {"balance": weival}
 
-out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * 12))
+out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
 print(json.dumps(out, indent='  '))
