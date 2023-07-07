@@ -70,10 +70,10 @@ else:
             "eip3198Transition": "0x0",
             "eip3529Transition": "0x0",
             "eip3541Transition": "0x0",
-            "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
-            "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
-            "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
-            "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))),
+            "eip4895TransitionTimestamp": "0x0",
+            "eip3855TransitionTimestamp": "0x0",
+            "eip3651TransitionTimestamp": "0x0",
+            "eip3860TransitionTimestamp": "0x0",
             "terminalTotalDifficulty":"0x0"
         },
         "genesis": {

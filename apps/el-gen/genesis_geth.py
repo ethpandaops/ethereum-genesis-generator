@@ -45,7 +45,7 @@ else:
             "mergeForkBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
-            "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])),
+            "shanghaiTime":0,
     },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
