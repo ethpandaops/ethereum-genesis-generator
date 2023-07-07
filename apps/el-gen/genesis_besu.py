@@ -44,7 +44,7 @@ else:
             "londonBlock":0,
             "preMergeForkBlock":0,
             "terminalTotalDifficulty":0,
-            "shanghaiTime":0,
+            "shanghaiTime": int(data['genesis_timestamp'] + data['genesis_delay']),
         },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
