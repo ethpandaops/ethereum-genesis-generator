@@ -18,6 +18,10 @@ gen_shared_files(){
     else
         echo "JWT secret already exists. skipping generation..."
     fi
+    if [ -f "/data/custom_config_data/genesis.json" ]; then
+        terminalTotalDifficulty=$(cat /data/custom_config_data/genesis.json | jq -r '.config.terminalTotalDifficulty')
+        sed -i "s/TERMINAL_TOTAL_DIFFICULTY:.*/TERMINAL_TOTAL_DIFFICULTY: $terminalTotalDifficulty/" /data/custom_config_data/config.yaml
+    fi
 }
 
 gen_el_config(){
