@@ -98,7 +98,12 @@ else:
             **{
                 "0x" + i.to_bytes(length=20, byteorder='big').hex(): {
                     "balance": "1",
-                } for i in range(256)
+                } for i in [x for x in range(256) if x != 11]
+            },
+            '0x000000000000000000000000000000000000000b': {
+                "balance": "0",
+                "nonce": "1",
+                "code": "0x3373fffffffffffffffffffffffffffffffffffffffe14604457602036146024575f5ffd5b620180005f350680545f35146037575f5ffd5b6201800001545f5260205ff35b42620180004206555f3562018000420662018000015500"
             },
             data['deposit_contract_address']: {
                 "balance": "0",
