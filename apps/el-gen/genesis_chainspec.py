@@ -163,10 +163,10 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][key] = {"balance": weival}
 
-out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip4788TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip1153TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip5656TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip6780TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+out['params']['eip4844TransitionTimestamp']= hex(18446744073709551615)
+out['params']['eip4788TransitionTimestamp']= hex(18446744073709551615)
+out['params']['eip1153TransitionTimestamp']= hex(18446744073709551615)
+out['params']['eip5656TransitionTimestamp']= hex(18446744073709551615)
+out['params']['eip6780TransitionTimestamp']= hex(18446744073709551615)
 
 print(json.dumps(out, indent='  '))
