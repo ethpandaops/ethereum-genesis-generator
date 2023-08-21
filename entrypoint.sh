@@ -10,6 +10,7 @@ gen_shared_files(){
     mkdir -p /data/custom_config_data
     wget -O /data/custom_config_data/trusted_setup.txt https://raw.githubusercontent.com/ethereum/c-kzg-4844/main/src/trusted_setup.txt
     wget -O /data/custom_config_data/trusted_setup.json https://raw.githubusercontent.com/ethereum/consensus-specs/dev/presets/mainnet/trusted_setups/testing_trusted_setups.json
+    wget -O /data/all.txt https://github.com/eth-clients/holesky/raw/main/public-keys/all.txt
     if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
         mkdir -p /data/el
         mkdir -p /data/cl
@@ -56,6 +57,7 @@ gen_cl_config(){
         genesis_args=(
           bellatrix
           --config /data/custom_config_data/config.yaml
+          --additional-validators /data/all.txt
           --mnemonics $tmp_dir/mnemonics.yaml
           --tranches-dir /data/custom_config_data/tranches
           --state-output /data/custom_config_data/genesis.ssz
