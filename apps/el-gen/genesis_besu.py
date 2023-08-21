@@ -9,6 +9,7 @@ testnet_config_path = "genesis-config.yaml"
 mainnet_config_path = "/apps/el-gen/mainnet/besu_genesis.json"
 sepolia_config_path = "/apps/el-gen/sepolia/besu_genesis.json"
 goerli_config_path = "/apps/el-gen/goerli/besu_genesis.json"
+holesky_config_path = "/apps/el-gen/holesky/besu_genesis.json"
 
 if len(sys.argv) > 1:
     testnet_config_path = sys.argv[1]
@@ -28,6 +29,10 @@ elif int(data['chain_id']) == 11155111:
     with open(sepolia_config_path) as m:
         sepolia_json = json.loads(m.read())
     out = sepolia_json
+elif int(data['chain_id']) == 17000:
+    with open(holesky_config_path) as m:
+        holesky_json = json.loads(m.read())
+    out = holesky_json
 else:
     out = {
         "config": {
