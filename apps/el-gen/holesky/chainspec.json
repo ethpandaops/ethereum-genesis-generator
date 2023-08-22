@@ -46,11 +46,11 @@
     "eip3651TransitionTimestamp": "0x65047260",
     "eip3860TransitionTimestamp": "0x65047260",
     "terminalTotalDifficulty": "0x0",
-    "eip4844TransitionTimestamp": "0xfffffffffff",
-    "eip4788TransitionTimestamp": "0xfffffffffff",
-    "eip1153TransitionTimestamp": "0xfffffffffff",
-    "eip5656TransitionTimestamp": "0xfffffffffff",
-    "eip6780TransitionTimestamp": "0xfffffffffff"
+    "eip4844TransitionTimestamp": "0x77359400",
+    "eip4788TransitionTimestamp": "0x77359400",
+    "eip1153TransitionTimestamp": "0x77359400",
+    "eip5656TransitionTimestamp": "0x77359400",
+    "eip6780TransitionTimestamp": "0x77359400"
   },
   "genesis": {
     "seal": {
