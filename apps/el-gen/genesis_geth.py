@@ -119,8 +119,10 @@ else:
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
-if int(data['chain_id']) != 17000:
-    out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
-else: 
+
+out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
+
+if int(data['chain_id']) == 17000: 
     out['config']['cancunTime'] = int(2000000000)
+    
 print(json.dumps(out, indent='  '))
