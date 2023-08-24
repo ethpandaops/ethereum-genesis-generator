@@ -153,11 +153,6 @@ else:
 
     out["engine"]["Ethash"] =  {}
 
-    # for key, value in data['el_premine'].items():
-    #     acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')
-    #     weival = value.replace('ETH', '0' * 18)
-    #     out["accounts"][acct.address] = {"balance": weival}
-
     # Some hardcoded addrs
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
