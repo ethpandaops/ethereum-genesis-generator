@@ -115,15 +115,14 @@ else:
         "timestamp": str(data['genesis_timestamp'])
     }
 
-    for key, value in data['el_premine'].items():
-        acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')
-        weival = value.replace('ETH', '0' * 18)
-        out["alloc"][acct.address] = {"balance": weival}
-
     # Some hardcoded addrs
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
 
-out['config']['cancunTime'] = int(2000000000)
+out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
+
+if int(data['chain_id']) == 17000: 
+    out['config']['cancunTime'] = int(2000000000)
+    
 print(json.dumps(out, indent='  '))

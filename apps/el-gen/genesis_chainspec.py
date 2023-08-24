@@ -153,20 +153,24 @@ else:
 
     out["engine"]["Ethash"] =  {}
 
-    for key, value in data['el_premine'].items():
-        acct = w3.eth.account.from_mnemonic(data['mnemonic'], account_path=key, passphrase='')
-        weival = value.replace('ETH', '0' * 18)
-        out["accounts"][acct.address] = {"balance": weival}
-
     # Some hardcoded addrs
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][key] = {"balance": weival}
 
-out['params']['eip4844TransitionTimestamp']= hex(2000000000)
-out['params']['eip4788TransitionTimestamp']= hex(2000000000)
-out['params']['eip1153TransitionTimestamp']= hex(2000000000)
-out['params']['eip5656TransitionTimestamp']= hex(2000000000)
-out['params']['eip6780TransitionTimestamp']= hex(2000000000)
+out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+out['params']['eip4788TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+out['params']['eip1153TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+out['params']['eip5656TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+out['params']['eip6780TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
+
+if int(data['chain_id']) == 17000:
+    out['params']['eip4844TransitionTimestamp']= hex(2000000000)
+    out['params']['eip4788TransitionTimestamp']= hex(2000000000)
+    out['params']['eip1153TransitionTimestamp']= hex(2000000000)
+    out['params']['eip5656TransitionTimestamp']= hex(2000000000)
+    out['params']['eip6780TransitionTimestamp']= hex(2000000000)
+
+
 
 print(json.dumps(out, indent='  '))
