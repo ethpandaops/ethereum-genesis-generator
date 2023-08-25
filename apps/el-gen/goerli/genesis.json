@@ -13,7 +13,6 @@
     "istanbulBlock": 1561651,
     "berlinBlock": 4460644,
     "londonBlock": 5062605,
-    "mergeForkBlock": 99999999,
     "terminalTotalDifficulty": 10790000,
     "shanghaiTime": 1678832736,
     "trustedCheckpoint": {
