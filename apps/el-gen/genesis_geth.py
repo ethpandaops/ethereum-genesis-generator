@@ -47,7 +47,7 @@ else:
             "istanbulBlock":0,
             "berlinBlock":0,
             "londonBlock":0,
-            "mergeForkBlock":0,
+            "mergeNetsplitBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
             "shanghaiTime": int(data['genesis_timestamp'] + data['genesis_delay']),

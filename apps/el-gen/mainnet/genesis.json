@@ -17,7 +17,7 @@
     "londonBlock": 12965000,
     "arrowGlacierBlock": 13773000,
     "grayGlacierBlock": 15050000,
-    "mergeForkBlock": 16675026,
+    "mergeNetsplitBlock": 16675026,
     "terminalTotalDifficulty": 58750000000000000000000,
     "shanghaiTime": 1681338455,
     "ethash": {}
