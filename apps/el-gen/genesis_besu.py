@@ -127,5 +127,4 @@ else:
         out["alloc"][key] = {"balance": weival}
 
 out['config']['ethash'] =  {}
-out['config']['cancunTime'] = int(2000000000)
 print(json.dumps(out, indent='  '))

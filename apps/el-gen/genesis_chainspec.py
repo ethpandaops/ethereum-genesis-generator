@@ -163,10 +163,4 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][key] = {"balance": weival}
 
-out['params']['eip4844TransitionTimestamp']= hex(2000000000)
-out['params']['eip4788TransitionTimestamp']= hex(2000000000)
-out['params']['eip1153TransitionTimestamp']= hex(2000000000)
-out['params']['eip5656TransitionTimestamp']= hex(2000000000)
-out['params']['eip6780TransitionTimestamp']= hex(2000000000)
-
 print(json.dumps(out, indent='  '))
