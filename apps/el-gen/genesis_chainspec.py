@@ -164,13 +164,4 @@ out['params']['eip1153TransitionTimestamp']= hex(int(data['genesis_timestamp']) 
 out['params']['eip5656TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
 out['params']['eip6780TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
 
-if int(data['chain_id']) == 17000:
-    out['params']['eip4844TransitionTimestamp']= hex(2000000000)
-    out['params']['eip4788TransitionTimestamp']= hex(2000000000)
-    out['params']['eip1153TransitionTimestamp']= hex(2000000000)
-    out['params']['eip5656TransitionTimestamp']= hex(2000000000)
-    out['params']['eip6780TransitionTimestamp']= hex(2000000000)
-
-
-
 print(json.dumps(out, indent='  '))
