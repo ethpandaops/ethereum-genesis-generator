@@ -1,3 +1,0 @@
-linux/amd64: ubuntu-latest
-linux/arm64: ARM64
-darwin/arm64: ARM64
