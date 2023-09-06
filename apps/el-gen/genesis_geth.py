@@ -125,6 +125,5 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
 
-out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 print(json.dumps(out, indent='  '))
