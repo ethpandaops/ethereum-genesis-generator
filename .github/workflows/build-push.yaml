@@ -23,7 +23,7 @@ on:
 
 jobs:
   build-push:
-    name: build-push-x86
+    name: build-x64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
@@ -48,7 +48,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
   build-push-arm:
-    name: build-push-arm
+    name: build-arm
     runs-on: ARM
     steps:
       - name: Checkout this repo
@@ -73,8 +73,10 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
   push-image:
-    depends-on: [build-push-x86, build-push-arm]
-    name: build-push-arm
+    needs: 
+      - build-x64
+      - build-arm
+    name: push-image
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub
