@@ -22,7 +22,7 @@ on:
         required: false
 
 jobs:
-  build-push:
+  build-x64:
     name: build-x64
     runs-on: ubuntu-latest
     steps:
@@ -47,7 +47,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-  build-push-arm:
+  build-arm:
     name: build-arm
     runs-on: ARM
     steps:
