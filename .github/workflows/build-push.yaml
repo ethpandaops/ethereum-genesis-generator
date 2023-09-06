@@ -5,6 +5,21 @@ on:
       - master
     tags:
       - '**'
+  workflow_dispatch:
+    inputs:
+      repository: 
+        default: ethpandaops/ethereum-genesis-generator
+        type: string
+        required: true
+      ref:
+        description: The branch, tag or SHA to checkout and build from
+        default: master
+        type: string
+        required: true
+      docker_tag:
+        description: Override target docker tag (defaults to the above source ref if left blank)
+        type: string
+        required: false
 
 inputs:
   MACOS_PASSWORD:
