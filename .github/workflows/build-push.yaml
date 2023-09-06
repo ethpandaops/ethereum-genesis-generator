@@ -2,13 +2,14 @@ name: Build docker image
 on:
   push:
     branches:
-      - '*'
+      - master
     tags:
       - '**'
     workflow_dispatch:
+
 jobs:
-  build-x64:
-    name: build-x64
+  build-push:
+    name: build-push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
