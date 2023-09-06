@@ -5,6 +5,11 @@ on:
       - master
     tags:
       - '**'
+
+inputs:
+  MACOS_PASSWORD:
+    required: true
+
 jobs:
   build-push:
     name: build-push
@@ -12,17 +17,20 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Context for Buildx
         shell: bash
         id: buildx-context
         run: |
-          docker context create builders
+          docker context use builders || docker context create builders 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
           endpoint: builders
+      - name: Unlock MacOS keychain for Docker Hub login
+        shell: bash
+        if: runner.os == 'macOS'
+        run: |
+          security -v unlock-keychain -p ${{ inputs.MACOS_PASSWORD }} ~/Library/Keychains/login.keychain-db
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -46,6 +54,8 @@ jobs:
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: 
+            - linux/amd64
+            - linux/arm64
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
