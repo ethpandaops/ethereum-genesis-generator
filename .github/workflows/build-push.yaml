@@ -92,8 +92,6 @@ jobs:
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           push: true
-          platforms: 
-            - linux/amd64
-            - linux/arm64
+          platforms: linux/amd64,linux/arm64
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
