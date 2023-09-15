@@ -43,16 +43,12 @@ gen_cl_config(){
         wget -O /data/all.txt https://github.com/eth-clients/holesky/raw/main/public-keys/all.txt
         # Replace environment vars in files
         envsubst < /config/cl/config.yaml > /data/custom_config_data/config.yaml
-        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
-        cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
         echo $CL_EXEC_BLOCK > /data/custom_config_data/deploy_block.txt
         echo $CL_EXEC_BLOCK > /data/custom_config_data/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/custom_config_data/bootstrap_nodes.txt
         echo "- $BEACON_STATIC_ENR" > /data/custom_config_data/boot_enr.txt
-        # Envsubst mnemonics
-        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
           bellatrix
