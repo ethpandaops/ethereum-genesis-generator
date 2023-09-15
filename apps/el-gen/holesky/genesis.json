@@ -14,7 +14,7 @@
     "mergeNetsplitBlock": 0,
     "terminalTotalDifficulty": 0,
     "terminalTotalDifficultyPassed": true,
-    "shanghaiTime": 1694884704
+    "shanghaiTime": 1696000704
   },
   "alloc": {
     "0x0000000000000000000000000000000000000000": {
@@ -1005,10 +1005,10 @@
   },
   "coinbase": "0x0000000000000000000000000000000000000000",
   "difficulty": "0x01",
-  "extraData": "0x686f77206d7563682069732074686520666973683f",
+  "extraData": "",
   "gasLimit": "0x17D7840",
   "nonce": "0x1234",
   "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "timestamp": "1694786100"
+  "timestamp": "1695902100"
 }

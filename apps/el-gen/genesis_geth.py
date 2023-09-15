@@ -47,7 +47,7 @@ else:
             "istanbulBlock":0,
             "berlinBlock":0,
             "londonBlock":0,
-            "mergeForkBlock":0,
+            "mergeNetsplitBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
             "shanghaiTime": int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['capella_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])),
@@ -119,7 +119,5 @@ else:
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
-
-out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 
 print(json.dumps(out, indent='  '))
