@@ -126,7 +126,7 @@ else:
         out["alloc"][key] = {"balance": weival}
 
 # TODO: This is a hack just for geth and just for kaustinen
-out['config']['pragueTime'] = int(data['genesis_timestamp'])
+out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 # TODO: This is a hack just for geth and just for networks who want proofs in block at genesis
 out['config']['proofInBlocks'] = True
 out['config']['shanghaiTime'] = 0
