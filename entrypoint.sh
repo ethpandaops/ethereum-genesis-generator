@@ -10,13 +10,13 @@ gen_shared_files(){
     mkdir -p /data/custom_config_data
     wget -O /data/custom_config_data/trusted_setup.txt https://raw.githubusercontent.com/ethereum/c-kzg-4844/main/src/trusted_setup.txt
     wget -O /data/custom_config_data/trusted_setup.json https://raw.githubusercontent.com/ethereum/consensus-specs/dev/presets/mainnet/trusted_setups/testing_trusted_setups.json
-    if ! [ -f "/data/el/jwtsecret" ] || [ -f "/data/cl/jwtsecret" ]; then
-        mkdir -p /data/el
-        mkdir -p /data/cl
-        echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/el/jwtsecret
-        cp /data/el/jwtsecret /data/cl/jwtsecret
-    else
-        echo "JWT secret already exists. skipping generation..."
+    if ! [ -f "/data/jwt/jwtsecret" ]; then
+        mkdir -p /data/jwt
+        echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/jwt/jwtsecret
+    fi
+    if [ -f "/data/custom_config_data/genesis.json" ]; then
+        terminalTotalDifficulty=$(cat /data/custom_config_data/genesis.json | jq -r '.config.terminalTotalDifficulty')
+        sed -i "s/TERMINAL_TOTAL_DIFFICULTY:.*/TERMINAL_TOTAL_DIFFICULTY: $terminalTotalDifficulty/" /data/custom_config_data/config.yaml
     fi
 }
 
@@ -71,6 +71,7 @@ gen_cl_config(){
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
         /usr/local/bin/zcli pretty bellatrix BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
         jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json > /data/custom_config_data/deposit_contract_block_hash.txt
+        jq -r '.genesis_validators_root' /data/custom_config_data/parsedBeaconState.json > /data/custom_config_data/genesis_validators_root.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi
