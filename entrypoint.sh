@@ -73,6 +73,7 @@ gen_cl_config(){
           genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
+        echo "0x0000000000000000000000000000000000000000000000000000000000000000" > /data/custom_config_data/genesis_validators_root.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi
