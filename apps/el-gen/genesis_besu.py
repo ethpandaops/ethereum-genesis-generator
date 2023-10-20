@@ -123,4 +123,7 @@ else:
 
 out['config']['ethash'] =  {}
 out['config']['cancunTime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
+
+# eip6110 activation
+out['config']['experimentaleipstime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['eip6110_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 print(json.dumps(out, indent='  '))

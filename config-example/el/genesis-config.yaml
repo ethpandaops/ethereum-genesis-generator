@@ -28,3 +28,4 @@ genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
 slot_duration_in_seconds: ${SLOT_DURATION_IN_SECONDS}
 deneb_fork_epoch: ${DENEB_FORK_EPOCH}
+eip6110_fork_epoch: ${EIP6111_FORK_EPOCH}
