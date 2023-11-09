@@ -54,7 +54,7 @@ gen_cl_config(){
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
-          verkle
+          capella
           --config /data/custom_config_data/config.yaml
           --mnemonics $tmp_dir/mnemonics.yaml
           --tranches-dir /data/custom_config_data/tranches
