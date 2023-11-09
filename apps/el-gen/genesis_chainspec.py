@@ -154,9 +154,35 @@ else:
         out["accounts"][acct.address] = {"balance": weival}
 
     # Some hardcoded addrs
-    for key, value in data['el_premine_addrs'].items():
-        weival = value.replace('ETH', '0' * 18)
-        out["accounts"][key] = {"balance": weival}
+    for addr, account in data['el_premine_addrs'].items():
+        # Convert balance format
+        if isinstance(account, dict) and 'balance' in account:
+            balance_value = account['balance'].replace('ETH', '0' * 18)
+        else:
+            # If it's not a dictionary, assume it's a single value for backward compatibility
+            balance_value = account.replace('ETH', '0' * 18)
+
+        # Create alloc dictionary entry
+        alloc_entry = {"balance": balance_value}
+
+        # Optionally add code
+        if 'code' in account:
+            alloc_entry['code'] = account['code']
+
+        # Optionally add storage
+        if 'storage' in account:
+            alloc_entry['storage'] = account['storage']
+
+        # Optionally set nonce
+        if 'nonce' in account:
+            alloc_entry['nonce'] = account['nonce']
+
+        # Optionally set private key
+        if 'secretKey' in account:
+            alloc_entry['secretKey'] = account['secretKey']
+
+        # Add alloc entry to output's alloc field
+        out["accounts"][addr] = alloc_entry
 
 out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
 out['params']['eip4788TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
