@@ -1,5 +1,5 @@
 FROM golang:1.21 as builder
-RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git \
+RUN git clone -b add-verkle-gen https://github.com/protolambda/eth2-testnet-genesis.git \
     && cd eth2-testnet-genesis \
     && go install . \
     && go install github.com/protolambda/eth2-val-tools@latest \
