@@ -112,7 +112,7 @@ else:
         "nonce": "0x1234",
         "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "timestamp": str(data['genesis_timestamp'])
+        "timestamp": str(data['genesis_timestamp'] + data['genesis_delay'])
     }
 
     for key, value in data['el_premine'].items():
