@@ -90,7 +90,7 @@ else:
             },
             "difficulty": "0x01",
             "author": "0x0000000000000000000000000000000000000000",
-            "timestamp": hex(data['genesis_timestamp']),
+            "timestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay'])),
             "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
             "extraData": "",
             "gasLimit": "0x17D7840"
