@@ -115,12 +115,11 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][acct.address] = {"balance": weival}
 
-
         # Some hardcoded addrs
     for key, value in data['el_premine_addrs'].items():
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][key] = {"balance": weival}
 
 out['config']['ethash'] =  {}
-out['config']['cancunTime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * (int(data['slots_per_epoch']) * int(data['slot_duration_in_seconds']))
+out['config']['cancunTime'] =  int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * (int(data['slots_per_epoch']) * int(data['slot_duration_in_seconds'])))
 print(json.dumps(out, indent='  '))
