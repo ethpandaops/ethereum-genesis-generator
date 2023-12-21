@@ -8,8 +8,6 @@ gen_shared_files(){
     set -x
     # Shared files
     mkdir -p /data/custom_config_data
-    wget -O /data/custom_config_data/trusted_setup.txt https://raw.githubusercontent.com/ethereum/c-kzg-4844/main/src/trusted_setup.txt
-    wget -O /data/custom_config_data/trusted_setup.json https://raw.githubusercontent.com/ethereum/consensus-specs/dev/presets/mainnet/trusted_setups/trusted_setup_4096.json
     if ! [ -f "/data/jwt/jwtsecret" ]; then
         mkdir -p /data/jwt
         echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/jwt/jwtsecret
