@@ -66,6 +66,14 @@ gen_cl_config(){
         else
           genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
         fi
+        if ! [ -z "$CL_ADDITIONAL_VALIDATORS" ]; then
+          if [[ $CL_ADDITIONAL_VALIDATORS = /* ]]; then
+            validators_file=$CL_ADDITIONAL_VALIDATORS
+          else
+            validators_file="/config/$CL_ADDITIONAL_VALIDATORS"
+          fi
+          genesis_args+=(--additional-validators $validators_file)
+        fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
         /usr/local/bin/zcli pretty capella BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
         jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt
