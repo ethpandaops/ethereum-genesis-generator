@@ -103,7 +103,7 @@ else:
         "baseFeePerGas": "0x3B9ACA00",
         "difficulty": "0x01",
         "extraData": "",
-        "gasLimit": "0x17D7840",
+        "gasLimit": hex(int(data['genesis_gaslimit'])),
         "nonce": "0x1234",
         "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
