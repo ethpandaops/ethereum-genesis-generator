@@ -60,7 +60,7 @@ else:
             **{
                 "0x" + i.to_bytes(length=20, byteorder='big').hex(): {
                     "balance": "1",
-                } for i in [x for x in range(256) if x != 11]
+                } for i in range(256)
             },
             data['deposit_contract_address']: {
                 "balance": "0",
