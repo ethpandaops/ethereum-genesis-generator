@@ -61,7 +61,9 @@ gen_cl_config(){
         if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
           genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
         fi
-        if [[ $SHADOW_FORK_RPC != "" ]]; then
+        if [[ $SHADOW_FORK_FILE != "" ]]; then
+          genesis_args+=(--shadow-fork-block-file=$SHADOW_FORK_FILE --eth1-config "")
+        elif [[ $SHADOW_FORK_RPC != "" ]]; then
           genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
         else
           genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
