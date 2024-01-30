@@ -78,6 +78,8 @@ gen_cl_config(){
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
         /usr/local/bin/zcli pretty capella BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
+        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/custom_config_data/parsedBeaconState.json)"
+        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/custom_config_data/parsedBeaconState.json)"
         jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt
         jq -r '.genesis_validators_root' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/genesis_validators_root.txt
     else
