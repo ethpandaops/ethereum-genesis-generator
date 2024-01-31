@@ -61,13 +61,19 @@ gen_cl_config(){
         if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
           genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
         fi
-        if [[ $SHADOW_FORK_RPC != "" ]]; then
+        if [[ $SHADOW_FORK_FILE != "" ]]; then
+          genesis_args+=(--shadow-fork-block-file=$SHADOW_FORK_FILE --eth1-config "")
+        elif [[ $SHADOW_FORK_RPC != "" ]]; then
           genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
         else
           genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        echo -n "0x0000000000000000000000000000000000000000000000000000000000000000" > /data/custom_config_data/genesis_validators_root.txt
+        /usr/local/bin/zcli pretty capella BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
+        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/custom_config_data/parsedBeaconState.json)"
+        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/custom_config_data/parsedBeaconState.json)"
+        jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt
+        jq -r '.genesis_validators_root' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/genesis_validators_root.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi
