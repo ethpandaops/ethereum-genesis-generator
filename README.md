@@ -34,6 +34,13 @@ SERVER_PORT    | 8000    | Web server port
 
 Besides that, you can also use ENV vars in your configuration files. One way of doing this is via the [values.env](config-example/values.env) configuration file. These will be replaced during runtime.
 
+### Shadow Fork
+If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
+transactions. This can be done with the below call for example:
+```sh
+curl -H "Content-Type: application/json" --data-raw '{ "jsonrpc":"2.0","method":"eth_getBlockByNumber", "params":[ "latest", true ], "id":1 }' localhost:8545
+```
+
 ### Available tools within the image
 
 Name | Source
