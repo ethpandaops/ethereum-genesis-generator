@@ -5,6 +5,7 @@ SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 
 gen_shared_files(){
+    . /apps/el-gen/.venv/bin/activate
     set -x
     # Shared files
     mkdir -p /data/custom_config_data
@@ -19,6 +20,7 @@ gen_shared_files(){
 }
 
 gen_el_config(){
+    . /apps/el-gen/.venv/bin/activate
     set -x
     if ! [ -f "/data/custom_config_data/genesis.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
@@ -33,6 +35,7 @@ gen_el_config(){
 }
 
 gen_cl_config(){
+    . /apps/el-gen/.venv/bin/activate
     set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/custom_config_data/genesis.ssz" ]; then
