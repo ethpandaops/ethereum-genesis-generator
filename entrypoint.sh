@@ -55,7 +55,7 @@ gen_cl_config(){
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
-          capella
+          deneb
           --config /data/custom_config_data/config.yaml
           --mnemonics $tmp_dir/mnemonics.yaml
           --tranches-dir /data/custom_config_data/tranches
@@ -80,7 +80,7 @@ gen_cl_config(){
           genesis_args+=(--additional-validators $validators_file)
         fi
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli pretty capella BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
+        /usr/local/bin/zcli pretty deneb BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/custom_config_data/parsedBeaconState.json)"
         echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/custom_config_data/parsedBeaconState.json)"
         jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt

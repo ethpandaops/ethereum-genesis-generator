@@ -50,7 +50,8 @@ else:
             "mergeNetsplitBlock":0,
             "terminalTotalDifficulty":0,
             "terminalTotalDifficultyPassed": True,
-            "shanghaiTime": int(data['genesis_timestamp'] + data['genesis_delay']),
+            "shanghaiTime": 0,
+            "cancunTime": 0,
     },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
@@ -152,5 +153,4 @@ else:
         out["alloc"][addr] = alloc_entry
 
 
-out['config']['cancunTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 print(json.dumps(out, indent='  '))

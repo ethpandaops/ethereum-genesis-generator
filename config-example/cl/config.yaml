@@ -35,7 +35,7 @@ CAPELLA_FORK_EPOCH: 0
 
 # DENEB
 DENEB_FORK_VERSION: $DENEB_FORK_VERSION
-DENEB_FORK_EPOCH: $DENEB_FORK_EPOCH
+DENEB_FORK_EPOCH: 0
 
 # Time parameters
 # ---------------------------------------------------------------
