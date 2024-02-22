@@ -181,7 +181,7 @@
     "eip3198Transition": "0xC5D488",
     "eip3529Transition": "0xC5D488",
     "eip3541Transition": "0xC5D488",
-    "totalDifficulty": "0x0c70d808a128d7380000",
+    "terminalTotalDifficulty": "0x0c70d808a128d7380000",
     "eip4895TransitionTimestamp": "0x64373057",
     "eip3855TransitionTimestamp": "0x64373057",
     "eip3651TransitionTimestamp": "0x64373057",
