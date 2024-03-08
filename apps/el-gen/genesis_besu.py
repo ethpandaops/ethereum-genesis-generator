@@ -50,8 +50,6 @@ else:
             "mergeNetsplitBlock": 0,
             "terminalTotalDifficulty": 0,
             "shanghaiTime": 0,
-            "pragueTime": int(data['genesis_timestamp'] + data['genesis_delay']),
-            "ethash": {},
         },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
