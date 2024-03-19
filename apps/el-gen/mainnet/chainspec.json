@@ -186,11 +186,11 @@
     "eip3855TransitionTimestamp": "0x64373057",
     "eip3651TransitionTimestamp": "0x64373057",
     "eip3860TransitionTimestamp": "0x64373057",
-    "eip4844TransitionTimestamp": "0",
-    "eip4788TransitionTimestamp": "0",
-    "eip1153TransitionTimestamp": "0",
-    "eip5656TransitionTimestamp": "0",
-    "eip6780TransitionTimestamp": "0"
+    "eip4844TransitionTimestamp": "0x65f1b057",
+    "eip4788TransitionTimestamp": "0x65f1b057",
+    "eip1153TransitionTimestamp": "0x65f1b057",
+    "eip5656TransitionTimestamp": "0x65f1b057",
+    "eip6780TransitionTimestamp": "0x65f1b057"
   },
   "genesis": {
     "seal": {
