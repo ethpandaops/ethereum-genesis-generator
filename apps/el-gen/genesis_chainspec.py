@@ -21,10 +21,6 @@ if int(data['chain_id']) == 1:
     with open(mainnet_config_path) as m:
         mainnet_json = json.loads(m.read())
     out = mainnet_json
-elif int(data['chain_id']) == 5:
-    with open(goerli_config_path) as m:
-        goerli_json = json.loads(m.read())
-    out = goerli_json
 elif int(data['chain_id']) == 11155111:
     with open(sepolia_config_path) as m:
         sepolia_json = json.loads(m.read())
@@ -75,11 +71,16 @@ else:
             "eip3198Transition": "0x0",
             "eip3529Transition": "0x0",
             "eip3541Transition": "0x0",
-            "eip4895TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay'])),
-            "eip3855TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay'])),
-            "eip3651TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay'])),
-            "eip3860TransitionTimestamp": hex(int(data['genesis_timestamp']) + int(data['genesis_delay'])),
-            "terminalTotalDifficulty":"0x0"
+            "eip4895TransitionTimestamp": "0x0",
+            "eip3855TransitionTimestamp": "0x0",
+            "eip3651TransitionTimestamp": "0x0",
+            "eip3860TransitionTimestamp": "0x0",
+            "terminalTotalDifficulty":"0x0",
+            "eip4844TransitionTimestamp": "0x0",
+            "eip4788TransitionTimestamp": "0x0",
+            "eip1153TransitionTimestamp": "0x0",
+            "eip5656TransitionTimestamp": "0x0",
+            "eip6780TransitionTimestamp": "0x0"
         },
         "genesis": {
             "seal": {
@@ -189,10 +190,5 @@ else:
         # Add alloc entry to output's alloc field
         out["accounts"][addr] = alloc_entry
 
-out['params']['eip4844TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip4788TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip1153TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip5656TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-out['params']['eip6780TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['deneb_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
-
+out['params']['eip6800TransitionTimestamp']= hex(int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds'])))
 print(json.dumps(out, indent='  '))
