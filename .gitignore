@@ -1,2 +1,3 @@
 data/*
 .idea/
+_snapshot_eth_getBlockByNumber.json
