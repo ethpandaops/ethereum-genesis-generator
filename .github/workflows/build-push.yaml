@@ -30,6 +30,7 @@ jobs:
           images: ethpandaops/ethereum-genesis-generator
           flavor: latest=true
           tags: |
+            type=semver,pattern=verkle-gen-{{version}}
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
