@@ -32,9 +32,10 @@ jobs:
           images: ethpandaops/ethereum-genesis-generator
           flavor: latest=true
           tags: |
+            type=semver,pattern=verkle-gen-{{version}}
             type=ref,event=branch
             type=ref,event=pr
-            type=raw,pattern={{version}}
+            type=semver,pattern={{version}}
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
