@@ -21,10 +21,6 @@ if int(data['chain_id']) == 1:
     with open(mainnet_config_path) as m:
         mainnet_json = json.loads(m.read())
     out = mainnet_json
-elif int(data['chain_id']) == 5:
-    with open(goerli_config_path) as m:
-        goerli_json = json.loads(m.read())
-    out = goerli_json
 elif int(data['chain_id']) == 11155111:
     with open(sepolia_config_path) as m:
         sepolia_json = json.loads(m.read())
@@ -153,5 +149,6 @@ else:
         # Add alloc entry to output's alloc field
         out["alloc"][addr] = alloc_entry
 
+out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 out['config']['ethash'] =  {}
 print(json.dumps(out, indent='  '))

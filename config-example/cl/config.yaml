@@ -37,6 +37,9 @@ CAPELLA_FORK_EPOCH: 0
 DENEB_FORK_VERSION: $DENEB_FORK_VERSION
 DENEB_FORK_EPOCH: 0
 
+ELECTRA_FORK_VERSION: $ELECTRA_FORK_VERSION
+ELECTRA_FORK_EPOCH: $ELECTRA_FORK_EPOCH
+
 # Time parameters
 # ---------------------------------------------------------------
 # 12 seconds

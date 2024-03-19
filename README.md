@@ -41,6 +41,12 @@ transactions. This can be done with the below call for example:
 curl -H "Content-Type: application/json" --data-raw '{ "jsonrpc":"2.0","method":"eth_getBlockByNumber", "params":[ "latest", true ], "id":1 }' localhost:8545
 ```
 
+### Release line explanation
+v1 -> bellatrix genesis state
+v2 -> capella genesis state
+v3 -> deneb genesis state
+verkle-gen -> verkle genesis state
+
 ### Available tools within the image
 
 Name | Source

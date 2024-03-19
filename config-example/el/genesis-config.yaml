@@ -28,4 +28,4 @@ genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
 genesis_gaslimit: ${GENESIS_GASLIMIT}
 slot_duration_in_seconds: ${SLOT_DURATION_IN_SECONDS}
-deneb_fork_epoch: ${DENEB_FORK_EPOCH}
+electra_fork_epoch: ${ELECTRA_FORK_EPOCH}
