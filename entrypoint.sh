@@ -3,7 +3,7 @@ source /config/values.env
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
-
+PRESET_BASE="${PRESET_BASE:-mainnet}"
 gen_shared_files(){
     . /apps/el-gen/.venv/bin/activate
     set -x
@@ -60,6 +60,11 @@ gen_cl_config(){
           --mnemonics $tmp_dir/mnemonics.yaml
           --tranches-dir /data/custom_config_data/tranches
           --state-output /data/custom_config_data/genesis.ssz
+          --preset-phase0 $PRESET_BASE
+          --preset-altair $PRESET_BASE
+          --preset-bellatrix $PRESET_BASE
+          --preset-capella $PRESET_BASE
+          --preset-deneb $PRESET_BASE
         )
         if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
           genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
@@ -79,8 +84,20 @@ gen_cl_config(){
           fi
           genesis_args+=(--additional-validators $validators_file)
         fi
+        zcli_args=(
+          pretty
+          deneb
+          BeaconState
+          --preset-phase0 $PRESET_BASE
+          --preset-altair $PRESET_BASE
+          --preset-bellatrix $PRESET_BASE
+          --preset-capella $PRESET_BASE
+          --preset-deneb $PRESET_BASE
+          /data/custom_config_data/genesis.ssz
+        )
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli pretty deneb BeaconState /data/custom_config_data/genesis.ssz > /data/custom_config_data/parsedBeaconState.json
+        /usr/local/bin/zcli "${zcli_args[@]}" > /data/custom_config_data/parsedBeaconState.json
+        echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/custom_config_data/parsedBeaconState.json)"
         echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/custom_config_data/parsedBeaconState.json)"
         jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt
