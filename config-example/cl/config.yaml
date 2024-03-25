@@ -1,5 +1,5 @@
 # Extends the mainnet preset
-PRESET_BASE: '$PRESET_BASE'
+PRESET_BASE: $PRESET_BASE
 CONFIG_NAME: testnet # needs to exist because of Prysm. Otherwise it conflicts with mainnet genesis
 
 # Genesis
