@@ -149,6 +149,6 @@ else:
         # Add alloc entry to output's alloc field
         out["alloc"][addr] = alloc_entry
 
-out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
+out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds']))
 out['config']['ethash'] =  {}
 print(json.dumps(out, indent='  '))
