@@ -1,3 +1,4 @@
+preset_base: ${PRESET_BASE}
 chain_id: ${CHAIN_ID}
 deposit_contract_address: "${DEPOSIT_CONTRACT_ADDRESS}"
 mnemonic: ${EL_AND_CL_MNEMONIC}
