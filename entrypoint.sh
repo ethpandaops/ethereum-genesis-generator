@@ -14,7 +14,7 @@ gen_shared_files(){
         echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/jwt/jwtsecret
     fi
     if [ -f "/data/custom_config_data/genesis.json" ]; then
-        terminalTotalDifficulty=$(cat /data/custom_config_data/genesis.json | jq -r '.config.terminalTotalDifficulty')
+        terminalTotalDifficulty=$(cat /data/custom_config_data/genesis.json | jq -r '.config.terminalTotalDifficulty | tostring')
         sed -i "s/TERMINAL_TOTAL_DIFFICULTY:.*/TERMINAL_TOTAL_DIFFICULTY: $terminalTotalDifficulty/" /data/custom_config_data/config.yaml
     fi
 }
