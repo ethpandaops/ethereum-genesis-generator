@@ -34,6 +34,22 @@ gen_el_config(){
     fi
 }
 
+gen_minimal_config() {
+  declare -A replacements=(
+    [MIN_PER_EPOCH_CHURN_LIMIT]=2
+    [CHURN_LIMIT_QUOTIENT]=32
+    [MIN_EPOCHS_FOR_BLOCK_REQUESTS]=272
+    [WHISK_EPOCHS_PER_SHUFFLING_PHASE]=4
+    [WHISK_PROPOSER_SELECTION_GAP]=1
+    [MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA]=64000000000
+    [MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT]=128000000000
+  )
+
+  for key in "${!replacements[@]}"; do
+    sed -i "s/$key:.*/$key: ${replacements[$key]}/" /data/custom_config_data/config.yaml
+  done
+}
+
 gen_cl_config(){
     . /apps/el-gen/.venv/bin/activate
     set -x
@@ -41,9 +57,12 @@ gen_cl_config(){
     if ! [ -f "/data/custom_config_data/genesis.ssz" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/custom_config_data
-        # Replace environment vars in files
         envsubst < /config/cl/config.yaml > /data/custom_config_data/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        # Conditionally override values if preset is "minimal"
+        if [[ "$PRESET_BASE" == "minimal" ]]; then
+          gen_minimal_config
+        fi
         cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
