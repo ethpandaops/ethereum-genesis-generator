@@ -100,6 +100,11 @@ else:
                 "nonce": "1",
                 "code": "0x3373fffffffffffffffffffffffffffffffffffffffe14604d57602036146024575f5ffd5b5f35801560495762001fff810690815414603c575f5ffd5b62001fff01545f5260205ff35b5f5ffd5b62001fff42064281555f359062001fff015500"
             },
+            "0x25a219378dad9b3503c8268c9ca836a52427a4fb": {
+                "balance": "0",
+                "nonce": "1",
+                "code": "0x60203611603157600143035f35116029575f356120000143116029576120005f3506545f5260205ff35b5f5f5260205ff35b5f5ffd00"
+            },
             "0x00A3ca265EBcb825B45F985A16CEFB49958cE017": {
                 "balance": "0",
                 "nonce": "1",
