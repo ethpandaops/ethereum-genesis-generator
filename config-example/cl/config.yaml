@@ -44,6 +44,7 @@ ELECTRA_FORK_EPOCH: $ELECTRA_FORK_EPOCH
 # EIP7594 - Peerdas
 EIP7594_FORK_VERSION: $EIP7594_FORK_VERSION
 EIP7594_FORK_EPOCH: $EIP7594_FORK_EPOCH
+PEER_DAS_EPOCH: $EIP7594_FORK_EPOCH
 
 # Time parameters
 # ---------------------------------------------------------------
