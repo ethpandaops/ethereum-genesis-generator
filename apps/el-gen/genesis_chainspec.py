@@ -204,16 +204,6 @@ else:
         out["accounts"][addr] = alloc_entry
 
 if 'electra_fork_epoch' in data:
-    out['params']['eip6110TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-    out['params']['eip7002TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
     out['params']['eip2537TransitionTimestamp']= hex(
         int(data['genesis_timestamp']) +
         int(data['genesis_delay']) +
@@ -229,7 +219,12 @@ if 'electra_fork_epoch' in data:
         int(data['genesis_delay']) +
         int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     )
-    out['params']['eip7685TransitionTimestamp']= hex(
+    out['params']['eip6110TransitionTimestamp']= hex(
+        int(data['genesis_timestamp']) +
+        int(data['genesis_delay']) +
+        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+    )
+    out['params']['eip7002TransitionTimestamp']= hex(
         int(data['genesis_timestamp']) +
         int(data['genesis_delay']) +
         int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
