@@ -37,7 +37,6 @@ gen_el_config(){
 gen_minimal_config() {
   declare -A replacements=(
     [MIN_PER_EPOCH_CHURN_LIMIT]=2
-    [CHURN_LIMIT_QUOTIENT]=32
     [MIN_EPOCHS_FOR_BLOCK_REQUESTS]=272
     [WHISK_EPOCHS_PER_SHUFFLING_PHASE]=4
     [WHISK_PROPOSER_SELECTION_GAP]=1
