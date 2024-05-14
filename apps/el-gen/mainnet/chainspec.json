@@ -190,7 +190,8 @@
     "eip4788TransitionTimestamp": "0x65F1B057",
     "eip1153TransitionTimestamp": "0x65F1B057",
     "eip5656TransitionTimestamp": "0x65F1B057",
-    "eip6780TransitionTimestamp": "0x65F1B057"
+    "eip6780TransitionTimestamp": "0x65F1B057",
+    "depositContractAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
   },
   "genesis": {
     "seal": {
