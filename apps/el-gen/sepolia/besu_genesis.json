@@ -14,7 +14,8 @@
     "mergeForkBlock": 1735371,
     "terminalTotalDifficulty": 17000000000000000,
     "shanghaiTime": 1677557088,
-    "cancunTime": 1706655072
+    "cancunTime": 1706655072,
+    "depositContractAddress": "0x7f02C3E3c98b133055B8B348B2Ac625669Ed295D"
   },
   "alloc": {
     "0xa2A6d93439144FFE4D27c9E088dCD8b783946263": {

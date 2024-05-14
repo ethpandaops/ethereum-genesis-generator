@@ -65,7 +65,8 @@
     "eip4788TransitionTimestamp": "0x65B97D60",
     "eip1153TransitionTimestamp": "0x65B97D60",
     "eip5656TransitionTimestamp": "0x65B97D60",
-    "eip6780TransitionTimestamp": "0x65B97D60"
+    "eip6780TransitionTimestamp": "0x65B97D60",
+    "depositContractAddress": "0x7f02C3E3c98b133055B8B348B2Ac625669Ed295D"
   },
   "genesis": {
     "seal": {

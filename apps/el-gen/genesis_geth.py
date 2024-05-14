@@ -48,7 +48,8 @@ else:
             "terminalTotalDifficultyPassed": True,
             "shanghaiTime": 0,
             "cancunTime": 0,
-    },
+            "depositContractAddress": data["deposit_contract_address"],
+        },
         "alloc": {
             # Allocate 1 wei to all possible pre-compiles.
             # See https://github.com/ethereum/EIPs/issues/716 "SpuriousDragon RIPEMD bug"
