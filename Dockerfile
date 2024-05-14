@@ -19,7 +19,7 @@ RUN apt-get update && \
 COPY apps /apps
 
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cd /apps/el-gen && python3  -m venv .venv && pip3 install --break-system-packages -r requirements.txt
+RUN cd /apps/el-gen && python3 -m venv .venv && /apps/el-gen/.venv/bin/pip3 install -r /apps/el-gen/requirements.txt
 COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-genesis
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
 COPY --from=builder /go/bin/zcli /usr/local/bin/zcli
