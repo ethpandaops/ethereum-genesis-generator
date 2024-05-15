@@ -18,6 +18,9 @@ jobs:
       - name: Prepare Matrix
         id: setup
         uses: ./.github/actions/prepare
+        with:
+          DOCKER_USERNAME: "${{ vars.DOCKER_USERNAME }}"
+          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
   deploy:
     needs:
       - prepare
