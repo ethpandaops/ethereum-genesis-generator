@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - multiarch-build
     tags:
       - '**'
     workflow_dispatch:
