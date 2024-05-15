@@ -5,8 +5,8 @@ outputs:
     description: "Matrix of platforms and runner to use"
     value: ${{ steps.setup_platforms.outputs.platforms }}
   tag:
-    description: "Tags for the docker image"
-    value: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+    description: "Tag for the docker image"
+    value: ${{ steps.set_tag.outputs.tag }}
 runs:
   using: "composite"
   steps:
@@ -41,10 +41,8 @@ runs:
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
-    - name: debug
-      id: debug
+    - name: Set tag
+      id: set_tag
       shell: bash
       run: |
-        echo "${{ steps.meta.outputs.tags }}"
-        echo "${{ steps.meta.outputs.tags[0] }}"
-        echo "${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
+        echo "tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_OUTPUT
