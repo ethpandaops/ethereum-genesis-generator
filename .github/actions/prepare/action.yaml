@@ -1,0 +1,43 @@
+name: 'Setup'
+description: 'Read and parse config files for builds'
+outputs:
+  platforms:
+    description: "Matrix of platforms and runner to use"
+    value: ${{ steps.setup_platforms.outputs.platforms }}
+  tag:
+    description: "Tags for the docker image"
+    value: ${{ steps.meta.outputs.tags[0] }}
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - uses: mikefarah/yq@v4.35.1
+    - name: Generate platform and runner matrix from config files
+      id: setup_platforms
+      shell: bash
+      run: |
+        PLATFORMS_JSON="["
+
+        # Extract the platforms
+        platforms=$(yq e ".ethereum-genesis-generator[]" platforms.yaml)
+
+        for platform in $platforms; do
+          slug=$(echo "$platform" | tr '/' '-')
+          runner=$(yq e ".\"$platform\"" runners.yaml)
+          PLATFORMS_JSON+="{\"platform\":\"$platform\", \"runner\":\"$runner\", \"slug\":\"$slug\"},"
+        done
+
+        PLATFORMS_JSON="${PLATFORMS_JSON%,}]"
+        echo "platforms=$PLATFORMS_JSON" >> $GITHUB_OUTPUT
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ethpandaops/ethereum-genesis-generator
+        flavor: latest=true
+        tags: |
+          type=semver,pattern=verkle-gen-{{version}}
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
