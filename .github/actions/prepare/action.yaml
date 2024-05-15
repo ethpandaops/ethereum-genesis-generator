@@ -41,3 +41,10 @@ runs:
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
+    - name: debug
+      id: debug
+      shell: bash
+      run: |
+        echo "${{ steps.meta.outputs.tags }}"
+        echo "${{ steps.meta.outputs.tags[0] }}"
+        echo "${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
