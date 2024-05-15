@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.setup.outputs.platforms }}
+      tag: ${{ steps.setup.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - name: Prepare Matrix
