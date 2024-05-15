@@ -6,7 +6,7 @@ outputs:
     value: ${{ steps.setup_platforms.outputs.platforms }}
   tag:
     description: "Tags for the docker image"
-    value: ${{ steps.meta.outputs.tags[0] }}
+    value: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
 runs:
   using: "composite"
   steps:
@@ -32,7 +32,7 @@ runs:
         echo "platforms=$PLATFORMS_JSON" >> $GITHUB_OUTPUT
     - name: Docker meta
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: ethpandaops/ethereum-genesis-generator
         flavor: latest=true
