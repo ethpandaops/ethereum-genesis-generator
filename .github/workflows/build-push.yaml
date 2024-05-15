@@ -18,9 +18,6 @@ jobs:
       - name: Prepare Matrix
         id: setup
         uses: ./.github/actions/prepare
-        with:
-          DOCKER_USERNAME: "${{ vars.DOCKER_USERNAME }}"
-          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
   deploy:
     needs:
       - prepare
@@ -35,7 +32,7 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           tag: ethpandaops/ethereum-genesis-generator:${{ needs.prepare.outputs.tag }}
-          DOCKER_USERNAME: "${{ vars.DOCKER_USERNAME }}"
+          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
   manifest:
     needs:
@@ -49,5 +46,5 @@ jobs:
           tag: ${{ needs.prepare.outputs.tag }}
           repository: ethpandaops/ethereum-genesis-generator
           platforms: ${{ needs.prepare.outputs.platforms }}
-          DOCKER_USERNAME: "${{ vars.DOCKER_USERNAME }}"
+          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
