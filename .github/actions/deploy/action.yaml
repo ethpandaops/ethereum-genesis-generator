@@ -63,16 +63,15 @@ runs:
     with:
       context: '.'
       file: Dockerfile
-      tags: ${{ steps.meta.outputs.tags[0] }}-${{ steps.vars.outputs.slug }}
+      tags: ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
       push: true
       platforms: ${{ inputs.platform }}
       build-args: ${{ inputs.build_args }}
   - name: Image digest & tags
     shell: bash
-    if: ${{ inputs.build_script == '' }}
     run: |
       cat << EOF
       digest: ${{ steps.docker_build.outputs.digest }}
       tags:
-        ${{ steps.meta.outputs.tags[0] }}
+        ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
       EOF
