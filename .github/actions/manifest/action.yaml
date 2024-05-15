@@ -36,6 +36,7 @@ runs:
       for ((i=0; i<$len; i++)); do
           slug=$(echo $PLATFORMS | jq -r --argjson i $i '.[$i].slug')
           imagetag="${{ inputs.tag }}-$slug"
+          imagetag=$(echo $imagetag | cut -d ':' -f2)
           image="${{ inputs.repository }}:$imagetag"
           url="https://hub.docker.com/v2/repositories/${{ inputs.repository }}/tags?page_size=25&page=1&ordering=&name=$imagetag"
           exists=$(curl -s $url | jq '.results | length > 0')
