@@ -53,10 +53,10 @@ runs:
       username: ${{ inputs.DOCKER_USERNAME }}
       password: ${{ inputs.DOCKER_PASSWORD }}
   - name: Generate slug
-    id: slzug
+    id: vars
     shell: bash
     run: |
-      echo "slug=$(echo '${{ inputs.platform }}' | tr '/' '-')"
+      echo "slug=$(echo '${{ inputs.platform }}' | tr '/' '-')" >> $GITHUB_OUTPUT
   - name: Docker build & push
     id: docker_build
     uses: docker/build-push-action@v5
