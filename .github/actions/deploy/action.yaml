@@ -1,0 +1,79 @@
+name: Deploy
+description: Build and push a docker image to Docker Hub
+
+outputs:
+  tag:
+    description: "Tags for the docker image"
+    value: ${{ steps.meta.outputs.tags[0] }}
+
+inputs:
+  platform:
+    description: The platform to build for
+    type: string
+    required: true
+  build_args:
+    description: Build arguments to pass to the Docker build
+    default: ""
+    type: string
+    required: false
+  tag:
+    description: Docker hub tag to push to
+    type: string
+    required: true
+  # Secrets
+  DOCKER_USERNAME:
+    required: true
+  DOCKER_PASSWORD:
+    required: true
+  MACOS_PASSWORD:
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Checkout this repo
+    uses: actions/checkout@v4
+  - name: Set up Docker Context for Buildx
+    shell: bash
+    id: buildx-context
+    run: |
+      docker context use builders || docker context create builders
+  - name: Set up Docker Buildx
+    uses: docker/setup-buildx-action@v3
+    with:
+      endpoint: builders
+  - name: Unlock MacOS keychain for Docker Hub login
+    shell: bash
+    if: runner.os == 'macOS'
+    run: |
+      security -v unlock-keychain -p ${{ inputs.MACOS_PASSWORD }} ~/Library/Keychains/login.keychain-db
+  - name: Login to Docker Hub
+    uses: docker/login-action@v3
+    with:
+      username: ${{ inputs.DOCKER_USERNAME }}
+      password: ${{ inputs.DOCKER_PASSWORD }}
+  - name: Generate slug
+    id: vars
+    shell: bash
+    run: |
+      echo "slug=$(echo '${{ inputs.platform }}' | tr '/' '-')" >> $GITHUB_OUTPUT
+      echo "DEBUG"
+      echo "${{ inputs.tag }}"
+  - name: Docker build & push
+    id: docker_build
+    uses: docker/build-push-action@v5
+    with:
+      context: '.'
+      file: Dockerfile
+      tags: ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
+      push: true
+      platforms: ${{ inputs.platform }}
+      build-args: ${{ inputs.build_args }}
+  - name: Image digest & tags
+    shell: bash
+    run: |
+      cat << EOF
+      digest: ${{ steps.docker_build.outputs.digest }}
+      tags:
+        ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
+      EOF
