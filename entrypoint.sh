@@ -8,27 +8,27 @@ gen_shared_files(){
     . /apps/el-gen/.venv/bin/activate
     set -x
     # Shared files
-    mkdir -p /data/custom_config_data
+    mkdir -p /data/metadata
     if ! [ -f "/data/jwt/jwtsecret" ]; then
         mkdir -p /data/jwt
         echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /data/jwt/jwtsecret
     fi
-    if [ -f "/data/custom_config_data/genesis.json" ]; then
-        terminalTotalDifficulty=$(cat /data/custom_config_data/genesis.json | jq -r '.config.terminalTotalDifficulty | tostring')
-        sed -i "s/TERMINAL_TOTAL_DIFFICULTY:.*/TERMINAL_TOTAL_DIFFICULTY: $terminalTotalDifficulty/" /data/custom_config_data/config.yaml
+    if [ -f "/data/metadata/genesis.json" ]; then
+        terminalTotalDifficulty=$(cat /data/metadata/genesis.json | jq -r '.config.terminalTotalDifficulty | tostring')
+        sed -i "s/TERMINAL_TOTAL_DIFFICULTY:.*/TERMINAL_TOTAL_DIFFICULTY: $terminalTotalDifficulty/" /data/metadata/config.yaml
     fi
 }
 
 gen_el_config(){
     . /apps/el-gen/.venv/bin/activate
     set -x
-    if ! [ -f "/data/custom_config_data/genesis.json" ]; then
+    if ! [ -f "/data/metadata/genesis.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-        mkdir -p /data/custom_config_data
+        mkdir -p /data/metadata
         envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/custom_config_data/genesis.json
-        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/chainspec.json
-        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/custom_config_data/besu.json
+        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
+        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
+        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -45,7 +45,7 @@ gen_minimal_config() {
   )
 
   for key in "${!replacements[@]}"; do
-    sed -i "s/$key:.*/$key: ${replacements[$key]}/" /data/custom_config_data/config.yaml
+    sed -i "s/$key:.*/$key: ${replacements[$key]}/" /data/metadata/config.yaml
   done
 }
 
@@ -53,31 +53,29 @@ gen_cl_config(){
     . /apps/el-gen/.venv/bin/activate
     set -x
     # Consensus layer: Check if genesis already exists
-    if ! [ -f "/data/custom_config_data/genesis.ssz" ]; then
+    if ! [ -f "/data/metadata/genesis.ssz" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-        mkdir -p /data/custom_config_data
-        envsubst < /config/cl/config.yaml > /data/custom_config_data/config.yaml
+        mkdir -p /data/metadata
+        envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
         fi
-        cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
+        cp $tmp_dir/mnemonics.yaml /data/metadata/mnemonics.yaml
         # Create deposit_contract.txt and deploy_block.txt
-        grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
-        echo $CL_EXEC_BLOCK > /data/custom_config_data/deploy_block.txt
-        echo $CL_EXEC_BLOCK > /data/custom_config_data/deposit_contract_block.txt
-        echo $BEACON_STATIC_ENR > /data/custom_config_data/bootstrap_nodes.txt
-        echo "- $BEACON_STATIC_ENR" > /data/custom_config_data/boot_enr.txt
+        grep DEPOSIT_CONTRACT_ADDRESS /data/metadata/config.yaml | cut -d " " -f2 > /data/metadata/deposit_contract.txt
+        echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
+        echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
         # Envsubst mnemonics
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
           deneb
-          --config /data/custom_config_data/config.yaml
+          --config /data/metadata/config.yaml
           --mnemonics $tmp_dir/mnemonics.yaml
-          --tranches-dir /data/custom_config_data/tranches
-          --state-output /data/custom_config_data/genesis.ssz
+          --tranches-dir /data/metadata/tranches
+          --state-output /data/metadata/genesis.ssz
           --preset-phase0 $PRESET_BASE
           --preset-altair $PRESET_BASE
           --preset-bellatrix $PRESET_BASE
@@ -92,7 +90,7 @@ gen_cl_config(){
         elif [[ $SHADOW_FORK_RPC != "" ]]; then
           genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
         else
-          genesis_args+=(--eth1-config /data/custom_config_data/genesis.json)
+          genesis_args+=(--eth1-config /data/metadata/genesis.json)
         fi
         if ! [ -z "$CL_ADDITIONAL_VALIDATORS" ]; then
           if [[ $CL_ADDITIONAL_VALIDATORS = /* ]]; then
@@ -111,15 +109,15 @@ gen_cl_config(){
           --preset-bellatrix $PRESET_BASE
           --preset-capella $PRESET_BASE
           --preset-deneb $PRESET_BASE
-          /data/custom_config_data/genesis.ssz
+          /data/metadata/genesis.ssz
         )
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli "${zcli_args[@]}" > /data/custom_config_data/parsedBeaconState.json
+        /usr/local/bin/zcli "${zcli_args[@]}" > /data/metadata/parsedBeaconState.json
         echo "Genesis args: ${genesis_args[@]}"
-        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/custom_config_data/parsedBeaconState.json)"
-        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/custom_config_data/parsedBeaconState.json)"
-        jq -r '.eth1_data.block_hash' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/deposit_contract_block_hash.txt
-        jq -r '.genesis_validators_root' /data/custom_config_data/parsedBeaconState.json | tr -d '\n' > /data/custom_config_data/genesis_validators_root.txt
+        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/metadata/parsedBeaconState.json)"
+        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/metadata/parsedBeaconState.json)"
+        jq -r '.eth1_data.block_hash' /data/metadata/parsedBeaconState.json | tr -d '\n' > /data/metadata/deposit_contract_block_hash.txt
+        jq -r '.genesis_validators_root' /data/metadata/parsedBeaconState.json | tr -d '\n' > /data/metadata/genesis_validators_root.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi
