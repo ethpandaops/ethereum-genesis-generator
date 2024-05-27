@@ -174,7 +174,7 @@ else:
         out["accounts"][acct.address] = {"balance": weival}
 
     # Some hardcoded addrs
-    for addr, account in data['el_premine_addrs'].items():
+    for addr, account in data['additional_preloaded_contracts'].items():
         # Convert balance format
         if isinstance(account, dict) and 'balance' in account:
             balance_value = account['balance'].replace('ETH', '0' * 18)
