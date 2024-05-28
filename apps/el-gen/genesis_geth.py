@@ -131,11 +131,8 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["alloc"][acct.address] = {"balance": weival}
 
-    combined_allocs = data['el_premine_addrs'].copy()
-    combined_allocs.update(data['additional_preloaded_contracts'])
-
     # Some hardcoded addrs
-    for addr, account in combined_allocs.items():
+    def add_alloc_entry(addr, account):
         # Convert balance format
         if isinstance(account, dict) and 'balance' in account:
             balance_value = account['balance'].replace('ETH', '0' * 18)
@@ -164,6 +161,12 @@ else:
 
         # Add alloc entry to output's alloc field
         out["alloc"][addr] = alloc_entry
+
+    for addr, account in data['el_premine_addrs'].items():
+        add_alloc_entry(addr, account)
+    
+    for addr, account in data['additional_preloaded_contracts'].items():
+        add_alloc_entry(addr, account)
 
 if 'electra_fork_epoch' in data:
     out['config']['pragueTime'] = \
