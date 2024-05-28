@@ -24,7 +24,8 @@ el_premine:
   "m/44'/60'/0'/0/18": 1000000000ETH
   "m/44'/60'/0'/0/19": 1000000000ETH
   "m/44'/60'/0'/0/20": 1000000000ETH
-el_premine_addrs: {}
+el_premine_addrs: ${EL_PREMINE_ADDRS}
+additional_preloaded_contracts: ${ADDITIONAL_PRELOADED_CONTRACTS}
 genesis_timestamp: ${GENESIS_TIMESTAMP}
 genesis_delay: ${GENESIS_DELAY}
 genesis_gaslimit: ${GENESIS_GASLIMIT}

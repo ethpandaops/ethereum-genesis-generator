@@ -10,7 +10,7 @@ mainnet_config_path = "/apps/el-gen/mainnet/chainspec.json"
 sepolia_config_path = "/apps/el-gen/sepolia/chainspec.json"
 goerli_config_path = "/apps/el-gen/goerli/chainspec.json"
 holesky_config_path = "/apps/el-gen/holesky/chainspec.json"
-
+combined_allocs = {}
 if len(sys.argv) > 1:
     testnet_config_path = sys.argv[1]
 
@@ -173,8 +173,11 @@ else:
         weival = value.replace('ETH', '0' * 18)
         out["accounts"][acct.address] = {"balance": weival}
 
+    combined_allocs = data['el_premine_addrs'].copy()
+    combined_allocs.update(data['additional_preloaded_contracts'])
+
     # Some hardcoded addrs
-    for addr, account in data['el_premine_addrs'].items():
+    for addr, account in combined_allocs.items():
         # Convert balance format
         if isinstance(account, dict) and 'balance' in account:
             balance_value = account['balance'].replace('ETH', '0' * 18)
