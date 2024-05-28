@@ -1,4 +1,5 @@
 #!/bin/bash -e
+eval "$(envsubst < /config/values.env.template)"
 source /config/values.env
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
