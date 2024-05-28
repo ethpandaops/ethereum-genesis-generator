@@ -1,5 +1,5 @@
 #!/bin/bash -e
-eval "$(envsubst < /config/defaults.env)"
+eval "$(cat < /config/defaults.env)"
 source /config/values.env
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
