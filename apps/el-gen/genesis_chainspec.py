@@ -185,6 +185,20 @@ else:
         # Create alloc dictionary entry
         alloc_entry = {"balance": balance_value}
 
+        # Add alloc entry to output's alloc field
+        out["accounts"][addr] = alloc_entry
+    # Some hardcoded addrs
+    for addr, account in data['additional_preloaded_contracts'].items():
+        # Convert balance format
+        if isinstance(account, dict) and 'balance' in account:
+            balance_value = account['balance'].replace('ETH', '0' * 18)
+        else:
+            # If it's not a dictionary, assume it's a single value for backward compatibility
+            balance_value = account.replace('ETH', '0' * 18)
+
+        # Create alloc dictionary entry
+        alloc_entry = {"balance": balance_value}
+
         # Optionally add code
         if 'code' in account:
             alloc_entry['code'] = account['code']
