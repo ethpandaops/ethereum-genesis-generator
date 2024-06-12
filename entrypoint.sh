@@ -116,12 +116,12 @@ gen_cl_config(){
           /data/metadata/genesis.ssz
         )
         /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli "${zcli_args[@]}" > /data/metadata/parsed/parsedConsensusGenesis.json
+        /usr/local/bin/zcli "${zcli_args[@]}" > /data/parsed/parsedConsensusGenesis.json
         echo "Genesis args: ${genesis_args[@]}"
-        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/metadata/parsed/parsedConsensusGenesis.json)"
-        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/metadata/parsed/parsedConsensusGenesis.json)"
-        jq -r '.eth1_data.block_hash' /data/metadata/parsed/parsedConsensusGenesis.json| tr -d '\n' > /data/metadata/deposit_contract_block_hash.txt
-        jq -r '.genesis_validators_root' /data/metadata/parsed/parsedConsensusGenesis.json | tr -d '\n' > /data/metadata/genesis_validators_root.txt
+        echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"
+        echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/parsed/parsedConsensusGenesis.json)"
+        jq -r '.eth1_data.block_hash' /data/parsed/parsedConsensusGenesis.json| tr -d '\n' > /data/metadata/deposit_contract_block_hash.txt
+        jq -r '.genesis_validators_root' /data/parsed/parsedConsensusGenesis.json | tr -d '\n' > /data/metadata/genesis_validators_root.txt
     else
         echo "cl genesis already exists. skipping generation..."
     fi
