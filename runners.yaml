@@ -1,3 +1,2 @@
 linux/amd64: ubuntu-latest
-linux/arm64: ARM64
-darwin/arm64: ARM64
+linux/arm64: self-hosted-ghr-size-l-arm64
