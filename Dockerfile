@@ -24,5 +24,6 @@ COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-gen
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
 COPY --from=builder /go/bin/zcli /usr/local/bin/zcli
 COPY config-example /config
+COPY defaults /defaults
 COPY entrypoint.sh .
 ENTRYPOINT [ "/work/entrypoint.sh" ]

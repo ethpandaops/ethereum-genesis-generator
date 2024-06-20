@@ -1,9 +1,10 @@
 #!/bin/bash -e
-eval "$(cat < /config/defaults.env)"
 if [ -f /config/values.env ];
 then
     source /config/values.env
 fi
+source /defaults/defaults.env
+
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
