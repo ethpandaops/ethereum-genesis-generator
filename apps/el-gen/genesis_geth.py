@@ -174,12 +174,13 @@ else:
 
         # Add alloc entry to output's alloc field
         out["alloc"][addr] = alloc_entry
+    if data.get('el_premine_addrs') is not None:
+        for addr, account in data['el_premine_addrs'].items():
+            add_alloc_entry(addr, account)
 
-    for addr, account in data['el_premine_addrs'].items():
-        add_alloc_entry(addr, account)
-
-    for addr, account in data['additional_preloaded_contracts'].items():
-        add_alloc_entry(addr, account)
+    if data.get('additional_preloaded_contracts') is not None:
+        for addr, account in data['additional_preloaded_contracts'].items():
+            add_alloc_entry(addr, account)
 
 if 'electra_fork_epoch' in data:
     out['config']['pragueTime'] = \
