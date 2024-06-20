@@ -60,6 +60,7 @@ gen_cl_config(){
     if ! [ -f "/data/metadata/genesis.ssz" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
+        mkdir -p /data/parsed
         envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
