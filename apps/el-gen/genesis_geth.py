@@ -177,7 +177,7 @@ else:
 
     for addr, account in data['el_premine_addrs'].items():
         add_alloc_entry(addr, account)
-    
+
     for addr, account in data['additional_preloaded_contracts'].items():
         add_alloc_entry(addr, account)
 
@@ -186,5 +186,11 @@ if 'electra_fork_epoch' in data:
         int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
         int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+
+if data['eof_activation_epoch'] != None:
+    out['config']['pragueEOFTime'] =  \
+        int(data['genesis_timestamp']) + \
+        int(data['genesis_delay']) + \
+        int(data['eof_activation_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
 
 print(json.dumps(out, indent='  '))
