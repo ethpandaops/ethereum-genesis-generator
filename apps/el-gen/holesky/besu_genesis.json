@@ -13,7 +13,7 @@
     "londonBlock": 0,
     "preMergeForkBlock": 0,
     "terminalTotalDifficulty": 0,
-    "shanghaiTime": 1694790240,
+    "shanghaiTime": 1696000704,
     "ethash": {},
     "cancunTime": 1707305664,
     "depositContractAddress": "0x4242424242424242424242424242424242424242"
@@ -1013,5 +1013,5 @@
   "nonce": "0x1234",
   "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "timestamp": "1694786100"
+  "timestamp": "1695902100"
 }
