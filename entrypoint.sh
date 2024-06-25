@@ -62,6 +62,9 @@ gen_cl_config(){
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
         mkdir -p /data/parsed
+        HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
+        COMMENT="# $HUMAN_READABLE_TIMESTAMP"
+        sed -i "s/#HUMAN_TIME_PLACEHOLDER/$COMMENT/" /config/cl/config.yaml
         envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
