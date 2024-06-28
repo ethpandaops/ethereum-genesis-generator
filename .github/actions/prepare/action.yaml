@@ -37,7 +37,7 @@ runs:
         images: ethpandaops/ethereum-genesis-generator
         flavor: latest=true
         tags: |
-          type=semver,pattern=ephemery-{{version}}
+          type=match,pattern=ephemery-v(.*),group=1,prefix=ephemery-
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
