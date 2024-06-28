@@ -35,7 +35,7 @@ runs:
       uses: docker/metadata-action@v5
       with:
         images: ethpandaops/ethereum-genesis-generator
-        flavor: latest=true
+        flavor: latest=false
         tags: |
           type=match,pattern=ephemery-v(.*),group=1,prefix=ephemery-
           type=ref,event=branch
