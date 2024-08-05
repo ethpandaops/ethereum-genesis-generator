@@ -223,7 +223,7 @@ else:
     for addr, account in data['additional_preloaded_contracts'].items():
         add_alloc_entry(addr, account)
 
-if 'electra_fork_epoch' in data:
+if data['electra_fork_epoch'] != None:
     out['params']['eip2537TransitionTimestamp']= hex(
         int(data['genesis_timestamp']) +
         int(data['genesis_delay']) +
