@@ -4,7 +4,7 @@ Create a ethereum consensus/execution layer testnet genesis and optionally expos
 
 ### Examples
 
-You can provide your own configuration directory. Have a look at the example in [`config-example`](config-example).
+Create a new file with your custom configuration in /config/values.env. You can use the [values.env](config-example/values.env) file as a template.
 
 ```sh
 # Create the output directory
@@ -13,17 +13,17 @@ mkdir output
 # Overwriting the config files and generating the EL and CL genesis
 docker run --rm -it -u $UID -v $PWD/output:/data \
   -v $PWD/config/values.env:/config/values.env \
-  ethpandaops/ethereum-genesis-generator:latest all
+  ethpandaops/ethereum-genesis-generator:master all
 
 # Just creating the EL genesis
 docker run --rm -it -u $UID -v $PWD/output:/data \
   -v $PWD/config/values.env:/config/values.env \
-  ethpandaops/ethereum-genesis-generator:latest el
+  ethpandaops/ethereum-genesis-generator:master el
 
 # Just creating the CL genesis
 docker run --rm -it -u $UID -v $PWD/output:/data \
   -v $PWD/config/values.env:/config/values.env \
-  ethpandaops/ethereum-genesis-generator:latest cl
+  ethpandaops/ethereum-genesis-generator:master cl
 ```
 ### Environment variables
 
