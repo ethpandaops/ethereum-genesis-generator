@@ -69,5 +69,5 @@ runs:
   - name: Create and push manifest images
     shell: bash
     run: |
-      docker buildx imagetools create --dry-run -t ${{ inputs.tag }} -t "latest" ${{ steps.generate_images_list.outputs.images }}
-      docker buildx imagetools create -t ${{ inputs.tag }} -t "latest" ${{ steps.generate_images_list.outputs.images }}
+      docker buildx imagetools create --dry-run -t ${{ inputs.tag }} ${{ steps.generate_images_list.outputs.images }}
+      docker buildx imagetools create -t ${{ inputs.tag }} ${{ steps.generate_images_list.outputs.images }}
