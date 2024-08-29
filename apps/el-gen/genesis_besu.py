@@ -126,5 +126,5 @@ else:
         out["alloc"][key] = {"balance": weival}
 
 out['config']['ethash'] =  {}
-out['config']['pragueTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
+out['config']['verkleTime'] = int(data['genesis_timestamp']) + int(data['genesis_delay']) + (int(data['electra_fork_epoch']) * 32 * int(data['slot_duration_in_seconds']))
 print(json.dumps(out, indent='  '))
