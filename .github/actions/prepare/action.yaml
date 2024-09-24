@@ -1,0 +1,54 @@
+name: 'Setup'
+description: 'Read and parse config files for builds'
+outputs:
+  platforms:
+    description: "Matrix of platforms and runner to use"
+    value: ${{ steps.setup_platforms.outputs.platforms }}
+  tag:
+    description: "Tag for the docker image"
+    value: ${{ steps.set_tag.outputs.tag }}
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - uses: mikefarah/yq@v4.35.1
+    - name: Generate platform and runner matrix from config files
+      id: setup_platforms
+      shell: bash
+      run: |
+        PLATFORMS_JSON="["
+
+        # Extract the platforms
+        platforms=$(yq e ".ethereum-genesis-generator[]" platforms.yaml)
+
+        for platform in $platforms; do
+          slug=$(echo "$platform" | tr '/' '-')
+          runner=$(yq e ".\"$platform\"" runners.yaml)
+          PLATFORMS_JSON+="{\"platform\":\"$platform\", \"runner\":\"$runner\", \"slug\":\"$slug\"},"
+        done
+
+        PLATFORMS_JSON="${PLATFORMS_JSON%,}]"
+        echo "platforms=$PLATFORMS_JSON" >> $GITHUB_OUTPUT
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ethpandaops/ethereum-genesis-generator
+        flavor: latest=auto
+        tags: |
+          type=semver,pattern={{version}}
+          type=ref,event=pr
+          type=ref,event=branch
+          type=sha
+          type=match,event=tag,pattern=^v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^verkle-gen-v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^ephemery-v\d+\.\d+\.\d+$,group=0
+
+    - name: Set tag
+      id: set_tag
+      shell: bash
+      run: |
+        echo "tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_OUTPUT
+
+
