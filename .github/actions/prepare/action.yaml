@@ -37,8 +37,8 @@ runs:
         images: ethpandaops/ethereum-genesis-generator
         flavor: latest=auto
         tags: |
-          type=raw,enable=${{ startsWith(github.ref, 'refs/tags/verkle-gen-v') }},event=tag
-          type=raw,value=verkle-gen,enable=${{ github.ref == format('refs/heads/{0}', 'verkle-gen') }},event=branch
+          type=raw,enable=${{ startsWith(github.ref, 'refs/tags/verkle-gen-v') }}
+          type=raw,value=verkle-gen,enable=${{ github.ref == format('refs/heads/{0}', 'verkle-gen') }}
           type=semver,pattern={{version}}
           type=ref,event=branch
           type=ref,event=pr
