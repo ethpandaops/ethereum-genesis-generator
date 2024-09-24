@@ -131,3 +131,4 @@ out['config']['verkleTime'] = int(data['genesis_timestamp']) + int(data['genesis
 out['config']['proofInBlocks'] = True
 out['config']['shanghaiTime'] = 0
 print(json.dumps(out, indent='  '))
+
