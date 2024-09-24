@@ -37,12 +37,14 @@ runs:
         images: ethpandaops/ethereum-genesis-generator
         flavor: latest=auto
         tags: |
-          type=raw,value=master,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
-          type=raw,value=verkle-gen,enable=${{ github.ref == format('refs/heads/{0}', 'verkle-gen') }},event=branch
           type=semver,pattern={{version}}
-          type=ref,event=branch
           type=ref,event=pr
-          type=semver,pattern={{version}}
+          type=ref,event=branch
+          type=sha
+          type=match,event=tag,pattern=^v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^verkle-gen-v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^ephemery-v\d+\.\d+\.\d+$,group=0
+
     - name: Set tag
       id: set_tag
       shell: bash
