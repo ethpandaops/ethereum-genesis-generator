@@ -1,9 +1,15 @@
 #!/bin/bash -e
+export FULL_ENV_FILE="/defaults/defaults.env"
+
 if [ -f /config/values.env ];
 then
-    source /config/values.env
+    export FULL_ENV_FILE="/config/values.env"
 fi
-source /defaults/defaults.env
+
+# Pull these values out of the env file since they can be very large and cause
+# "arguments list too long" errors in the shell.
+grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
+source /tmp/values-short.env
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
@@ -30,7 +36,7 @@ gen_el_config(){
     if ! [ -f "/data/metadata/genesis.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
-        envsubst < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
+        python3 /apps/el-gen/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
         python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
         python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
         python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
