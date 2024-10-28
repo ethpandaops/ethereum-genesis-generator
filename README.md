@@ -4,7 +4,7 @@ Create a ethereum consensus/execution layer testnet genesis and optionally expos
 
 ### Examples
 
-Create a new file with your custom configuration in /config/values.env. You can use the [values.env](config-example/values.env) file as a template.
+Create a new file with your custom configuration in `./config/values.env`. You can use the [defaults.env](defaults/defaults.env) file as a template.
 
 ```sh
 # Create the output directory
