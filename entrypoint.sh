@@ -44,6 +44,7 @@ gen_cl_config(){
         cp $tmp_dir/mnemonics.yaml /data/custom_config_data/mnemonics.yaml
         # Create deposit_contract.txt and deploy_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/custom_config_data/config.yaml | cut -d " " -f2 > /data/custom_config_data/deposit_contract.txt
+        echo 0 > /data/custom_config_data/deposit_contract_block_hash.txt
         echo $CL_EXEC_BLOCK > /data/custom_config_data/deploy_block.txt
         echo $CL_EXEC_BLOCK > /data/custom_config_data/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/custom_config_data/bootstrap_nodes.txt
