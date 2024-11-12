@@ -182,15 +182,11 @@ else:
         add_alloc_entry(addr, account)
 
 if 'electra_fork_epoch' in data:
-    out['config']['pragueTime'] = \
+    fork_timestamp = \
         int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
         int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    out['config']['osakaTime'] = out['config']['pragueTime']
-if 'fulu_fork_epoch' in data:
-    out['config']['osakaTime'] =  \
-        int(data['genesis_timestamp']) + \
-        int(data['genesis_delay']) + \
-        int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+    out['config']['osakaTime'] = fork_timestamp
+    out['config']['pragueTime'] = fork_timestamp
 
 print(json.dumps(out, indent='  '))
