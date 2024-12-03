@@ -1,20 +1,24 @@
 #!/bin/bash -e
-export FULL_ENV_FILE="/defaults/defaults.env"
+export DEFAULT_ENV_FILE="/defaults/defaults.env"
 
 if [ -f /config/values.env ];
 then
+    # Use user provided env vars if it exists
     export FULL_ENV_FILE="/config/values.env"
+    # Pull these values out of the env file since they can be very large and cause
+    # "arguments list too long" errors in the shell.
+    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
+else
+    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $DEFAULT_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
 fi
 
-# Pull these values out of the env file since they can be very large and cause
-# "arguments list too long" errors in the shell.
-grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
 source /tmp/values-short.env
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 PRESET_BASE="${PRESET_BASE:-mainnet}"
+GENESIS_TIMESTAMP="${GENESIS_TIMESTAMP:-0}"
 gen_shared_files(){
     . /apps/el-gen/.venv/bin/activate
     set -x
@@ -36,7 +40,7 @@ gen_el_config(){
     if ! [ -f "/data/metadata/genesis.json" ]; then
         tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
-        python3 /apps/el-gen/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
+        python3 /apps/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
         python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
         python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
         python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
@@ -70,9 +74,9 @@ gen_cl_config(){
         mkdir -p /data/parsed
         HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
-        envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
+        python3 /apps/envsubst.py < /config/cl/config.yaml > /data/metadata/config.yaml
         sed -i "s/#HUMAN_TIME_PLACEHOLDER/$COMMENT/" /data/metadata/config.yaml
-        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
@@ -83,7 +87,7 @@ gen_cl_config(){
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
         # Envsubst mnemonics
-        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args=(
           deneb
