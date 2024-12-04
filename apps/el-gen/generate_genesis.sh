@@ -50,16 +50,16 @@ generate_genesis() {
 
     # Add additional fork properties
     if [ $has_fork -lt 2 ]; then
-        if [ "$BELLATRIX_FORK_EPOCH" -gt "0" ] && [ "$BELLATRIX_FORK_EPOCH" -lt "18446744073709551615" ]; then
+        if [ "$BELLATRIX_FORK_EPOCH" -gt "0" ] && [ ! "$BELLATRIX_FORK_EPOCH" == "18446744073709551615" ]; then
             genesis_add_pre_bellatrix $tmp_dir
         else
             genesis_add_post_bellatrix $tmp_dir
         fi
     fi
-    [ $has_fork -lt 3 ] && [ "$CAPELLA_FORK_EPOCH" -lt "18446744073709551615" ] && genesis_add_capella $tmp_dir
-    [ $has_fork -lt 4 ] && [ "$DENEB_FORK_EPOCH"   -lt "18446744073709551615" ] && genesis_add_deneb $tmp_dir
-    [ $has_fork -lt 5 ] && [ "$ELECTRA_FORK_EPOCH" -lt "18446744073709551615" ] && genesis_add_electra $tmp_dir
-    [ $has_fork -lt 6 ] && [ "$FULU_FORK_EPOCH"    -lt "18446744073709551615" ] && genesis_add_fulu $tmp_dir
+    [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_capella $tmp_dir
+    [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
+    [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_electra $tmp_dir
+    [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"    == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # add genesis allocations
@@ -76,7 +76,7 @@ generate_genesis() {
 
         # 3. add prefunded wallets and additional contracts from el/genesis-config.yaml
         if [ -f /config/el/genesis-config.yaml ]; then
-            envsubst < /config/el/genesis-config.yaml | yq -o=json | jq -c > $tmp_dir/el-genesis-config.json
+            envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
 
             el_mnemonic=$(jq -r '.mnemonic' $tmp_dir/el-genesis-config.json)
             if [ -z "$el_mnemonic" ]; then
@@ -84,6 +84,7 @@ generate_genesis() {
             fi
 
             # 3.1 add el_premine wallets from menmonic & derivation path
+            echo "Adding premine wallets from menomic"
             for premine in $(cat $tmp_dir/el-genesis-config.json | jq -c '.el_premine | to_entries[]');
             do
                 path=$(echo $premine | jq -r '.key')
@@ -93,6 +94,7 @@ generate_genesis() {
             done
 
             # 3.2 add el_premine_addrs wallets
+            echo "Adding static premine wallets"
             for premine in $(cat $tmp_dir/el-genesis-config.json | jq -c '.el_premine_addrs | to_entries[]');
             do
                 address=$(echo $premine | jq -r '.key')
@@ -102,6 +104,7 @@ generate_genesis() {
 
             # 3.3 add additional_preloaded_contracts
             additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -c '.additional_preloaded_contracts')
+            echo "Adding additional contracts"
             if ! [[ "$additional_contracts" == {* ]]; then
                 if [ -f "$additional_contracts" ]; then
                     additional_contracts=$(cat $additional_contracts | jq -c)
@@ -126,13 +129,17 @@ generate_genesis() {
 }
 
 genesis_get_activation_time() {
-    if [ "$PRESET_BASE" == "minimal" ]; then
-        slots_per_epoch=8
+    if [ "$1" == "0" ]; then
+        echo "0"
     else
-        slots_per_epoch=32
+        if [ "$PRESET_BASE" == "minimal" ]; then
+            slots_per_epoch=8
+        else
+            slots_per_epoch=32
+        fi
+        epoch_delay=$(( $SLOT_DURATION_IN_SECONDS * $slots_per_epoch * $1 ))
+        echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
-    epoch_delay=$(( $SLOT_DURATION_IN_SECONDS * $slots_per_epoch * $1 ))
-    echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
 }
 
 genesis_add_allocation() {
@@ -147,10 +154,10 @@ genesis_add_allocation() {
     balance=$(echo $allocation | jq -r '.balance' | sed 's/ *ETH/000000000000000000/')
     allocation=$(echo $allocation | jq -c '.balance = "'$balance'"')
 
-    echo "Adding allocation for $address"
-    genesis_data=$(cat $tmp_dir/genesis.json   | jq -c '.alloc    += '"$allocation")
-    chainspec_data=$(cat $tmp_dir/chainspec.json | jq -c '.accounts += '"$allocation")
-    besu_data=$(cat $tmp_dir/besu.json      | jq -c '.alloc    += '"$allocation")
+    echo "  adding allocation for $address: $balance"
+    genesis_data=$(cat $tmp_dir/genesis.json     | jq -c '.alloc    += {"'"$address"'":'"$allocation"'}')
+    chainspec_data=$(cat $tmp_dir/chainspec.json | jq -c '.accounts += {"'"$address"'":'"$allocation"'}')
+    besu_data=$(cat $tmp_dir/besu.json           | jq -c '.alloc    += {"'"$address"'":'"$allocation"'}')
 
     echo $genesis_data > $tmp_dir/genesis.json
     echo $chainspec_data > $tmp_dir/chainspec.json
@@ -159,28 +166,36 @@ genesis_add_allocation() {
 
 genesis_add_system_contracts() {
     tmp_dir=$1
-    system_contracts=$(cat /apps/el-gen/system-contracts.yaml | jq -c)
+    system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
 
     echo "Adding system contracts"
-    echo "$system_contracts"
 
     # add deposit contract
+    echo -e "  genesis contract:\t$DEPOSIT_CONTRACT_ADDRESS"
     genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$system_contracts" | jq -c '.deposit')
 
-    if [ "$DENEB_FORK_EPOCH" -lt "18446744073709551615" ]; then
+    if [ ! "$DENEB_FORK_EPOCH" == "18446744073709551615" ]; then
         # EIP-4788: Beacon block root in the EVM
-        genesis_add_allocation $tmp_dir $(echo "$system_contracts" | jq -c '.eip4788_address') $(echo "$system_contracts" | jq -c '.eip4788')
+        target_address=$(echo "$system_contracts" | jq -r '.eip4788_address')
+        echo -e "  EIP-4788 contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip4788')
     fi
 
-    if [ "$ELECTRA_FORK_EPOCH" -lt "18446744073709551615" ]; then
+    if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
         # EIP-2935: Serve historical block hashes from state
-        genesis_add_allocation $tmp_dir $(echo "$system_contracts" | jq -c '.eip2935_address') $(echo "$system_contracts" | jq -c '.eip2935')
+        target_address=$(echo "$system_contracts" | jq -r '.eip2935_address')
+        echo -e "  EIP-2935 contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip2935')
 
         # EIP-7002: Execution layer triggerable withdrawals
-        genesis_add_allocation $tmp_dir $(echo "$system_contracts" | jq -c '.eip7002_address') $(echo "$system_contracts" | jq -c '.eip7002')
+        target_address=$(echo "$system_contracts" | jq -r '.eip7002_address')
+        echo -e "  EIP-7002 contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7002')
 
         # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-        genesis_add_allocation $tmp_dir $(echo "$system_contracts" | jq -c '.eip7251_address') $(echo "$system_contracts" | jq -c '.eip7251')
+        target_address=$(echo "$system_contracts" | jq -r '.eip7251_address')
+        echo -e "  EIP-7251 contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
     fi
 }
 

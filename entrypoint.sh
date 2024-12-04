@@ -71,9 +71,9 @@ gen_cl_config(){
         mkdir -p /data/parsed
         HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
-        python3 /apps/envsubst.py < /config/cl/config.yaml > /data/metadata/config.yaml
+        envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         sed -i "s/#HUMAN_TIME_PLACEHOLDER/$COMMENT/" /data/metadata/config.yaml
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
@@ -84,7 +84,7 @@ gen_cl_config(){
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
         # Envsubst mnemonics
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         if [[ $ALTAIR_FORK_EPOCH != 0 ]]; then
           genesis_args+=(
