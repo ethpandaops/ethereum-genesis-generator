@@ -15,11 +15,11 @@ generate_genesis() {
     # has_fork tracks the fork version of the input genesis
     # 0 - phase0
     # 1 - altair
-    # 2 - bellatrix
-    # 3 - capella
-    # 4 - deneb
-    # 5 - electra
-    # 6 - fulu
+    # 2 - bellatrix / merge
+    # 3 - capella / shanghai
+    # 4 - deneb / cancun
+    # 5 - electra / prague
+    # 6 - fulu / osaka
     
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -49,30 +49,18 @@ generate_genesis() {
     fi
 
     # Add additional fork properties
-    if [ $has_fork -lt 2 ]; then
-        if [ "$BELLATRIX_FORK_EPOCH" -gt "0" ] && [ ! "$BELLATRIX_FORK_EPOCH" == "18446744073709551615" ]; then
-            genesis_add_pre_bellatrix $tmp_dir
-        else
-            genesis_add_post_bellatrix $tmp_dir
-        fi
-    fi
-    [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_capella $tmp_dir
-    [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
-    [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_electra $tmp_dir
-    [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"    == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
+    [ $has_fork -lt 2 ] && [ ! "$BELLATRIX_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_bellatrix $tmp_dir
+    [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_capella $tmp_dir
+    [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
+    [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
+    [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # add genesis allocations
         
         # 1. allocate 1 wei to all possible pre-compiles.
         #    see https://github.com/ethereum/EIPs/issues/716 "SpuriousDragon RIPEMD bug"
-        allocations="{}"
-        for index in $(seq 0 255);
-        do
-            address=$(printf "0x%040x" $index)
-            allocations=$(echo $allocations | jq -c '. += {"'"$address"'": {"balance": "1"}}')
-        done
-        echo "$allocations" > $tmp_dir/allocations.json
+        cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
 
         # 2. add system contracts
         genesis_add_system_contracts $tmp_dir
@@ -210,28 +198,7 @@ genesis_add_system_contracts() {
     fi
 }
 
-genesis_add_pre_bellatrix() {
-    tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
-    echo "Adding pre-bellatrix genesis properties (TODO)"
-
-    # genesis.json
-    # "mergeNetsplitBlock": 1735371,
-    # "terminalTotalDifficulty": 17000000000000000,
-
-    # chainspec.json
-    # "terminalTotalDifficulty": "0x3c6568f12e8000",
-    # "mergeForkIdTransition": "0x1A7ACB",
-
-    # besu.json
-    # "mergeForkBlock": 1735371,
-    # "terminalTotalDifficulty": 17000000000000000,
-}
-
-genesis_add_post_bellatrix() {
+genesis_add_bellatrix() {
     tmp_dir=$1
     echo "Adding bellatrix genesis properties"
 
