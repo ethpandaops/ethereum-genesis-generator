@@ -63,13 +63,16 @@ generate_genesis() {
 
     if [ "$is_shadowfork" == "0" ]; then
         # add genesis allocations
+        
         # 1. allocate 1 wei to all possible pre-compiles.
         #    see https://github.com/ethereum/EIPs/issues/716 "SpuriousDragon RIPEMD bug"
-        #for index in $(seq 0 255);
-        #do
-        #    address=$(printf "0x%040x" $index)
-        #    genesis_add_allocation $tmp_dir $address "1"
-        #done
+        allocations="{}"
+        for index in $(seq 0 255);
+        do
+            address=$(printf "0x%040x" $index)
+            allocations=$(echo $allocations | jq -c '. += {"'"$address"'": {"balance": "1"}}')
+        done
+        echo "$allocations" > $tmp_dir/allocations.json
 
         # 2. add system contracts
         genesis_add_system_contracts $tmp_dir
@@ -120,6 +123,12 @@ generate_genesis() {
                 genesis_add_allocation $tmp_dir $address $balance
             done
         fi
+
+        # add allocations to genesis files
+        allocations=$(cat $tmp_dir/allocations.json)
+        genesis_add_json $tmp_dir/genesis.json '.alloc += '"$allocations"
+        genesis_add_json $tmp_dir/chainspec.json '.accounts += '"$allocations"
+        genesis_add_json $tmp_dir/besu.json '.alloc += '"$allocations"
     fi
 
     cat $tmp_dir/genesis.json | jq > $out_dir/genesis.json
@@ -142,6 +151,14 @@ genesis_get_activation_time() {
     fi
 }
 
+genesis_add_json() {
+    file=$1
+    data=$2
+
+    jq -c "$data" "$file" > "$file.out"
+    mv "$file.out" "$file"
+}
+
 genesis_add_allocation() {
     tmp_dir=$1
     address=$2
@@ -155,13 +172,7 @@ genesis_add_allocation() {
     allocation=$(echo $allocation | jq -c '.balance = "'$balance'"')
 
     echo "  adding allocation for $address: $balance"
-    genesis_data=$(cat $tmp_dir/genesis.json     | jq -c '.alloc    += {"'"$address"'":'"$allocation"'}')
-    chainspec_data=$(cat $tmp_dir/chainspec.json | jq -c '.accounts += {"'"$address"'":'"$allocation"'}')
-    besu_data=$(cat $tmp_dir/besu.json           | jq -c '.alloc    += {"'"$address"'":'"$allocation"'}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/allocations.json '. += {"'"$address"'":'"$allocation"'}'
 }
 
 genesis_add_system_contracts() {
@@ -222,79 +233,59 @@ genesis_add_pre_bellatrix() {
 
 genesis_add_post_bellatrix() {
     tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
     echo "Adding bellatrix genesis properties"
 
     # genesis.json
     # "mergeNetsplitBlock": 0
     # "terminalTotalDifficulty": 0
     # "terminalTotalDifficultyPassed": true
-    genesis_data=$(echo $genesis_data | jq '.config += {"mergeNetsplitBlock": 0, "terminalTotalDifficulty": 0, "terminalTotalDifficultyPassed": true}')
+    genesis_add_json $tmp_dir/genesis.json '.config += {"mergeNetsplitBlock": 0, "terminalTotalDifficulty": 0, "terminalTotalDifficultyPassed": true}'
 
     # chainspec.json
     # "mergeForkIdTransition": "0x0"
     # "terminalTotalDifficulty":"0x0"
-    chainspec_data=$(echo $chainspec_data | jq '.params += {"mergeForkIdTransition": "0x0", "terminalTotalDifficulty":"0x0"}')
+    genesis_add_json $tmp_dir/chainspec.json '.params += {"mergeForkIdTransition": "0x0", "terminalTotalDifficulty":"0x0"}'
 
     # besu.json
     # "preMergeForkBlock": 0
     # "terminalTotalDifficulty": 0
     # "ethash": {}
-    besu_data=$(echo $besu_data | jq '. += {"preMergeForkBlock": 0, "terminalTotalDifficulty": 0, "ethash": {}}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {"preMergeForkBlock": 0, "terminalTotalDifficulty": 0, "ethash": {}}'
 }
 
 # add capella fork properties
 genesis_add_capella() {
     tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
     echo "Adding capella genesis properties"
     shanghai_time=$(genesis_get_activation_time $CAPELLA_FORK_EPOCH)
     shanghai_time_hex="0x$(printf "%x" $shanghai_time)"
 
     # genesis.json
     # "shanghaiTime": 123456
-    genesis_data=$(echo $genesis_data | jq '.config += {"shanghaiTime": '"$shanghai_time"'}')
+    genesis_add_json $tmp_dir/genesis.json '.config += {"shanghaiTime": '"$shanghai_time"'}'
 
     # chainspec.json
     # "eip4895TransitionTimestamp": "0x123456"
     # "eip3855TransitionTimestamp": "0x123456"
     # "eip3651TransitionTimestamp": "0x123456"
     # "eip3860TransitionTimestamp": "0x123456"
-    chainspec_data=$(echo $chainspec_data | jq '.params += {"eip4895TransitionTimestamp": "'$shanghai_time_hex'", "eip3855TransitionTimestamp": "'$shanghai_time_hex'", "eip3651TransitionTimestamp": "'$shanghai_time_hex'", "eip3860TransitionTimestamp": "'$shanghai_time_hex'"}')
+    genesis_add_json $tmp_dir/chainspec.json '.params += {"eip4895TransitionTimestamp": "'$shanghai_time_hex'", "eip3855TransitionTimestamp": "'$shanghai_time_hex'", "eip3651TransitionTimestamp": "'$shanghai_time_hex'", "eip3860TransitionTimestamp": "'$shanghai_time_hex'"}'
 
     # besu.json
     # "shanghaiTime": 123456
-    besu_data=$(echo $besu_data | jq '.config += {"shanghaiTime": '"$shanghai_time"'}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {"shanghaiTime": '"$shanghai_time"'}'
 }
 
 # add deneb fork properties
 genesis_add_deneb() {
     tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
     echo "Adding deneb genesis properties"
     cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
     cancun_time_hex="0x$(printf "%x" $cancun_time)"
 
     # genesis.json
     # "cancunTime": 123456
-    genesis_data=$(echo $genesis_data | jq '.config += {"cancunTime": '"$cancun_time"'}')
+    genesis_add_json $tmp_dir/genesis.json '.config += {"cancunTime": '"$cancun_time"'}'
 
     # chainspec.json
     # "eip4844TransitionTimestamp": "0x123456",
@@ -302,24 +293,16 @@ genesis_add_deneb() {
     # "eip1153TransitionTimestamp": "0x123456",
     # "eip5656TransitionTimestamp": "0x123456",
     # "eip6780TransitionTimestamp": "0x123456",
-    chainspec_data=$(echo $chainspec_data | jq '.params += {"eip4844TransitionTimestamp": "'$cancun_time_hex'", "eip4788TransitionTimestamp": "'$cancun_time_hex'", "eip1153TransitionTimestamp": "'$cancun_time_hex'", "eip5656TransitionTimestamp": "'$cancun_time_hex'", "eip6780TransitionTimestamp": "'$cancun_time_hex'"}')
+    genesis_add_json $tmp_dir/chainspec.json '.params += {"eip4844TransitionTimestamp": "'$cancun_time_hex'", "eip4788TransitionTimestamp": "'$cancun_time_hex'", "eip1153TransitionTimestamp": "'$cancun_time_hex'", "eip5656TransitionTimestamp": "'$cancun_time_hex'", "eip6780TransitionTimestamp": "'$cancun_time_hex'"}'
 
     # besu.json
     # "cancunTime": 123456
-    besu_data=$(echo $besu_data | jq '.config += {"cancunTime": '"$cancun_time"'}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {"cancunTime": '"$cancun_time"'}'
 }
 
 # add electra fork properties
 genesis_add_electra() {
     tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
@@ -327,7 +310,7 @@ genesis_add_electra() {
     # genesis.json
     # "depositContractAddress": "0x4242424242424242424242424242424242424242"
     # "pragueTime": 123456
-    genesis_data=$(echo $genesis_data | jq '.config += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "pragueTime": '"$prague_time"'}')
+    genesis_add_json $tmp_dir/genesis.json '.config += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "pragueTime": '"$prague_time"'}'
 
     # chainspec.json
     # "depositContractAddress": "0x4242424242424242424242424242424242424242"
@@ -337,42 +320,30 @@ genesis_add_electra() {
     # "eip7002TransitionTimestamp": "0x123456"
     # "eip7251TransitionTimestamp": "0x123456"
     # "eip7702TransitionTimestamp": "0x123456"
-    chainspec_data=$(echo $chainspec_data | jq '.params += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "eip2537TransitionTimestamp": "'$prague_time_hex'", "eip2935TransitionTimestamp": "'$prague_time_hex'", "eip6110TransitionTimestamp": "'$prague_time_hex'", "eip7002TransitionTimestamp": "'$prague_time_hex'", "eip7251TransitionTimestamp": "'$prague_time_hex'", "eip7702TransitionTimestamp": "'$prague_time_hex'"}')
+    genesis_add_json $tmp_dir/chainspec.json '.params += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "eip2537TransitionTimestamp": "'$prague_time_hex'", "eip2935TransitionTimestamp": "'$prague_time_hex'", "eip6110TransitionTimestamp": "'$prague_time_hex'", "eip7002TransitionTimestamp": "'$prague_time_hex'", "eip7251TransitionTimestamp": "'$prague_time_hex'", "eip7702TransitionTimestamp": "'$prague_time_hex'"}'
 
     # besu.json
     # "depositContractAddress": "0x4242424242424242424242424242424242424242"
     # "pragueTime": 123456
-    besu_data=$(echo $besu_data | jq '.config += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "pragueTime": '"$prague_time"'}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {"depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'", "pragueTime": '"$prague_time"'}'
 }
 
 # add fulu fork properties
 genesis_add_fulu() {
     tmp_dir=$1
-    genesis_data=$(cat $tmp_dir/genesis.json)
-    chainspec_data=$(cat $tmp_dir/chainspec.json)
-    besu_data=$(cat $tmp_dir/besu.json)
-    
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
 
     # genesis.json
     # "osakaTime": 123456
-    genesis_data=$(echo $genesis_data | jq '.config += {"osakaTime": '"$osaka_time"'}')
+    genesis_add_json $tmp_dir/genesis.json '.config += {"osakaTime": '"$osaka_time"'}'
 
     # chainspec.json
     # "eip7692TransitionTimestamp": "0x123456"
-    chainspec_data=$(echo $chainspec_data | jq '.params += {"eip7692TransitionTimestamp": "'$osaka_time_hex'"}')
+    genesis_add_json $tmp_dir/chainspec.json '.params += {"eip7692TransitionTimestamp": "'$osaka_time_hex'"}'
 
     # besu.json
     # "osakaTime": 123456
-    besu_data=$(echo $besu_data | jq '.config += {"osakaTime": '"$osaka_time"'}')
-
-    echo $genesis_data > $tmp_dir/genesis.json
-    echo $chainspec_data > $tmp_dir/chainspec.json
-    echo $besu_data > $tmp_dir/besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {"osakaTime": '"$osaka_time"'}'
 }
