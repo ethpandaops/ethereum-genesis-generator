@@ -16,7 +16,6 @@ SERVER_PORT="${SERVER_PORT:-8000}"
 WITHDRAWAL_ADDRESS="${WITHDRAWAL_ADDRESS:-0xf97e180c050e5Ab072211Ad2C213Eb5AEE4DF134}"
 PRESET_BASE="${PRESET_BASE:-mainnet}"
 gen_shared_files(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Shared files
     mkdir -p /data/metadata
@@ -31,15 +30,11 @@ gen_shared_files(){
 }
 
 gen_el_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     if ! [ -f "/data/metadata/genesis.json" ]; then
-        tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
-        python3 /apps/el-gen/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
-        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
-        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
+        source /apps/el-gen/generate_genesis.sh
+        generate_genesis /data/metadata
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -61,7 +56,6 @@ gen_minimal_config() {
 }
 
 gen_cl_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/metadata/genesis.ssz" ]; then
