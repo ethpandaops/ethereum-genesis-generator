@@ -7,10 +7,12 @@ import json
 from dotenv import dotenv_values
 
 # Load default and full environment variables from specified files
+# handle the case where the env file is not present
 defaults = dotenv_values(os.environ['DEFAULT_ENV_FILE'])
-config = dotenv_values(os.environ['FULL_ENV_FILE'])
 
-# Also check actual environment variables
+config_file = os.environ.get('FULL_ENV_FILE')
+config = dotenv_values(config_file) if config_file and os.path.isfile(config_file) else {}
+
 env_vars = os.environ
 
 # These regular expressions are used to identify and match environment variable patterns in the input text.

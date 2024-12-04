@@ -10,12 +10,16 @@ mainnet_config_path = "/apps/el-gen/mainnet/chainspec.json"
 sepolia_config_path = "/apps/el-gen/sepolia/chainspec.json"
 goerli_config_path = "/apps/el-gen/goerli/chainspec.json"
 holesky_config_path = "/apps/el-gen/holesky/chainspec.json"
+isNamedTestnet = False
 combined_allocs = {}
 if len(sys.argv) > 1:
     testnet_config_path = sys.argv[1]
 
 with open(testnet_config_path) as stream:
     data = yaml.safe_load(stream)
+
+if int(data['chain_id']) == 1 or int(data['chain_id']) == 11155111 or int(data['chain_id']) == 17000:
+    isNamedTestnet = True
 
 if int(data['chain_id']) == 1:
     with open(mainnet_config_path) as m:
@@ -71,16 +75,6 @@ else:
             "eip3198Transition": "0x0",
             "eip3529Transition": "0x0",
             "eip3541Transition": "0x0",
-            "eip4895TransitionTimestamp": "0x0",
-            "eip3855TransitionTimestamp": "0x0",
-            "eip3651TransitionTimestamp": "0x0",
-            "eip3860TransitionTimestamp": "0x0",
-            "terminalTotalDifficulty":"0x0",
-            "eip4844TransitionTimestamp": "0x0",
-            "eip4788TransitionTimestamp": "0x0",
-            "eip1153TransitionTimestamp": "0x0",
-            "eip5656TransitionTimestamp": "0x0",
-            "eip6780TransitionTimestamp": "0x0",
             "depositContractAddress": data["deposit_contract_address"],
         },
         "genesis": {
@@ -223,46 +217,80 @@ else:
     for addr, account in data['additional_preloaded_contracts'].items():
         add_alloc_entry(addr, account)
 
+        
+# Terminal total difficulty
+if 'terminal_total_difficulty' in data and not isNamedTestnet:
+    if data['terminal_total_difficulty'] != 0:
+        out['params']['terminalTotalDifficulty'] = hex(data['terminal_total_difficulty'])
+    else:
+        out['params']['terminalTotalDifficulty'] = "0x0"
+# Capella fork
+if 'capella_fork_epoch' in data and not isNamedTestnet:
+    if data['capella_fork_epoch'] != 0:
+        capella_timestamp = hex(
+            int(data['genesis_timestamp']) +
+        int(data['genesis_delay']) +
+        int(data['capella_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+        )
+        out['params']['eip4895TransitionTimestamp'] = capella_timestamp
+        out['params']['eip3651TransitionTimestamp'] = capella_timestamp
+        out['params']['eip3855TransitionTimestamp'] = capella_timestamp
+        out['params']['eip3860TransitionTimestamp'] = capella_timestamp
+    else:
+        out['params']['eip4895TransitionTimestamp'] = 0
+        out['params']['eip3651TransitionTimestamp'] = 0
+        out['params']['eip3855TransitionTimestamp'] = 0
+        out['params']['eip3860TransitionTimestamp'] = 0
+
+# Dencun fork
+if 'deneb_fork_epoch' in data and not isNamedTestnet:
+    if data['deneb_fork_epoch'] != 0:
+        deneb_timestamp = hex(
+        int(data['genesis_timestamp']) +
+        int(data['genesis_delay']) +
+        int(data['deneb_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+        )
+        out['params']['eip4844TransitionTimestamp'] = deneb_timestamp
+        out['params']['eip4788TransitionTimestamp'] = deneb_timestamp
+        out['params']['eip1153TransitionTimestamp'] = deneb_timestamp
+        out['params']['eip5656TransitionTimestamp'] = deneb_timestamp
+        out['params']['eip6780TransitionTimestamp'] = deneb_timestamp
+    else:
+        out['params']['eip4844TransitionTimestamp'] = 0
+        out['params']['eip4788TransitionTimestamp'] = 0
+        out['params']['eip1153TransitionTimestamp'] = 0
+        out['params']['eip5656TransitionTimestamp'] = 0
+        out['params']['eip6780TransitionTimestamp'] = 0
+
 if 'electra_fork_epoch' in data:
-    out['params']['eip2537TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-    out['params']['eip2935TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-
-    out['params']['eip6110TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-    out['params']['eip7002TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-
-    out['params']['eip7251TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
-
-    out['params']['eip7702TransitionTimestamp']= hex(
-        int(data['genesis_timestamp']) +
-        int(data['genesis_delay']) +
-        int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
+    if data['electra_fork_epoch'] != 0:
+        electra_timestamp = hex(
+            int(data['genesis_timestamp']) +
+            int(data['genesis_delay']) +
+            int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+            )
+        out['params']['eip2537TransitionTimestamp']= electra_timestamp
+        out['params']['eip2935TransitionTimestamp']= electra_timestamp
+        out['params']['eip6110TransitionTimestamp']= electra_timestamp
+        out['params']['eip7002TransitionTimestamp']= electra_timestamp
+        out['params']['eip7251TransitionTimestamp']= electra_timestamp
+        out['params']['eip7702TransitionTimestamp']= electra_timestamp
+    else:
+        out['params']['eip2537TransitionTimestamp']= 0
+        out['params']['eip2935TransitionTimestamp']= 0
+        out['params']['eip6110TransitionTimestamp']= 0
+        out['params']['eip7002TransitionTimestamp']= 0
+        out['params']['eip7251TransitionTimestamp']= 0
+        out['params']['eip7702TransitionTimestamp']= 0
 
 if 'fulu_fork_epoch' in data:
-    out['params']['eip7692TransitionTimestamp'] = hex(
-        int(data['genesis_timestamp']) + \
+    if data['fulu_fork_epoch'] != 0:
+        out['params']['eip7692TransitionTimestamp'] = hex(
+            int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
-        int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
-    )
+            int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+        )
+    else:
+        out['params']['eip7692TransitionTimestamp'] = 0
 
 print(json.dumps(out, indent='  '))

@@ -202,7 +202,6 @@ gen_cl_config(){
             --preset-phase0 $PRESET_BASE
             --preset-altair $PRESET_BASE
             --preset-bellatrix $PRESET_BASE
-            --preset-capella $PRESET_BASE
             /data/metadata/genesis.ssz
           )
         else
@@ -214,7 +213,6 @@ gen_cl_config(){
           --preset-altair $PRESET_BASE
           --preset-bellatrix $PRESET_BASE
           --preset-capella $PRESET_BASE
-          --preset-deneb $PRESET_BASE
           /data/metadata/genesis.ssz
         )
         fi
