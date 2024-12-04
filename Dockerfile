@@ -12,7 +12,7 @@ VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-    ca-certificates build-essential gettext-base jq yq wget curl && \
+    ca-certificates gettext-base jq yq wget curl && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
