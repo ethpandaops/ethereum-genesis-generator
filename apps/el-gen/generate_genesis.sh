@@ -49,7 +49,7 @@ generate_genesis() {
     fi
 
     # Add additional fork properties
-    [ $has_fork -lt 2 ] && [ ! "$BELLATRIX_FORK_EPOCH" == "18446744073709551615" ] && genesis_add_bellatrix $tmp_dir
+    [ $has_fork -lt 2 ] && genesis_add_bellatrix $tmp_dir
     [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_capella $tmp_dir
     [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
