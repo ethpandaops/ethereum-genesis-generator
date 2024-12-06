@@ -56,64 +56,54 @@ generate_genesis() {
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
-        # add genesis allocations
-        
-        # 1. allocate 1 wei to all possible pre-compiles.
-        #    see https://github.com/ethereum/EIPs/issues/716 "SpuriousDragon RIPEMD bug"
+        # Initialize allocations with precompiles
+        echo "Adding precompile allocations..."
         cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
 
-        # 2. add system contracts
+        # Add system contracts
         genesis_add_system_contracts $tmp_dir
 
-        # 3. add prefunded wallets and additional contracts from el/genesis-config.yaml
+        # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
+            
+            el_mnemonic=$(jq -r '.mnemonic // env.EL_AND_CL_MNEMONIC' $tmp_dir/el-genesis-config.json)
 
-            el_mnemonic=$(jq -r '.mnemonic' $tmp_dir/el-genesis-config.json)
-            if [ -z "$el_mnemonic" ]; then
-                el_mnemonic=$EL_AND_CL_MNEMONIC
-            fi
-
-            # 3.1 add el_premine wallets from menmonic & derivation path
-            echo "Adding premine wallets from menomic"
-            for premine in $(cat $tmp_dir/el-genesis-config.json | jq -c '.el_premine | to_entries[]');
-            do
+            # Process all premine wallets in one pass
+            echo "Adding premine wallets from mnemonic..."
+            jq -c '.el_premine | to_entries[]' $tmp_dir/el-genesis-config.json | while read premine; do
                 path=$(echo $premine | jq -r '.key')
                 address=$(geth-hdwallet -mnemonic "$el_mnemonic" -path "$path" | grep "public address:" | awk '{print $3}')
-                balance=$(echo $premine | jq -r '.value')
-                genesis_add_allocation $tmp_dir $address $balance
+                echo "  adding allocation for $address"
+                echo "$premine" | jq -c '.value |= gsub(" *ETH"; "000000000000000000") | {"'"$address"'":{"balance":.value}}' >> $tmp_dir/allocations.json
             done
 
-            # 3.2 add el_premine_addrs wallets
-            echo "Adding static premine wallets"
-            for premine in $(cat $tmp_dir/el-genesis-config.json | jq -c '.el_premine_addrs | to_entries[]');
-            do
-                address=$(echo $premine | jq -r '.key')
-                balance=$(echo $premine | jq -r '.value')
-                genesis_add_allocation $tmp_dir $address $balance
-            done
+            # Process static premine addresses
+            echo "Adding static premine wallets..."
+            cat $tmp_dir/el-genesis-config.json | jq -c '.el_premine_addrs
+                | with_entries(.value = (if (.value|type) == "string" then {"balance": .value} else .value end))
+                | with_entries(.value.balance |= gsub(" *ETH"; "000000000000000000"))
+            ' >> $tmp_dir/allocations.json
 
-            # 3.3 add additional_preloaded_contracts
+            # Process additional contracts
             additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -cr '.additional_preloaded_contracts')
-            echo "Adding additional contracts  $additional_contracts"
             if ! [[ "$(echo "$additional_contracts" | sed -e 's/^[[:space:]]*//')" == {* ]]; then
+                echo "Additional contracts file: $additional_contracts"
                 if [ -f "$additional_contracts" ]; then
-                    additional_contracts=$(cat $additional_contracts | jq -c)
+                    additional_contracts=$(cat $additional_contracts)
                 else
                     additional_contracts="{}"
                 fi
             fi
 
-            for premine in $(echo "$additional_contracts" | jq -c 'to_entries[]');
-            do
-                address=$(echo $premine | jq -r '.key')
-                balance=$(echo $premine | jq -rc '.value')
-                genesis_add_allocation $tmp_dir $address $balance
-            done
+            # Add additional contracts to allocations
+            echo "Adding additional contracts..."
+            echo "$additional_contracts" | jq -c 'with_entries(.value.balance |= gsub(" *ETH"; "000000000000000000"))' >> $tmp_dir/allocations.json
         fi
 
-        # add allocations to genesis files
-        allocations=$(cat $tmp_dir/allocations.json)
+        # Apply combined allocations in one shot
+        echo "Applying allocations to genesis files..."
+        allocations=$(jq -s 'reduce .[] as $item ({}; . * $item)' $tmp_dir/allocations.json)
         genesis_add_json $tmp_dir/genesis.json '.alloc += '"$allocations"
         genesis_add_json $tmp_dir/chainspec.json '.accounts += '"$allocations"
         genesis_add_json $tmp_dir/besu.json '.alloc += '"$allocations"
@@ -152,15 +142,8 @@ genesis_add_allocation() {
     address=$2
     allocation=$3
 
-    if ! [[ "$allocation" == {* ]]; then
-        allocation='{"balance": "'"$(echo $allocation | sed 's/ *ETH/000000000000000000/')"'"}'
-    else
-        balance=$(echo $allocation | jq -r '.balance' | sed 's/ *ETH/000000000000000000/')
-        allocation=$(echo $allocation | jq -c '.balance = "'$balance'"')
-    fi
-
-    echo "  adding allocation for $address: $balance"
-    genesis_add_json $tmp_dir/allocations.json '. += {"'"$address"'":'"$allocation"'}'
+    echo "  adding allocation for $address"
+    echo "$allocation" | jq -c '.balance |= gsub(" *ETH"; "000000000000000000") | {("'"$address"'"): .}' >> $tmp_dir/allocations.json
 }
 
 genesis_add_system_contracts() {
