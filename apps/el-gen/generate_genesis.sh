@@ -94,8 +94,8 @@ generate_genesis() {
             done
 
             # 3.3 add additional_preloaded_contracts
-            additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -c '.additional_preloaded_contracts')
-            echo "Adding additional contracts"
+            additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -cr '.additional_preloaded_contracts')
+            echo "Adding additional contracts  $additional_contracts"
             if ! [[ "$(echo "$additional_contracts" | sed -e 's/^[[:space:]]*//')" == {* ]]; then
                 if [ -f "$additional_contracts" ]; then
                     additional_contracts=$(cat $additional_contracts | jq -c)
@@ -107,7 +107,7 @@ generate_genesis() {
             for premine in $(echo "$additional_contracts" | jq -c 'to_entries[]');
             do
                 address=$(echo $premine | jq -r '.key')
-                balance=$(echo $premine | jq -r '.value')
+                balance=$(echo $premine | jq -rc '.value')
                 genesis_add_allocation $tmp_dir $address $balance
             done
         fi
