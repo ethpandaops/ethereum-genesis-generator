@@ -255,3 +255,4 @@ esac
 if [ "$SERVER_ENABLED" = true ] ; then
   cd /data && exec python3 -m http.server "$SERVER_PORT"
 fi
+
