@@ -96,7 +96,7 @@ generate_genesis() {
             # 3.3 add additional_preloaded_contracts
             additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -c '.additional_preloaded_contracts')
             echo "Adding additional contracts"
-            if ! [[ "$additional_contracts" == {* ]]; then
+            if ! [[ "$(echo "$additional_contracts" | sed -e 's/^[[:space:]]*//')" == {* ]]; then
                 if [ -f "$additional_contracts" ]; then
                     additional_contracts=$(cat $additional_contracts | jq -c)
                 else

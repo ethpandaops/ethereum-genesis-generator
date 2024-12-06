@@ -1,21 +1,13 @@
 #!/bin/bash -e
-export DEFAULT_ENV_FILE="/defaults/defaults.env"
-# Load the default env vars into the environment
-source $DEFAULT_ENV_FILE
 
+# Load the default env vars into the environment
+source /defaults/defaults.env
+
+# Load the env vars entered by the user
 if [ -f /config/values.env ];
 then
-    # Use user provided env vars if it exists
-    export FULL_ENV_FILE="/config/values.env"
-    # Pull these values out of the env file since they can be very large and cause
-    # "arguments list too long" errors in the shell.
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
-    # print the value of ADDITIONAL_PRELOADED_CONTRACTS
-else
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $DEFAULT_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
+    source /config/values.env
 fi
-# Load the env vars entered by the user without the larger values into the environment
-source /tmp/values-short.env
 
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
