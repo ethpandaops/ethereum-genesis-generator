@@ -25,16 +25,28 @@ def sub(m):
     # Get variable name from match
     var_name = m.group(1)
     
-    # Try env vars first, then defaults, then config
+    # Try env vars first, then config, then defaults
     cfg = env_vars.get(var_name)
-    if cfg is None:
-        cfg = config.get(var_name)
+    
+    cfg = config.get(var_name)
     if cfg is None:
         cfg = defaults.get(var_name)
     
     if cfg is None:
         raise Exception(f"Missing environment variable: {var_name}")
     
+    # Handle JSON-like strings by removing trailing single quotes if present
+    cfg = cfg.strip().strip("'")
+    
+    # Try to parse as JSON if it looks like JSON
+    if cfg.startswith('{') and cfg.endswith('}'):
+        try:
+            # Validate it's proper JSON
+            json.loads(cfg)
+            return cfg  # Return the original string if it's valid JSON
+        except json.JSONDecodeError:
+            pass
+            
     return cfg
 
 # Read from standard input line by line
