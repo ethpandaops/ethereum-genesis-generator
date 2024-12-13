@@ -210,6 +210,13 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
     else:
         out['config']['cancunTime'] = 0
 
+    if 'blobSchedule' not in out['config']:
+        out['config']['blobSchedule'] = {}
+    out['config']['blobSchedule']['cancun'] = {
+        "target": data['target_blobs_per_block_cancun'],
+        "max": data['max_blobs_per_block_cancun']
+    }
+
 if 'electra_fork_epoch' in data:
     if data['electra_fork_epoch'] != 0:
         out['config']['pragueTime'] = \
@@ -219,9 +226,7 @@ if 'electra_fork_epoch' in data:
     else:
         out['config']['pragueTime'] = 0
 
-    if 'blobSchedule' not in out:
-        out['blobSchedule'] = {}
-    out['blobSchedule']['prague'] = {
+    out['config']['blobSchedule']['prague'] = {
         "target": data['target_blobs_per_block_prague'],
         "max": data['max_blobs_per_block_prague']
     }
@@ -235,7 +240,7 @@ if 'fulu_fork_epoch' in data:
     else:
         out['config']['osakaTime'] = 0
 
-    out['blobSchedule']['osaka'] = {
+    out['config']['blobSchedule']['osaka'] = {
         "target": data['target_blobs_per_block_osaka'],
         "max": data['max_blobs_per_block_osaka']
     }
