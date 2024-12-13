@@ -216,6 +216,12 @@ if 'electra_fork_epoch' in data:
         int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
             int(data['electra_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+        out['config']['blobSchedule'] = {
+            "prague": {
+                "target": data['target_blobs_per_block_prague'],
+                "max": data['max_blobs_per_block_prague']
+            }
+        }
     else:
         out['config']['pragueTime'] = 0
 
@@ -225,8 +231,14 @@ if 'fulu_fork_epoch' in data:
         int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
             int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+        out['config']['blobSchedule'] = {
+            "osaka": {
+                "target": data['target_blobs_per_block_osaka'],
+                "max": data['max_blobs_per_block_osaka']
+            }
+        }
     else:
         out['config']['osakaTime'] = 0
-    
+
 out['config']['ethash'] =  {}
 print(json.dumps(out, indent='  '))
