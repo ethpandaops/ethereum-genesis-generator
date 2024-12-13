@@ -239,15 +239,18 @@ genesis_add_deneb() {
     cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
     cancun_time_hex="0x$(printf "%x" $cancun_time)"
     target_blobs_per_block_cancun=3
-    max_blobs_per_block_cancun=$MAX_BLOBS_PER_BLOCK
+    max_blobs_per_block_cancun=6
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "cancunTime": '"$cancun_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule.cancun = {
-        "target": '"$target_blobs_per_block_cancun"',
-        "max": '"$max_blobs_per_block_cancun"'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {}'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "cancun": {
+            "target": '"$target_blobs_per_block_cancun"',
+            "max": '"$max_blobs_per_block_cancun"'
+        }
     }'
 
     # chainspec.json
@@ -263,9 +266,12 @@ genesis_add_deneb() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "cancunTime": '"$cancun_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule.cancun = {
-        "target": '"$target_blobs_per_block_cancun"',
-        "max": '"$max_blobs_per_block_cancun"'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {}'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "cancun": {
+            "target": '"$target_blobs_per_block_cancun"',
+            "max": '"$max_blobs_per_block_cancun"'
+        }
     }'
 }
 
@@ -283,9 +289,11 @@ genesis_add_electra() {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule.prague = {
-        "target": '"$target_blobs_per_block_prague"',
-        "max": '"$max_blobs_per_block_prague"'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "prague": {
+            "target": '"$target_blobs_per_block_prague"',
+            "max": '"$max_blobs_per_block_prague"'
+        }
     }'
 
     # chainspec.json
@@ -304,9 +312,11 @@ genesis_add_electra() {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule.prague = {
-        "target": '"$target_blobs_per_block_prague"',
-        "max": '"$max_blobs_per_block_prague"'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "prague": {
+            "target": '"$target_blobs_per_block_prague"',
+            "max": '"$max_blobs_per_block_prague"'
+        }
     }'
 }
 
@@ -323,9 +333,11 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule.osaka = {
-        "target": '"$target_blobs_per_block_osaka"',
-        "max": '"$max_blobs_per_block_osaka"'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$target_blobs_per_block_osaka"',
+            "max": '"$max_blobs_per_block_osaka"'
+        }
     }'
 
     # chainspec.json
@@ -337,8 +349,10 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule.osaka = {
-        "target": '"$target_blobs_per_block_osaka"',
-        "max": '"$max_blobs_per_block_osaka"'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$target_blobs_per_block_osaka"',
+            "max": '"$max_blobs_per_block_osaka"'
+        }
     }'
 }
