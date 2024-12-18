@@ -198,7 +198,7 @@ if 'capella_fork_epoch' in data and not isNamedTestnet:
             int(data['capella_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     else:
         out['config']['shanghaiTime'] = 0
-        
+
 
 if 'deneb_fork_epoch' in data and not isNamedTestnet:
     if data['deneb_fork_epoch'] != 0:
@@ -208,6 +208,13 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
             int(data['deneb_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     else:
         out['config']['cancunTime'] = 0
+        
+    if 'blobSchedule' not in out['config']:
+        out['config']['blobSchedule'] = {}
+    out['config']['blobSchedule']['cancun'] = {
+        "target": data['target_blobs_per_block_cancun'],
+        "max": data['max_blobs_per_block_cancun']
+    }
 
 if 'electra_fork_epoch' in data:
     if data['electra_fork_epoch'] != 0:
@@ -218,13 +225,23 @@ if 'electra_fork_epoch' in data:
     else:
         out['config']['pragueTime'] = 0
 
+    out['config']['blobSchedule']['prague'] = {
+        "target": data['target_blobs_per_block_prague'],
+        "max": data['max_blobs_per_block_prague']
+    }
+
 if 'fulu_fork_epoch' in data:
-    if data['fulu_fork_epoch'] != 0:   
+    if data['fulu_fork_epoch'] != 0:
         out['config']['osakaTime'] =  \
             int(data['genesis_timestamp']) + \
             int(data['genesis_delay']) + \
             int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     else:
         out['config']['osakaTime'] = 0
+
+    out['config']['blobSchedule']['osaka'] = {
+        "target": data['target_blobs_per_block_osaka'],
+        "max": data['max_blobs_per_block_osaka']
+    }
 
 print(json.dumps(out, indent='  '))

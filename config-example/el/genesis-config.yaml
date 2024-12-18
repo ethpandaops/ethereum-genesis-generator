@@ -37,3 +37,9 @@ capella_fork_epoch: ${CAPELLA_FORK_EPOCH}
 deneb_fork_epoch: ${DENEB_FORK_EPOCH}
 electra_fork_epoch: ${ELECTRA_FORK_EPOCH}
 fulu_fork_epoch: ${FULU_FORK_EPOCH}
+target_blobs_per_block_cancun: 3
+max_blobs_per_block_cancun: 6
+target_blobs_per_block_prague: ${TARGET_BLOBS_PER_BLOCK_ELECTRA}
+max_blobs_per_block_prague: ${MAX_BLOBS_PER_BLOCK_ELECTRA}
+target_blobs_per_block_osaka: ${TARGET_BLOBS_PER_BLOCK_FULU}
+max_blobs_per_block_osaka: ${MAX_BLOBS_PER_BLOCK_FULU}
