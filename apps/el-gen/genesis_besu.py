@@ -210,6 +210,7 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
     else:
         out['config']['cancunTime'] = 0
 
+    out['config']['blobSchedule'] = {}
     out['config']['blobSchedule']['cancun'] = {
         "target": data['target_blobs_per_block_cancun'],
         "max": data['max_blobs_per_block_cancun']
