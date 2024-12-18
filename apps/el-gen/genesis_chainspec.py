@@ -261,6 +261,15 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
         out['params']['eip1153TransitionTimestamp'] = 0
         out['params']['eip5656TransitionTimestamp'] = 0
         out['params']['eip6780TransitionTimestamp'] = 0
+    # If blobSchedule is not in the config, add it  
+    if 'blobSchedule' not in out['config']:
+        out['params']['blobSchedule'] = {}
+    else: 
+    # if blobSchedule is in the config, add the cancun blobSchedule
+        out['params']['blobSchedule']['cancun'] = {
+            "target": data['target_blobs_per_block_cancun'],
+            "max": data['max_blobs_per_block_cancun']
+        }
 
 if 'electra_fork_epoch' in data:
     if data['electra_fork_epoch'] != 0:
@@ -283,6 +292,12 @@ if 'electra_fork_epoch' in data:
         out['params']['eip7251TransitionTimestamp']= 0
         out['params']['eip7702TransitionTimestamp']= 0
 
+    # add the prague blobSchedule
+    out['params']['blobSchedule']['prague'] = {
+        "target": data['target_blobs_per_block_prague'],
+        "max": data['max_blobs_per_block_prague']
+    }
+
 if 'fulu_fork_epoch' in data:
     if data['fulu_fork_epoch'] != 0:
         out['params']['eip7692TransitionTimestamp'] = hex(
@@ -293,4 +308,9 @@ if 'fulu_fork_epoch' in data:
     else:
         out['params']['eip7692TransitionTimestamp'] = 0
 
+    # add the osaka blobSchedule
+    out['params']['blobSchedule']['osaka'] = {
+        "target": data['target_blobs_per_block_osaka'],
+        "max": data['max_blobs_per_block_osaka']
+    }
 print(json.dumps(out, indent='  '))
