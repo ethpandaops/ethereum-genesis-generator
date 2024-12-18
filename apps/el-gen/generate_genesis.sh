@@ -243,9 +243,9 @@ genesis_add_deneb() {
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "cancunTime": '"$cancun_time"'
+        "cancunTime": '"$cancun_time"',
+        "blobSchedule": {}
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {}'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
@@ -259,14 +259,21 @@ genesis_add_deneb() {
         "eip4788TransitionTimestamp": "'$cancun_time_hex'",
         "eip1153TransitionTimestamp": "'$cancun_time_hex'",
         "eip5656TransitionTimestamp": "'$cancun_time_hex'",
-        "eip6780TransitionTimestamp": "'$cancun_time_hex'"
+        "eip6780TransitionTimestamp": "'$cancun_time_hex'",
+        "blobSchedule": {}
+    }'
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
+        "cancun": {
+            "target": '"$target_blobs_per_block_cancun"',
+            "max": '"$max_blobs_per_block_cancun"'
+        }
     }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
-        "cancunTime": '"$cancun_time"'
+        "cancunTime": '"$cancun_time"',
+        "blobSchedule": {}
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {}'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
@@ -281,8 +288,6 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
-    target_blobs_per_block_prague=$TARGET_BLOBS_PER_BLOCK_ELECTRA
-    max_blobs_per_block_prague=$MAX_BLOBS_PER_BLOCK_ELECTRA
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -291,8 +296,8 @@ genesis_add_electra() {
     }'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "prague": {
-            "target": '"$target_blobs_per_block_prague"',
-            "max": '"$max_blobs_per_block_prague"'
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
         }
     }'
 
@@ -306,6 +311,12 @@ genesis_add_electra() {
         "eip7251TransitionTimestamp": "'$prague_time_hex'",
         "eip7702TransitionTimestamp": "'$prague_time_hex'"
     }'
+    genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
+        "prague": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
+        }
+    }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
@@ -314,8 +325,8 @@ genesis_add_electra() {
     }'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "prague": {
-            "target": '"$target_blobs_per_block_prague"',
-            "max": '"$max_blobs_per_block_prague"'
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
         }
     }'
 }
@@ -326,8 +337,6 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
-    target_blobs_per_block_osaka=$TARGET_BLOBS_PER_BLOCK_FULU
-    max_blobs_per_block_osaka=$MAX_BLOBS_PER_BLOCK_FULU
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -335,14 +344,20 @@ genesis_add_fulu() {
     }'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "osaka": {
-            "target": '"$target_blobs_per_block_osaka"',
-            "max": '"$max_blobs_per_block_osaka"'
+            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
         }
     }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
         "eip7692TransitionTimestamp": "'$osaka_time_hex'"
+    }'
+    genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
+        }
     }'
 
     # besu.json
@@ -351,8 +366,8 @@ genesis_add_fulu() {
     }'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "osaka": {
-            "target": '"$target_blobs_per_block_osaka"',
-            "max": '"$max_blobs_per_block_osaka"'
+            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
         }
     }'
 }
