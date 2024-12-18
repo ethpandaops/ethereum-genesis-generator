@@ -5,7 +5,7 @@ generate_genesis() {
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
     export GENESIS_TIMESTAMP_HEX="0x$(printf "%x" $GENESIS_TIMESTAMP)"
     export GENESIS_GASLIMIT_HEX="0x$(printf "%x" $GENESIS_GASLIMIT)"
-    
+
     out_dir=$1
     tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
 
@@ -20,7 +20,7 @@ generate_genesis() {
     # 4 - deneb / cancun
     # 5 - electra / prague
     # 6 - fulu / osaka
-    
+
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
         has_fork="4" # deneb
@@ -66,7 +66,7 @@ generate_genesis() {
         # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
-            
+
             el_mnemonic=$(jq -r '.mnemonic // env.EL_AND_CL_MNEMONIC' $tmp_dir/el-genesis-config.json)
 
             # Process all premine wallets in one pass
@@ -238,10 +238,19 @@ genesis_add_deneb() {
     echo "Adding deneb genesis properties"
     cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
     cancun_time_hex="0x$(printf "%x" $cancun_time)"
+    target_blobs_per_block_cancun=3
+    max_blobs_per_block_cancun=6
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "cancunTime": '"$cancun_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {}'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "cancun": {
+            "target": '"$target_blobs_per_block_cancun"',
+            "max": '"$max_blobs_per_block_cancun"'
+        }
     }'
 
     # chainspec.json
@@ -257,6 +266,13 @@ genesis_add_deneb() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "cancunTime": '"$cancun_time"'
     }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {}'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "cancun": {
+            "target": '"$target_blobs_per_block_cancun"',
+            "max": '"$max_blobs_per_block_cancun"'
+        }
+    }'
 }
 
 # add electra fork properties
@@ -265,11 +281,19 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
+    target_blobs_per_block_prague=$TARGET_BLOBS_PER_BLOCK_ELECTRA
+    max_blobs_per_block_prague=$MAX_BLOBS_PER_BLOCK_ELECTRA
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "prague": {
+            "target": '"$target_blobs_per_block_prague"',
+            "max": '"$max_blobs_per_block_prague"'
+        }
     }'
 
     # chainspec.json
@@ -288,6 +312,12 @@ genesis_add_electra() {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
     }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "prague": {
+            "target": '"$target_blobs_per_block_prague"',
+            "max": '"$max_blobs_per_block_prague"'
+        }
+    }'
 }
 
 # add fulu fork properties
@@ -296,10 +326,18 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    target_blobs_per_block_osaka=$TARGET_BLOBS_PER_BLOCK_FULU
+    max_blobs_per_block_osaka=$MAX_BLOBS_PER_BLOCK_FULU
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$target_blobs_per_block_osaka"',
+            "max": '"$max_blobs_per_block_osaka"'
+        }
     }'
 
     # chainspec.json
@@ -310,5 +348,11 @@ genesis_add_fulu() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
+    }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$target_blobs_per_block_osaka"',
+            "max": '"$max_blobs_per_block_osaka"'
+        }
     }'
 }
