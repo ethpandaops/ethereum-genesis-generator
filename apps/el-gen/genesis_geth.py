@@ -208,6 +208,7 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
             int(data['deneb_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     else:
         out['config']['cancunTime'] = 0
+        
     if 'blobSchedule' not in out['config']:
         out['config']['blobSchedule'] = {}
     out['config']['blobSchedule']['cancun'] = {

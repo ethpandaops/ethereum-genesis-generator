@@ -264,9 +264,9 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
     # If blobSchedule is not in the config, add it  
     if 'blobSchedule' not in out['config']:
         out['params']['blobSchedule'] = {}
-    else: 
+    
     # if blobSchedule is in the config, add the cancun blobSchedule
-        out['params']['blobSchedule']['cancun'] = {
+    out['params']['blobSchedule']['cancun'] = {
             "target": data['target_blobs_per_block_cancun'],
             "max": data['max_blobs_per_block_cancun']
         }
