@@ -261,10 +261,7 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
         out['params']['eip1153TransitionTimestamp'] = 0
         out['params']['eip5656TransitionTimestamp'] = 0
         out['params']['eip6780TransitionTimestamp'] = 0
-    # If blobSchedule is not in the config, add it  
-    if 'blobSchedule' not in out['config']:
-        out['params']['blobSchedule'] = {}
-    
+
     # if blobSchedule is in the config, add the cancun blobSchedule
     out['params']['blobSchedule']['cancun'] = {
             "target": data['target_blobs_per_block_cancun'],
