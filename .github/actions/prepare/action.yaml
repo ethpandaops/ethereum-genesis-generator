@@ -38,11 +38,17 @@ runs:
         flavor: latest=false
         tags: |
           type=match,pattern=ephemery-v(.*),group=1,prefix=ephemery-
-          type=ref,event=branch
           type=ref,event=pr
-          type=semver,pattern={{version}}
+          type=ref,event=branch
+          type=sha
+          type=match,event=tag,pattern=^v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^verkle-gen-v\d+\.\d+\.\d+$,group=0
+          type=match,event=tag,pattern=^ephemery-v\d+\.\d+\.\d+$,group=0
+
     - name: Set tag
       id: set_tag
       shell: bash
       run: |
         echo "tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_OUTPUT
+
+

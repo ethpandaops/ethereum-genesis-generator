@@ -10,6 +10,7 @@ mainnet_config_path = "/apps/el-gen/mainnet/besu_genesis.json"
 sepolia_config_path = "/apps/el-gen/sepolia/besu_genesis.json"
 goerli_config_path = "/apps/el-gen/goerli/besu_genesis.json"
 holesky_config_path = "/apps/el-gen/holesky/besu_genesis.json"
+isNamedTestnet = False
 combined_allocs = {}
 
 if len(sys.argv) > 1:
@@ -17,6 +18,9 @@ if len(sys.argv) > 1:
 
 with open(testnet_config_path) as stream:
     data = yaml.safe_load(stream)
+
+if int(data['chain_id']) == 1 or int(data['chain_id']) == 11155111 or int(data['chain_id']) == 17000:
+    isNamedTestnet = True
 
 if int(data['chain_id']) == 1:
     with open(mainnet_config_path) as m:
@@ -45,9 +49,6 @@ else:
             "berlinBlock":0,
             "londonBlock":0,
             "preMergeForkBlock":0,
-            "terminalTotalDifficulty":0,
-            "shanghaiTime": 0,
-            "cancunTime": 0,
             "depositContractAddress": data["deposit_contract_address"],
         },
         "alloc": {
@@ -107,7 +108,7 @@ else:
         },
         "coinbase": "0x0000000000000000000000000000000000000000",
         "baseFeePerGas": "0x3B9ACA00",
-        "difficulty": "0x01",
+        "difficulty": "0x0",
         "extraData": "",
         "gasLimit": hex(int(data['genesis_gaslimit'] if 'genesis_gaslimit' in data and data['genesis_gaslimit'] is not None else 25000000)),
         "nonce": "0x1234",
@@ -158,6 +159,38 @@ else:
     for addr, account in data['additional_preloaded_contracts'].items():
         add_alloc_entry(addr, account)
 
+# Add fork timestamps for each fork
+# Altair and Bellatrix have no EL implication in terms of timestamp and hence are not included here
+if 'terminal_total_difficulty' in data and not isNamedTestnet:
+    if data['terminal_total_difficulty'] != 0:
+        out['config']['terminalTotalDifficulty'] = data['terminal_total_difficulty']
+    else:
+        out['config']['terminalTotalDifficulty'] = 0
+
+
+if 'capella_fork_epoch' in data and not isNamedTestnet:
+    if data['capella_fork_epoch'] != 0:
+        out['config']['shanghaiTime'] = \
+            int(data['genesis_timestamp']) + \
+        int(data['genesis_delay']) + \
+            int(data['capella_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+    else:
+        out['config']['shanghaiTime'] = 0
+
+if 'deneb_fork_epoch' in data and not isNamedTestnet:
+    if data['deneb_fork_epoch'] != 0:
+        out['config']['cancunTime'] = \
+        int(data['genesis_timestamp']) + \
+        int(data['genesis_delay']) + \
+            int(data['deneb_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
+    else:
+        out['config']['cancunTime'] = 0
+
+    out['config']['blobSchedule'] = {}
+    out['config']['blobSchedule']['cancun'] = {
+        "target": data['target_blobs_per_block_cancun'],
+        "max": data['max_blobs_per_block_cancun']
+    }
 
 out['config']['ethash'] =  {}
 print(json.dumps(out, indent='  '))
