@@ -108,7 +108,7 @@ else:
         },
         "coinbase": "0x0000000000000000000000000000000000000000",
         "baseFeePerGas": "0x3B9ACA00",
-        "difficulty": "0x0",
+        "difficulty": "0x01",
         "extraData": "",
         "gasLimit": hex(int(data['genesis_gaslimit'] if 'genesis_gaslimit' in data and data['genesis_gaslimit'] is not None else 25000000)),
         "nonce": "0x1234",
