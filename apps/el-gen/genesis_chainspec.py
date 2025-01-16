@@ -282,6 +282,7 @@ if 'electra_fork_epoch' in data:
         out['params']['eip7002TransitionTimestamp']= electra_timestamp
         out['params']['eip7251TransitionTimestamp']= electra_timestamp
         out['params']['eip7702TransitionTimestamp']= electra_timestamp
+        out['params']['eip7623TransitionTimestamp']= electra_timestamp
     else:
         out['params']['eip2537TransitionTimestamp']= 0
         out['params']['eip2935TransitionTimestamp']= 0
@@ -289,7 +290,8 @@ if 'electra_fork_epoch' in data:
         out['params']['eip7002TransitionTimestamp']= 0
         out['params']['eip7251TransitionTimestamp']= 0
         out['params']['eip7702TransitionTimestamp']= 0
-
+        out['params']['eip7623TransitionTimestamp']= 0
+        
     # add the prague blobSchedule
     out['params']['blobSchedule']['prague'] = {
         "target": data['target_blobs_per_block_prague'],
