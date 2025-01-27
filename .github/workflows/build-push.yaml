@@ -22,7 +22,6 @@ jobs:
     needs:
       - prepare
     runs-on: ${{ matrix.runner }}
-    continue-on-error: true
     strategy:
       matrix:
         include: ${{fromJson(needs.prepare.outputs.platforms)}}
