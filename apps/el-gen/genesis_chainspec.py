@@ -265,8 +265,9 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
     # add the cancun blobSchedule
     out['params']['blobSchedule'] = {}
     out['params']['blobSchedule']['cancun'] = {
-            "target": data['target_blobs_per_block_cancun'],
-            "max": data['max_blobs_per_block_cancun']
+            "target": hex(data['target_blobs_per_block_cancun']),
+            "max": hex(data['max_blobs_per_block_cancun']),
+            "baseFeeUpdateFraction": hex(data['basefee_update_fraction_cancun'])
         }
 
 if 'electra_fork_epoch' in data:
@@ -294,8 +295,9 @@ if 'electra_fork_epoch' in data:
         
     # add the prague blobSchedule
     out['params']['blobSchedule']['prague'] = {
-        "target": data['target_blobs_per_block_prague'],
-        "max": data['max_blobs_per_block_prague']
+        "target": hex(data['target_blobs_per_block_prague']),
+        "max": hex(data['max_blobs_per_block_prague']),
+        "baseFeeUpdateFraction": hex(data['basefee_update_fraction_prague'])
     }
 
 if 'fulu_fork_epoch' in data:
@@ -310,7 +312,8 @@ if 'fulu_fork_epoch' in data:
 
     # add the osaka blobSchedule
     out['params']['blobSchedule']['osaka'] = {
-        "target": data['target_blobs_per_block_osaka'],
-        "max": data['max_blobs_per_block_osaka']
+        "target": hex(data['target_blobs_per_block_osaka']),
+        "max": hex(data['max_blobs_per_block_osaka']),
+        "baseFeeUpdateFraction": hex(data['basefee_update_fraction_osaka'])
     }
 print(json.dumps(out, indent='  '))

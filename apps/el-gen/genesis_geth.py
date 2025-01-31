@@ -212,7 +212,8 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
     out['config']['blobSchedule'] = {}
     out['config']['blobSchedule']['cancun'] = {
         "target": data['target_blobs_per_block_cancun'],
-        "max": data['max_blobs_per_block_cancun']
+        "max": data['max_blobs_per_block_cancun'],
+        "baseFeeUpdateFraction": data['basefee_update_fraction_cancun']
     }
 
 if 'electra_fork_epoch' in data:
@@ -226,7 +227,8 @@ if 'electra_fork_epoch' in data:
 
     out['config']['blobSchedule']['prague'] = {
         "target": data['target_blobs_per_block_prague'],
-        "max": data['max_blobs_per_block_prague']
+        "max": data['max_blobs_per_block_prague'],
+        "baseFeeUpdateFraction": data['basefee_update_fraction_prague']
     }
 
 if 'fulu_fork_epoch' in data:
@@ -240,7 +242,8 @@ if 'fulu_fork_epoch' in data:
 
     out['config']['blobSchedule']['osaka'] = {
         "target": data['target_blobs_per_block_osaka'],
-        "max": data['max_blobs_per_block_osaka']
+        "max": data['max_blobs_per_block_osaka'],
+        "baseFeeUpdateFraction": data['basefee_update_fraction_osaka']
     }
 
 print(json.dumps(out, indent='  '))
