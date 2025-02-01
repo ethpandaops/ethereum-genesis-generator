@@ -240,16 +240,17 @@ genesis_add_deneb() {
     cancun_time_hex="0x$(printf "%x" $cancun_time)"
     target_blobs_per_block_cancun=3
     max_blobs_per_block_cancun=6
+    base_fee_update_fraction_cancun=3338477
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "cancunTime": '"$cancun_time"',
-        "blobSchedule": {}
+        "cancunTime": '"$cancun_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule = {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
-            "max": '"$max_blobs_per_block_cancun"'
+            "max": '"$max_blobs_per_block_cancun"',
+            "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
         }
     }'
 
@@ -259,25 +260,25 @@ genesis_add_deneb() {
         "eip4788TransitionTimestamp": "'$cancun_time_hex'",
         "eip1153TransitionTimestamp": "'$cancun_time_hex'",
         "eip5656TransitionTimestamp": "'$cancun_time_hex'",
-        "eip6780TransitionTimestamp": "'$cancun_time_hex'",
-        "blobSchedule": {}
+        "eip6780TransitionTimestamp": "'$cancun_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule = {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
-            "max": '"$max_blobs_per_block_cancun"'
+            "max": '"$max_blobs_per_block_cancun"',
+            "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
         }
     }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
-        "cancunTime": '"$cancun_time"',
-        "blobSchedule": {}
+        "cancunTime": '"$cancun_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule = {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
-            "max": '"$max_blobs_per_block_cancun"'
+            "max": '"$max_blobs_per_block_cancun"',
+            "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
         }
     }'
 }
@@ -297,7 +298,8 @@ genesis_add_electra() {
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "prague": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
         }
     }'
 
@@ -315,7 +317,8 @@ genesis_add_electra() {
     genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
         "prague": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
         }
     }'
 
@@ -327,7 +330,8 @@ genesis_add_electra() {
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "prague": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
         }
     }'
 }
@@ -346,7 +350,8 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
         }
     }'
 
@@ -357,7 +362,8 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
         }
     }'
 
@@ -368,7 +374,8 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"'
+            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
         }
     }'
 }

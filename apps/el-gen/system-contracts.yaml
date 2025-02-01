@@ -46,7 +46,7 @@ eip4788: {
 }
 
 # EIP-2935: Serve historical block hashes from state
-eip2935_address: "0x0F792be4B0c0cb4DAE440Ef133E90C0eCD48CCCC"
+eip2935_address: "0x0000F90827F1C53a10cb7A02335B175320002935"
 eip2935: {
     "balance": "0",
     "nonce": "1",
@@ -54,7 +54,7 @@ eip2935: {
 }
 
 # EIP-7002: Execution layer triggerable withdrawals
-eip7002_address: "0x0c15F14308530b7CDB8460094BbB9cC28b9AaaAA"
+eip7002_address: "0x00000961Ef480Eb55e80D19ad83579A64c007002"
 eip7002: {
     "balance": "0",
     "nonce": "1",
@@ -65,7 +65,7 @@ eip7002: {
 }
 
 # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-eip7251_address: "0x00431F263cE400f4455c2dCf564e53007Ca4bbBb"
+eip7251_address: "0x0000BBdDc7CE488642fb579F8B00f3a590007251"
 eip7251: {
     "balance": "0",
     "nonce": "1",
