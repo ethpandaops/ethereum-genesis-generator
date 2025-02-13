@@ -1,6 +1,6 @@
 FROM golang:1.22 as builder
 RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git  \
-    && cd eth2-testnet-genesis \
+    && cd eth2-testnet-genesis && git checkout adding-0x02-from-list \
     && go install . \
     && go install github.com/protolambda/eth2-val-tools@latest \
     && go install github.com/protolambda/zcli@latest
