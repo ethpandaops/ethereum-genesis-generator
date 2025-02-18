@@ -93,74 +93,26 @@ gen_cl_config(){
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
         # Envsubst mnemonics
+        if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
+          export WITHDRAWAL_ADDRESS="null"
+        fi
         python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
-        if [[ $ALTAIR_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            phase0
+        genesis_args+=(
+          devnet
           --config /data/metadata/config.yaml
+          --eth1-config /data/metadata/genesis.json
           --mnemonics $tmp_dir/mnemonics.yaml
-          --tranches-dir /data/metadata/tranches
           --state-output /data/metadata/genesis.ssz
-          --preset-phase0 $PRESET_BASE
+          --json-output /data/parsed/parsedConsensusGenesis.json
         )
-        elif [[ $BELLATRIX_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            altair
-          --config /data/metadata/config.yaml
-          --mnemonics $tmp_dir/mnemonics.yaml
-          --tranches-dir /data/metadata/tranches
-          --state-output /data/metadata/genesis.ssz
-          --preset-phase0 $PRESET_BASE
-          --preset-altair $PRESET_BASE
-        )
-        elif [[ $CAPELLA_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            bellatrix
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-          )
-        elif [[ $DENEB_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            capella
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            --preset-capella $PRESET_BASE
-          )
-        else
-          genesis_args+=(
-            deneb
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            --preset-capella $PRESET_BASE
-            --preset-deneb $PRESET_BASE
-          )
-        fi
-        if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
-          genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
-        fi
+
         if [[ $SHADOW_FORK_FILE != "" ]]; then
           genesis_args+=(--shadow-fork-block-file=$SHADOW_FORK_FILE --eth1-config "")
         elif [[ $SHADOW_FORK_RPC != "" ]]; then
           genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
-        elif [[ $ALTAIR_FORK_EPOCH == 0 ]] && [[ $BELLATRIX_FORK_EPOCH == 0 ]]; then
-          genesis_args+=(--eth1-config /data/metadata/genesis.json)
         fi
+
         if ! [ -z "$CL_ADDITIONAL_VALIDATORS" ]; then
           if [[ $CL_ADDITIONAL_VALIDATORS = /* ]]; then
             validators_file=$CL_ADDITIONAL_VALIDATORS
@@ -169,57 +121,8 @@ gen_cl_config(){
           fi
           genesis_args+=(--additional-validators $validators_file)
         fi
-        if [[ $ALTAIR_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            phase0
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $BELLATRIX_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            altair
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $CAPELLA_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            bellatrix
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $DENEB_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            capella
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        else
-        zcli_args=(
-          pretty
-          deneb
-          BeaconState
-          --preset-phase0 $PRESET_BASE
-          --preset-altair $PRESET_BASE
-          --preset-bellatrix $PRESET_BASE
-          --preset-capella $PRESET_BASE
-          /data/metadata/genesis.ssz
-        )
-        fi
-        /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli "${zcli_args[@]}" > /data/parsed/parsedConsensusGenesis.json
+        
+        /usr/local/bin/eth-beacon-genesis "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"
         echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/parsed/parsedConsensusGenesis.json)"
