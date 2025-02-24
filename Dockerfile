@@ -1,9 +1,8 @@
 FROM golang:1.22 as builder
-RUN git clone https://github.com/protolambda/eth2-testnet-genesis.git  \
-    && cd eth2-testnet-genesis \
-    && go install . \
-    && go install github.com/protolambda/eth2-val-tools@latest \
-    && go install github.com/protolambda/zcli@latest
+WORKDIR /work
+RUN git clone https://github.com/ethpandaops/eth-beacon-genesis.git  \
+    && cd eth-beacon-genesis && make \
+    && go install github.com/protolambda/eth2-val-tools@latest
 
 FROM debian:latest
 WORKDIR /work
@@ -20,9 +19,8 @@ COPY apps /apps
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cd /apps/el-gen && python3 -m venv .venv && /apps/el-gen/.venv/bin/pip3 install -r /apps/el-gen/requirements.txt
-COPY --from=builder /go/bin/eth2-testnet-genesis /usr/local/bin/eth2-testnet-genesis
+COPY --from=builder /work/eth-beacon-genesis/bin/eth-beacon-genesis /usr/local/bin/eth-beacon-genesis
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
-COPY --from=builder /go/bin/zcli /usr/local/bin/zcli
 COPY config-example /config
 COPY defaults /defaults
 COPY entrypoint.sh .
