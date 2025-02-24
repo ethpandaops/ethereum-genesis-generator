@@ -108,9 +108,9 @@ gen_cl_config(){
         )
 
         if [[ $SHADOW_FORK_FILE != "" ]]; then
-          genesis_args+=(--shadow-fork-block-file=$SHADOW_FORK_FILE --eth1-config "")
+          genesis_args+=(--shadow-fork-block=$SHADOW_FORK_FILE)
         elif [[ $SHADOW_FORK_RPC != "" ]]; then
-          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
+          genesis_args+=(--shadow-fork-rpc=$SHADOW_FORK_RPC)
         fi
 
         if ! [ -z "$CL_ADDITIONAL_VALIDATORS" ]; then
