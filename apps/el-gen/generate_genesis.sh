@@ -314,7 +314,7 @@ genesis_add_electra() {
         "eip7702TransitionTimestamp": "'$prague_time_hex'",
         "eip7623TransitionTimestamp": "'$prague_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
         "prague": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
