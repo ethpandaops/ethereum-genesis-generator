@@ -217,7 +217,7 @@ else:
     for addr, account in data['additional_preloaded_contracts'].items():
         add_alloc_entry(addr, account)
 
-        
+
 # Terminal total difficulty
 if 'terminal_total_difficulty' in data and not isNamedTestnet:
     if data['terminal_total_difficulty'] != 0:
@@ -292,7 +292,7 @@ if 'electra_fork_epoch' in data:
         out['params']['eip7251TransitionTimestamp']= 0
         out['params']['eip7702TransitionTimestamp']= 0
         out['params']['eip7623TransitionTimestamp']= 0
-        
+
     # add the prague blobSchedule
     out['params']['blobSchedule']['prague'] = {
         "target": hex(data['target_blobs_per_block_prague']),
@@ -302,13 +302,16 @@ if 'electra_fork_epoch' in data:
 
 if 'fulu_fork_epoch' in data:
     if data['fulu_fork_epoch'] != 0:
-        out['params']['eip7692TransitionTimestamp'] = hex(
+        fulu_timestamp = hex(
             int(data['genesis_timestamp']) + \
         int(data['genesis_delay']) + \
             int(data['fulu_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
         )
+        out['params']['eip7692TransitionTimestamp'] = fulu_timestamp
+        out['params']['eip7594TransitionTimestamp'] = fulu_timestamp
     else:
         out['params']['eip7692TransitionTimestamp'] = 0
+        out['params']['eip7594TransitionTimestamp'] = 0
 
     # add the osaka blobSchedule
     out['params']['blobSchedule']['osaka'] = {
