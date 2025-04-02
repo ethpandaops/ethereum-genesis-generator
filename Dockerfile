@@ -1,4 +1,4 @@
-FROM golang:1.22 as builder
+FROM golang:1.24 as builder
 WORKDIR /work
 RUN git clone https://github.com/ethpandaops/eth-beacon-genesis.git  \
     && cd eth-beacon-genesis && make \
