@@ -39,6 +39,12 @@ generate_genesis() {
         cp /apps/el-gen/holesky/genesis.json $tmp_dir/genesis.json
         cp /apps/el-gen/holesky/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/holesky/besu_genesis.json $tmp_dir/besu.json
+    elif [ "$CHAIN_ID" == "560048" ]; then
+        # hoodi shadowfork
+        has_fork="5" # electra
+        cp /apps/el-gen/hoodi/genesis.json $tmp_dir/genesis.json
+        cp /apps/el-gen/hoodi/chainspec.json $tmp_dir/chainspec.json
+        cp /apps/el-gen/hoodi/besu_genesis.json $tmp_dir/besu.json
     else
         # Generate base genesis.json, chainspec.json and besu.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
