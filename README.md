@@ -51,7 +51,6 @@ verkle-gen -> verkle genesis state
 
 Name | Source
 ---- | ----
-eth2-testnet-genesis | https://github.com/protolambda/eth2-testnet-genesis
+eth-beacon-genesis | https://github.com/ethpandaops/eth-beacon-genesis
 eth2-val-tools | https://github.com/protolambda/eth2-val-tools
-zcli | https://github.com/protolambda/zcli
 el-gen | [apps/el-gen](apps/el-gen)
