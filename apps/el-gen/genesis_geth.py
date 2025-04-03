@@ -8,7 +8,7 @@ w3.eth.account.enable_unaudited_hdwallet_features()
 testnet_config_path = "genesis-config.yaml"
 mainnet_config_path = "/apps/el-gen/mainnet/genesis.json"
 sepolia_config_path = "/apps/el-gen/sepolia/genesis.json"
-goerli_config_path = "/apps/el-gen/goerli/genesis.json"
+hoodi_config_path = "/apps/el-gen/hoodi/genesis.json"
 holesky_config_path = "/apps/el-gen/holesky/genesis.json"
 isNamedTestnet = False
 combined_allocs = {}
@@ -18,7 +18,7 @@ if len(sys.argv) > 1:
 with open(testnet_config_path) as stream:
     data = yaml.safe_load(stream)
 
-if int(data['chain_id']) == 1 or int(data['chain_id']) == 11155111 or int(data['chain_id']) == 17000:
+if int(data['chain_id']) == 1 or int(data['chain_id']) == 11155111 or int(data['chain_id']) == 17000 or int(data['chain_id']) == 560048:
     isNamedTestnet = True
 
 if int(data['chain_id']) == 1:
@@ -33,6 +33,10 @@ elif int(data['chain_id']) == 17000:
     with open(holesky_config_path) as m:
         holesky_json = json.loads(m.read())
     out = holesky_json
+elif int(data['chain_id']) == 560048:
+    with open(hoodi_config_path) as m:
+        hoodi_json = json.loads(m.read())
+    out = hoodi_json
 else:
     out = {
         "config": {
@@ -208,7 +212,7 @@ if 'deneb_fork_epoch' in data and not isNamedTestnet:
             int(data['deneb_fork_epoch']) * ( 32 if data['preset_base']=='mainnet' else 8 ) * int(data['slot_duration_in_seconds'])
     else:
         out['config']['cancunTime'] = 0
-        
+
     out['config']['blobSchedule'] = {}
     out['config']['blobSchedule']['cancun'] = {
         "target": data['target_blobs_per_block_cancun'],
