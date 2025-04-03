@@ -14,7 +14,7 @@
     },
     "alloc": {},
     "coinbase": "0x0000000000000000000000000000000000000000",
-    "difficulty": "0x01",
+    "difficulty": "${GENESIS_DIFFICULTY_HEX}",
     "extraData": "",
     "gasLimit": "${GENESIS_GASLIMIT_HEX}",
     "nonce": "0x1234",
