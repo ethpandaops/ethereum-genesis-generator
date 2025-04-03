@@ -1,21 +1,13 @@
 #!/bin/bash -e
-export DEFAULT_ENV_FILE="/defaults/defaults.env"
-# Load the default env vars into the environment
-source $DEFAULT_ENV_FILE
 
+# Load the default env vars into the environment
+source /defaults/defaults.env
+
+# Load the env vars entered by the user
 if [ -f /config/values.env ];
 then
-    # Use user provided env vars if it exists
-    export FULL_ENV_FILE="/config/values.env"
-    # Pull these values out of the env file since they can be very large and cause
-    # "arguments list too long" errors in the shell.
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
-    # print the value of ADDITIONAL_PRELOADED_CONTRACTS
-else
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $DEFAULT_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
+    source /config/values.env
 fi
-# Load the env vars entered by the user without the larger values into the environment
-source /tmp/values-short.env
 
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
@@ -23,7 +15,6 @@ SERVER_PORT="${SERVER_PORT:-8000}"
 
 
 gen_shared_files(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Shared files
     mkdir -p /data/metadata
@@ -38,16 +29,11 @@ gen_shared_files(){
 }
 
 gen_el_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     if ! [ -f "/data/metadata/genesis.json" ]; then
-        tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
-        python3 /apps/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        cat $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
-        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
-        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
+        source /apps/el-gen/generate_genesis.sh
+        generate_genesis /data/metadata
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -69,7 +55,6 @@ gen_minimal_config() {
 }
 
 gen_cl_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/metadata/genesis.ssz" ]; then
@@ -80,9 +65,9 @@ gen_cl_config(){
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
         export MAX_REQUEST_BLOB_SIDECARS_ELECTRA=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_ELECTRA))
         export MAX_REQUEST_BLOB_SIDECARS_FULU=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_FULU))
-        python3 /apps/envsubst.py < /config/cl/config.yaml > /data/metadata/config.yaml
+        envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         sed -i "s/#HUMAN_TIME_PLACEHOLDER/$COMMENT/" /data/metadata/config.yaml
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
@@ -96,7 +81,7 @@ gen_cl_config(){
         if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
           export WITHDRAWAL_ADDRESS="null"
         fi
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args+=(
           devnet
