@@ -5,6 +5,7 @@ generate_genesis() {
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
     export GENESIS_TIMESTAMP_HEX="0x$(printf "%x" $GENESIS_TIMESTAMP)"
     export GENESIS_GASLIMIT_HEX="0x$(printf "%x" $GENESIS_GASLIMIT)"
+    export GENESIS_DIFFICULTY_HEX="0x$(printf "%x" $GENESIS_DIFFICULTY)"
 
     out_dir=$1
     tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
