@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Source the basefee calculator script
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+source "$SCRIPT_DIR/calculate_basefee_fraction.sh"
+
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -247,7 +251,13 @@ genesis_add_deneb() {
     cancun_time_hex="0x$(printf "%x" $cancun_time)"
     target_blobs_per_block_cancun=3
     max_blobs_per_block_cancun=6
-    base_fee_update_fraction_cancun=3338477
+    
+    # Calculate baseFeeUpdateFraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_DENEB" ]; then
+        BASEFEE_UPDATE_FRACTION_DENEB=$(calculate_basefee_fraction $max_blobs_per_block_cancun $target_blobs_per_block_cancun)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_DENEB: $BASEFEE_UPDATE_FRACTION_DENEB"
+    fi
+    base_fee_update_fraction_cancun=$BASEFEE_UPDATE_FRACTION_DENEB
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -296,6 +306,12 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
+    
+    # Calculate baseFeeUpdateFraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ]; then
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
+    fi
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -349,6 +365,12 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    
+    # Calculate baseFeeUpdateFraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_FULU" ]; then
+        BASEFEE_UPDATE_FRACTION_FULU=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_FULU $TARGET_BLOBS_PER_BLOCK_FULU)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_FULU: $BASEFEE_UPDATE_FRACTION_FULU"
+    fi
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
