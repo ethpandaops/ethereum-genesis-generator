@@ -367,7 +367,7 @@ genesis_add_fulu() {
         "eip7692TransitionTimestamp": "'$osaka_time_hex'",
         "eip7594TransitionTimestamp": "'$osaka_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.config.blobSchedule += {
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
             "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
