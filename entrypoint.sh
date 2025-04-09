@@ -1,21 +1,13 @@
 #!/bin/bash -e
-export DEFAULT_ENV_FILE="/defaults/defaults.env"
-# Load the default env vars into the environment
-source $DEFAULT_ENV_FILE
 
+# Load the default env vars into the environment
+source /defaults/defaults.env
+
+# Load the env vars entered by the user
 if [ -f /config/values.env ];
 then
-    # Use user provided env vars if it exists
-    export FULL_ENV_FILE="/config/values.env"
-    # Pull these values out of the env file since they can be very large and cause
-    # "arguments list too long" errors in the shell.
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $FULL_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
-    # print the value of ADDITIONAL_PRELOADED_CONTRACTS
-else
-    grep -v "ADDITIONAL_PRELOADED_CONTRACTS" $DEFAULT_ENV_FILE | grep -v "EL_PREMINE_ADDRS" > /tmp/values-short.env
+    source /config/values.env
 fi
-# Load the env vars entered by the user without the larger values into the environment
-source /tmp/values-short.env
 
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
@@ -23,7 +15,6 @@ SERVER_PORT="${SERVER_PORT:-8000}"
 
 
 gen_shared_files(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Shared files
     mkdir -p /data/metadata
@@ -38,16 +29,11 @@ gen_shared_files(){
 }
 
 gen_el_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     if ! [ -f "/data/metadata/genesis.json" ]; then
-        tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
         mkdir -p /data/metadata
-        python3 /apps/envsubst.py < /config/el/genesis-config.yaml > $tmp_dir/genesis-config.yaml
-        cat $tmp_dir/genesis-config.yaml
-        python3 /apps/el-gen/genesis_geth.py $tmp_dir/genesis-config.yaml      > /data/metadata/genesis.json
-        python3 /apps/el-gen/genesis_chainspec.py $tmp_dir/genesis-config.yaml > /data/metadata/chainspec.json
-        python3 /apps/el-gen/genesis_besu.py $tmp_dir/genesis-config.yaml > /data/metadata/besu.json
+        source /apps/el-gen/generate_genesis.sh
+        generate_genesis /data/metadata
     else
         echo "el genesis already exists. skipping generation..."
     fi
@@ -69,7 +55,6 @@ gen_minimal_config() {
 }
 
 gen_cl_config(){
-    . /apps/el-gen/.venv/bin/activate
     set -x
     # Consensus layer: Check if genesis already exists
     if ! [ -f "/data/metadata/genesis.ssz" ]; then
@@ -80,9 +65,9 @@ gen_cl_config(){
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
         export MAX_REQUEST_BLOB_SIDECARS_ELECTRA=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_ELECTRA))
         export MAX_REQUEST_BLOB_SIDECARS_FULU=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_FULU))
-        python3 /apps/envsubst.py < /config/cl/config.yaml > /data/metadata/config.yaml
+        envsubst < /config/cl/config.yaml > /data/metadata/config.yaml
         sed -i "s/#HUMAN_TIME_PLACEHOLDER/$COMMENT/" /data/metadata/config.yaml
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
@@ -93,74 +78,26 @@ gen_cl_config(){
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
         # Envsubst mnemonics
-        python3 /apps/envsubst.py < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
+          export WITHDRAWAL_ADDRESS="null"
+        fi
+        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
-        if [[ $ALTAIR_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            phase0
+        genesis_args+=(
+          devnet
           --config /data/metadata/config.yaml
+          --eth1-config /data/metadata/genesis.json
           --mnemonics $tmp_dir/mnemonics.yaml
-          --tranches-dir /data/metadata/tranches
           --state-output /data/metadata/genesis.ssz
-          --preset-phase0 $PRESET_BASE
+          --json-output /data/parsed/parsedConsensusGenesis.json
         )
-        elif [[ $BELLATRIX_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            altair
-          --config /data/metadata/config.yaml
-          --mnemonics $tmp_dir/mnemonics.yaml
-          --tranches-dir /data/metadata/tranches
-          --state-output /data/metadata/genesis.ssz
-          --preset-phase0 $PRESET_BASE
-          --preset-altair $PRESET_BASE
-        )
-        elif [[ $CAPELLA_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            bellatrix
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-          )
-        elif [[ $DENEB_FORK_EPOCH != 0 ]]; then
-          genesis_args+=(
-            capella
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            --preset-capella $PRESET_BASE
-          )
-        else
-          genesis_args+=(
-            deneb
-            --config /data/metadata/config.yaml
-            --mnemonics $tmp_dir/mnemonics.yaml
-            --tranches-dir /data/metadata/tranches
-            --state-output /data/metadata/genesis.ssz
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            --preset-capella $PRESET_BASE
-            --preset-deneb $PRESET_BASE
-          )
-        fi
-        if [[ $WITHDRAWAL_TYPE == "0x01" ]]; then
-          genesis_args+=(--eth1-withdrawal-address $WITHDRAWAL_ADDRESS)
-        fi
+
         if [[ $SHADOW_FORK_FILE != "" ]]; then
-          genesis_args+=(--shadow-fork-block-file=$SHADOW_FORK_FILE --eth1-config "")
+          genesis_args+=(--shadow-fork-block=$SHADOW_FORK_FILE)
         elif [[ $SHADOW_FORK_RPC != "" ]]; then
-          genesis_args+=(--shadow-fork-eth1-rpc=$SHADOW_FORK_RPC --eth1-config "")
-        elif [[ $ALTAIR_FORK_EPOCH == 0 ]] && [[ $BELLATRIX_FORK_EPOCH == 0 ]]; then
-          genesis_args+=(--eth1-config /data/metadata/genesis.json)
+          genesis_args+=(--shadow-fork-rpc=$SHADOW_FORK_RPC)
         fi
+
         if ! [ -z "$CL_ADDITIONAL_VALIDATORS" ]; then
           if [[ $CL_ADDITIONAL_VALIDATORS = /* ]]; then
             validators_file=$CL_ADDITIONAL_VALIDATORS
@@ -169,57 +106,8 @@ gen_cl_config(){
           fi
           genesis_args+=(--additional-validators $validators_file)
         fi
-        if [[ $ALTAIR_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            phase0
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $BELLATRIX_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            altair
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $CAPELLA_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            bellatrix
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        elif [[ $DENEB_FORK_EPOCH != 0 ]]; then
-          zcli_args=(
-            pretty
-            capella
-            BeaconState
-            --preset-phase0 $PRESET_BASE
-            --preset-altair $PRESET_BASE
-            --preset-bellatrix $PRESET_BASE
-            /data/metadata/genesis.ssz
-          )
-        else
-        zcli_args=(
-          pretty
-          deneb
-          BeaconState
-          --preset-phase0 $PRESET_BASE
-          --preset-altair $PRESET_BASE
-          --preset-bellatrix $PRESET_BASE
-          --preset-capella $PRESET_BASE
-          /data/metadata/genesis.ssz
-        )
-        fi
-        /usr/local/bin/eth2-testnet-genesis "${genesis_args[@]}"
-        /usr/local/bin/zcli "${zcli_args[@]}" > /data/parsed/parsedConsensusGenesis.json
+        
+        /usr/local/bin/eth-beacon-genesis "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"
         echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/parsed/parsedConsensusGenesis.json)"
