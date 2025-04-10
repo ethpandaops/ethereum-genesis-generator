@@ -73,7 +73,7 @@ gen_cl_config(){
           gen_minimal_config
         fi
         cp $tmp_dir/mnemonics.yaml /data/metadata/mnemonics.yaml
-        # Create deposit_contract.txt and deploy_block.txt
+        # Create deposit_contract.txt and deposit_contract_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/metadata/config.yaml | cut -d " " -f2 > /data/metadata/deposit_contract.txt
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
