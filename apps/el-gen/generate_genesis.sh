@@ -21,6 +21,7 @@ generate_genesis() {
     # 4 - deneb / cancun
     # 5 - electra / prague
     # 6 - fulu / osaka
+    # 7 - eip7805 / eip7805
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -61,6 +62,7 @@ generate_genesis() {
     [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
+    [ $has_fork -lt 7 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -385,5 +387,28 @@ genesis_add_fulu() {
             "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
             "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
         }
+    }'
+}
+
+# add eip7805 fork properties
+genesis_add_eip7805() {
+    tmp_dir=$1
+    echo "Adding eip7805 genesis properties"
+    eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
+    eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
+
+    # genesis.json
+    genesis_add_json $tmp_dir/genesis.json '.config += {
+        "eip7805Time": '"$eip7805_time"'
+    }'
+
+    # chainspec.json
+    genesis_add_json $tmp_dir/chainspec.json '.params += {
+        "eip7805TransitionTimestamp": "'$eip7805_time_hex'"
+    }'
+
+    # besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {
+        "eip7805Time": '"$eip7805_time"'
     }'
 }
