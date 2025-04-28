@@ -31,13 +31,13 @@ generate_genesis() {
         cp /apps/el-gen/mainnet/besu_genesis.json $tmp_dir/besu.json
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
-        has_fork="5" # deneb
+        has_fork="5" # electra
         cp /apps/el-gen/sepolia/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/sepolia/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/sepolia/besu_genesis.json $tmp_dir/besu.json
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
-        has_fork="5" # deneb
+        has_fork="5" # electra
         cp /apps/el-gen/holesky/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/holesky/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/holesky/besu_genesis.json $tmp_dir/besu.json
