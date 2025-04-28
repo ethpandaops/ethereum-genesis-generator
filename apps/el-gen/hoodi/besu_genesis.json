@@ -32,7 +32,6 @@
     "withdrawalRequestContractAddress": "0x00000961ef480eb55e80d19ad83579a64c007002",
     "consolidationRequestContractAddress": "0x0000bbddc7ce488642fb579f8b00f3a590007251",
     "pragueTime": 1742999832,
-
     "discovery": {
       "bootnodes": [
         "enode://2112dd3839dd752813d4df7f40936f06829fc54c0e051a93967c26e5f5d27d99d886b57b4ffcc3c475e930ec9e79c56ef1dbb7d86ca5ee83a9d2ccf36e5c240c@134.209.138.84:30303",
@@ -280,9 +279,7 @@
     "0x000000000000000000000000000000000000004e": {
       "balance": "1"
     },
-    "0x000000000000000000000000000000000000004f": {
-      "balance": "1"
-    },
+    "0x000000000000000000000000000000000000004f": { "balance": "1" },
     "0x0000000000000000000000000000000000000050": {
       "balance": "1"
     },
