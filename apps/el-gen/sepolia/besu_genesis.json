@@ -11,11 +11,42 @@
     "istanbulBlock": 0,
     "berlinBlock": 0,
     "londonBlock": 0,
-    "mergeForkBlock": 1735371,
+    "mergeNetSplitBlock": 1735371,
     "terminalTotalDifficulty": 17000000000000000,
     "shanghaiTime": 1677557088,
     "cancunTime": 1706655072,
-    "depositContractAddress": "0x7f02C3E3c98b133055B8B348B2Ac625669Ed295D"
+    "pragueTime": 1741159776,
+    "blobSchedule": {
+      "cancun": {
+        "target": 3,
+        "max": 6,
+        "baseFeeUpdateFraction": 3338477
+      },
+      "prague": {
+        "target": 6,
+        "max": 9,
+        "baseFeeUpdateFraction": 5007716
+      }
+    },
+    "ethash": {},
+    "depositContractAddress": "0x7f02c3e3c98b133055b8b348b2ac625669ed295d",
+    "withdrawalRequestContractAddress": "0x00000961ef480eb55e80d19ad83579a64c007002",
+    "consolidationRequestContractAddress": "0x0000bbddc7ce488642fb579f8b00f3a590007251",
+    "discovery": {
+      "dns": "enrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@all.sepolia.ethdisco.net",
+      "bootnodes": [
+        "enode://4e5e92199ee224a01932a377160aa432f31d0b351f84ab413a8e0a42f4f36476f8fb1cbe914af0d9aef0d51665c214cf653c651c4bbd9d5550a934f241f1682b@138.197.51.181:30303",
+        "enode://143e11fb766781d22d92a2e33f8f104cddae4411a122295ed1fdb6638de96a6ce65f5b7c964ba3763bba27961738fef7d3ecc739268f3e5e771fb4c87b6234ba@146.190.1.103:30303",
+        "enode://8b61dc2d06c3f96fddcbebb0efb29d60d3598650275dc469c22229d3e5620369b0d3dedafd929835fe7f489618f19f456fe7c0df572bf2d914a9f4e006f783a9@170.64.250.88:30303",
+        "enode://10d62eff032205fcef19497f35ca8477bea0eadfff6d769a147e895d8b2b8f8ae6341630c645c30f5df6e67547c03494ced3d9c5764e8622a26587b083b028e8@139.59.49.206:30303",
+        "enode://9e9492e2e8836114cc75f5b929784f4f46c324ad01daf87d956f98b3b6c5fcba95524d6e5cf9861dc96a2c8a171ea7105bb554a197455058de185fa870970c7c@138.68.123.152:30303"
+      ]
+    },
+    "checkpoint": {
+      "hash": "0x491ebac1b7f9c0eb426047a495dc577140cb3e09036cd3f7266eda86b635d9fa",
+      "number": 1273020,
+      "totalDifficulty": "0x13DE1653E7D280"
+    }
   },
   "alloc": {
     "0xa2A6d93439144FFE4D27c9E088dCD8b783946263": {

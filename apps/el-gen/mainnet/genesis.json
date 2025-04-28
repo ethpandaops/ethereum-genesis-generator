@@ -20,8 +20,21 @@
     "terminalTotalDifficulty": 58750000000000000000000,
     "shanghaiTime": 1681338455,
     "cancunTime": 1710338135,
+    "pragueTime": 1746612311,
     "ethash": {},
-    "depositContractAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+    "depositContractAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+    "blobSchedule": {
+      "cancun": {
+        "target": 3,
+        "max": 6,
+        "baseFeeUpdateFraction": 3338477
+      },
+      "prague": {
+        "target": 6,
+        "max": 9,
+        "baseFeeUpdateFraction": 5007716
+      }
+    }
   },
   "nonce": "0x42",
   "timestamp": "0x0",

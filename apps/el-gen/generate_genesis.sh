@@ -26,25 +26,25 @@ generate_genesis() {
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
         has_fork="4" # deneb
-        cp /apps/el-gen/mainnet/genesis.json $tmp_dir/genesis.json
+        cp /apps/el-gen/mainnet/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/mainnet/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/mainnet/besu_genesis.json $tmp_dir/besu.json
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
         has_fork="4" # deneb
-        cp /apps/el-gen/sepolia/genesis.json $tmp_dir/genesis.json
+        cp /apps/el-gen/sepolia/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/sepolia/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/sepolia/besu_genesis.json $tmp_dir/besu.json
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
         has_fork="4" # deneb
-        cp /apps/el-gen/holesky/genesis.json $tmp_dir/genesis.json
+        cp /apps/el-gen/holesky/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/holesky/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/holesky/besu_genesis.json $tmp_dir/besu.json
     elif [ "$CHAIN_ID" == "560048" ]; then
         # hoodi shadowfork
         has_fork="5" # electra
-        cp /apps/el-gen/hoodi/genesis.json $tmp_dir/genesis.json
+        cp /apps/el-gen/hoodi/genesis.json   $tmp_dir/genesis.json
         cp /apps/el-gen/hoodi/chainspec.json $tmp_dir/chainspec.json
         cp /apps/el-gen/hoodi/besu_genesis.json $tmp_dir/besu.json
     else
@@ -56,6 +56,17 @@ generate_genesis() {
         has_fork="0"
     fi
 
+    ####################################################################
+    # PRECOMPILE ALLOCS + SYSTEM CONTRACTS MUST COME BEFORE FORK HELPERS
+    ####################################################################
+    if [ "$is_shadowfork" == "0" ]; then
+        echo "Adding precompile allocations..."
+        cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
+
+        # exports EIP7002_CONTRACT_ADDRESS, EIP7251_CONTRACT_ADDRESS, …
+        genesis_add_system_contracts $tmp_dir
+    fi
+
     # Add additional fork properties
     [ $has_fork -lt 2 ] && genesis_add_bellatrix $tmp_dir
     [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_capella $tmp_dir
@@ -65,14 +76,6 @@ generate_genesis() {
     [ $has_fork -lt 7 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
-        # Initialize allocations with precompiles
-        echo "Adding precompile allocations..."
-        cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
-
-        # Add system contracts
-        genesis_add_system_contracts $tmp_dir
-
-        # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
 
@@ -118,9 +121,9 @@ generate_genesis() {
         genesis_add_json $tmp_dir/besu.json '.alloc += '"$allocations"
     fi
 
-    cat $tmp_dir/genesis.json | jq > $out_dir/genesis.json
+    cat $tmp_dir/genesis.json   | jq > $out_dir/genesis.json
     cat $tmp_dir/chainspec.json | jq > $out_dir/chainspec.json
-    cat $tmp_dir/besu.json | jq > $out_dir/besu.json
+    cat $tmp_dir/besu.json      | jq > $out_dir/besu.json
     rm -rf $tmp_dir
 }
 
@@ -170,6 +173,7 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip4788_address')
         echo -e "  EIP-4788 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip4788')
+        export EIP4788_CONTRACT_ADDRESS=$target_address
     fi
 
     if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
@@ -177,16 +181,19 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip2935_address')
         echo -e "  EIP-2935 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip2935')
+        export EIP2935_CONTRACT_ADDRESS=$target_address
 
         # EIP-7002: Execution layer triggerable withdrawals
         target_address=$(echo "$system_contracts" | jq -r '.eip7002_address')
         echo -e "  EIP-7002 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7002')
+        export EIP7002_CONTRACT_ADDRESS=$target_address
 
         # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
         target_address=$(echo "$system_contracts" | jq -r '.eip7251_address')
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
+        export EIP7251_CONTRACT_ADDRESS=$target_address
     fi
 }
 
@@ -320,8 +327,8 @@ genesis_add_electra() {
         "eip6110TransitionTimestamp": "'$prague_time_hex'",
         "eip7002TransitionTimestamp": "'$prague_time_hex'",
         "eip7251TransitionTimestamp": "'$prague_time_hex'",
-        "eip7702TransitionTimestamp": "'$prague_time_hex'",
-        "eip7623TransitionTimestamp": "'$prague_time_hex'"
+        "eip7623TransitionTimestamp": "'$prague_time_hex'",
+        "eip7702TransitionTimestamp": "'$prague_time_hex'"
     }'
     genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
         "prague": {
@@ -334,6 +341,8 @@ genesis_add_electra() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
+        "withdrawalRequestContractAddress": "'"$EIP7002_CONTRACT_ADDRESS"'",
+        "consolidationRequestContractAddress": "'"$EIP7251_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
     }'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
