@@ -170,6 +170,7 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip4788_address')
         echo -e "  EIP-4788 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip4788')
+        EIP4788_CONTRACT_ADDRESS=$target_address
     fi
 
     if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
@@ -177,16 +178,19 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip2935_address')
         echo -e "  EIP-2935 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip2935')
+        EIP2935_CONTRACT_ADDRESS=$target_address
 
         # EIP-7002: Execution layer triggerable withdrawals
         target_address=$(echo "$system_contracts" | jq -r '.eip7002_address')
         echo -e "  EIP-7002 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7002')
+        EIP7002_CONTRACT_ADDRESS=$target_address
 
         # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
         target_address=$(echo "$system_contracts" | jq -r '.eip7251_address')
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
+        EIP7251_CONTRACT_ADDRESS=$target_address
     fi
 }
 
@@ -334,6 +338,8 @@ genesis_add_electra() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
+        "withdrawalRequestContractAddress": "'"$EIP7002_CONTRACT_ADDRESS"'",
+        "consolidationRequestContractAddress": "'"$EIP7251_CONTRACT_ADDRESS"'",
         "pragueTime": '"$prague_time"'
     }'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
