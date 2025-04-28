@@ -56,17 +56,6 @@ generate_genesis() {
         has_fork="0"
     fi
 
-    ####################################################################
-    # PRECOMPILE ALLOCS + SYSTEM CONTRACTS MUST COME BEFORE FORK HELPERS
-    ####################################################################
-    if [ "$is_shadowfork" == "0" ]; then
-        echo "Adding precompile allocations..."
-        cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
-
-        # exports EIP7002_CONTRACT_ADDRESS, EIP7251_CONTRACT_ADDRESS, …
-        genesis_add_system_contracts $tmp_dir
-    fi
-
     # Add additional fork properties
     [ $has_fork -lt 2 ] && genesis_add_bellatrix $tmp_dir
     [ $has_fork -lt 3 ] && [ ! "$CAPELLA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_capella $tmp_dir
@@ -76,6 +65,14 @@ generate_genesis() {
     [ $has_fork -lt 7 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
+        # Initialize allocations with precompiles
+        echo "Adding precompile allocations..."
+        cat /apps/el-gen/precompile-allocs.yaml | yq -c > $tmp_dir/allocations.json
+
+        # Add system contracts
+        genesis_add_system_contracts $tmp_dir
+
+        # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
 
@@ -173,7 +170,6 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip4788_address')
         echo -e "  EIP-4788 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip4788')
-        export EIP4788_CONTRACT_ADDRESS=$target_address
     fi
 
     if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
@@ -181,19 +177,16 @@ genesis_add_system_contracts() {
         target_address=$(echo "$system_contracts" | jq -r '.eip2935_address')
         echo -e "  EIP-2935 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip2935')
-        export EIP2935_CONTRACT_ADDRESS=$target_address
 
         # EIP-7002: Execution layer triggerable withdrawals
         target_address=$(echo "$system_contracts" | jq -r '.eip7002_address')
         echo -e "  EIP-7002 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7002')
-        export EIP7002_CONTRACT_ADDRESS=$target_address
 
         # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
         target_address=$(echo "$system_contracts" | jq -r '.eip7251_address')
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
-        export EIP7251_CONTRACT_ADDRESS=$target_address
     fi
 }
 
@@ -305,6 +298,11 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
+
+    # load electra system contracts
+    system_contracts=$(cat /apps/el-gen/electra-system-contracts.yaml | yq -c)
+    EIP7002_CONTRACT_ADDRESS=$(echo "$system_contracts" | jq -r '.eip7002_address')
+    EIP7251_CONTRACT_ADDRESS=$(echo "$system_contracts" | jq -r '.eip7251_address')
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
