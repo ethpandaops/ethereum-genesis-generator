@@ -327,8 +327,8 @@ genesis_add_electra() {
         "eip6110TransitionTimestamp": "'$prague_time_hex'",
         "eip7002TransitionTimestamp": "'$prague_time_hex'",
         "eip7251TransitionTimestamp": "'$prague_time_hex'",
-        "eip7702TransitionTimestamp": "'$prague_time_hex'",
-        "eip7623TransitionTimestamp": "'$prague_time_hex'"
+        "eip7623TransitionTimestamp": "'$prague_time_hex'",
+        "eip7702TransitionTimestamp": "'$prague_time_hex'"
     }'
     genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
         "prague": {
