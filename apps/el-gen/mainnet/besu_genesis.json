@@ -14,7 +14,7 @@
     "arrowGlacierBlock": 13773000,
     "grayGlacierBlock": 15050000,
     "mergeForkBlock": 16675026,
-    "terminalTotalDifficulty": 58750000000000000000000,
+    "terminalTotalDifficulty": "58750000000000000000000",
     "shanghaiTime": 1681338455,
     "cancunTime": 1710338135,
     "ethash": {},
