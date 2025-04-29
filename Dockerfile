@@ -11,12 +11,15 @@ VOLUME ["/config", "/data"]
 EXPOSE 8000/tcp
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
-    ca-certificates gettext-base jq yq wget curl && \
+    ca-certificates gettext-base yq wget curl && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 COPY apps /apps
+
+RUN curl -L https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -o /usr/local/bin/jq && \
+    chmod +x /usr/local/bin/jq
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 COPY --from=builder /work/eth-beacon-genesis/bin/eth-beacon-genesis /usr/local/bin/eth-beacon-genesis
