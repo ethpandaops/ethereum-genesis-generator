@@ -63,6 +63,7 @@ generate_genesis() {
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
     [ $has_fork -lt 7 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
+    genesis_add_bpo $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -250,6 +251,7 @@ genesis_add_deneb() {
     target_blobs_per_block_cancun=3
     max_blobs_per_block_cancun=6
     base_fee_update_fraction_cancun=3338477
+    base_fee_update_fraction_cancun_hex="0x$(printf "%x" $base_fee_update_fraction_cancun)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -275,7 +277,7 @@ genesis_add_deneb() {
         "cancun": {
             "target": '"$target_blobs_per_block_cancun"',
             "max": '"$max_blobs_per_block_cancun"',
-            "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
+            "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun_hex'"
         }
     }'
 
@@ -298,7 +300,7 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
-
+    basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
     # load electra system contracts
     system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
     EIP7002_CONTRACT_ADDRESS=$(echo "$system_contracts" | jq -r '.eip7002_address')
@@ -332,7 +334,7 @@ genesis_add_electra() {
         "prague": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+            "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
         }
     }'
 
@@ -363,37 +365,15 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
-        }
-    }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
         "eip7692TransitionTimestamp": "'$osaka_time_hex'",
         "eip7594TransitionTimestamp": "'$osaka_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
-        }
-    }'
-
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
-    }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_FULU"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_FULU"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_FULU"'
-        }
     }'
 }
 
@@ -418,4 +398,62 @@ genesis_add_eip7805() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "eip7805Time": '"$eip7805_time"'
     }'
+}
+
+genesis_add_bpo() {
+    tmp_dir=$1
+    echo "Adding bpo genesis properties"
+    for i in {1..5}; do
+        bpo_var="BPO_${i}_EPOCH"
+        bpo_val=${!bpo_var}
+
+        # Skip if variable is not defined, is empty, or has max value
+        if [ -z "$bpo_val" ] || [ "$bpo_val" = "18446744073709551615" ]; then
+            continue
+        fi
+
+        bpo_time=$(genesis_get_activation_time $bpo_val)
+        bpo_time_hex="0x$(printf "%x" $bpo_time)"
+
+        target_var="BPO_${i}_TARGET_BLOBS"
+        max_var="BPO_${i}_MAX_BLOBS"
+        fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
+        fraction_value=${!fraction_var}
+        fraction_var_hex="0x$(printf "%x" $fraction_value)"
+
+        # genesis.json
+        genesis_add_json $tmp_dir/genesis.json '.config += {
+            "bpo'"$i"'Time": '"$bpo_time"'
+        }'
+        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+            "bpo'"$i"'": {
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": '"$fraction_value"'
+            }
+        }'
+
+        # chainspec.json
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
+            "bpo'"$i"'": {
+                "timestamp": "'$bpo_time_hex'",
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": "'$fraction_var_hex'"
+            }
+        }'
+
+        # besu.json
+        genesis_add_json $tmp_dir/besu.json '.config += {
+            "bpo'"$i"'Time": '"$bpo_time"'
+        }'
+
+        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+            "bpo'"$i"'": {
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": '"$fraction_value"'
+            }
+        }'
+    done
 }
