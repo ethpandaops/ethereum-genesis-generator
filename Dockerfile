@@ -1,6 +1,6 @@
 FROM golang:1.24 AS builder
 WORKDIR /work
-RUN git clone -b bbusa/ignore-complex https://github.com/ethpandaops/eth-beacon-genesis.git  \
+RUN git clone https://github.com/ethpandaops/eth-beacon-genesis.git  \
     && cd eth-beacon-genesis && make \
     && go install github.com/protolambda/eth2-val-tools@latest \
     && go install github.com/miguelmota/go-ethereum-hdwallet/cmd/geth-hdwallet@latest
