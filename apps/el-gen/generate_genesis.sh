@@ -114,9 +114,9 @@ generate_genesis() {
         # Apply combined allocations in one shot
         echo "Applying allocations to genesis files..."
         allocations=$(jq -s 'reduce .[] as $item ({}; . * $item)' $tmp_dir/allocations.json)
-        genesis_add_json $tmp_dir/genesis.json '.alloc += '"$allocations"
-        genesis_add_json $tmp_dir/chainspec.json '.accounts += '"$allocations"
-        genesis_add_json $tmp_dir/besu.json '.alloc += '"$allocations"
+        genesis_add_big_json $tmp_dir/genesis.json "$allocations" '.alloc += $input[0]'
+        genesis_add_big_json $tmp_dir/chainspec.json "$allocations" '.accounts += $input[0]'
+        genesis_add_big_json $tmp_dir/besu.json "$allocations" '.alloc += $input[0]'
     fi
 
     cat $tmp_dir/genesis.json   | jq > $out_dir/genesis.json
@@ -143,8 +143,21 @@ genesis_add_json() {
     file=$1
     data=$2
 
+    echo "$data" > /data/change.json
+    cp "$file" /data/input.json
     jq -c "$data" "$file" > "$file.out"
     mv "$file.out" "$file"
+}
+
+genesis_add_big_json() {
+    file=$1
+    data=$2
+    query=$3
+
+    echo "$data" > "$file.inp"
+    jq -c --slurpfile input "$file.inp" "$query" "$file" > "$file.out"
+    mv "$file.out" "$file"
+    rm "$file.inp"
 }
 
 genesis_add_allocation() {
