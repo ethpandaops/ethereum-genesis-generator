@@ -373,10 +373,18 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+        }
     }'
 
     # chainspec.json
@@ -384,9 +392,24 @@ genesis_add_fulu() {
         "eip7692TransitionTimestamp": "'$osaka_time_hex'",
         "eip7594TransitionTimestamp": "'$osaka_time_hex'"
     }'
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
+        "osaka": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$basefee_update_fraction_electra_hex"'
+        }
+    }'
+
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
+    }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+        }
     }'
 }
 
