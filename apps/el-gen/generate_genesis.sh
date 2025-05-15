@@ -396,7 +396,7 @@ genesis_add_fulu() {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$basefee_update_fraction_electra_hex"'
+            "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
         }
     }'
 
