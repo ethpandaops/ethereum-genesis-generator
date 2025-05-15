@@ -54,6 +54,48 @@ gen_minimal_config() {
   done
 }
 
+# This function conditionally adds the BLOB_SCHEDULE section to the config.yaml file
+# It only adds the section if any BPO is non-default
+add_blob_schedule() {
+    # Takes config file path as argument
+    local config_file=$1
+
+    # Check if any BPO is non-default and build BLOB_SCHEDULE if needed
+    INCLUDE_SCHEDULE=false
+    BLOB_SCHEDULE=""
+
+    # The default value is already in the environment from defaults.env
+    DEFAULT_BPO_EPOCH="18446744073709551615"
+
+    for i in {1..5}; do
+        var_epoch="BPO_${i}_EPOCH"
+        var_blobs="BPO_${i}_MAX_BLOBS"
+
+        # Check if this BPO has a non-default value
+        if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$DEFAULT_BPO_EPOCH" ]; then
+            if [ "$INCLUDE_SCHEDULE" = false ]; then
+                # First non-default BPO - add header
+                BLOB_SCHEDULE="
+# Blob Scheduling
+# ---------------------------------------------------------------
+
+BLOB_SCHEDULE:"
+                INCLUDE_SCHEDULE=true
+            fi
+
+            # Add this BPO entry
+            BLOB_SCHEDULE="$BLOB_SCHEDULE
+  - EPOCH: ${!var_epoch}
+    MAX_BLOBS_PER_BLOCK: ${!var_blobs}"
+        fi
+    done
+
+    # Append BLOB_SCHEDULE section if any non-default BPOs were found
+    if [ "$INCLUDE_SCHEDULE" = true ]; then
+        echo "$BLOB_SCHEDULE" >> "$config_file"
+    fi
+}
+
 gen_cl_config(){
     set -x
     # Consensus layer: Check if genesis already exists
@@ -69,40 +111,8 @@ gen_cl_config(){
         cat /config/cl/config.yaml | sed '/^BLOB_SCHEDULE:/,/^[a-zA-Z]/ d' | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
         envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
 
-        # Check if any BPO is non-default and build BLOB_SCHEDULE if needed
-        INCLUDE_SCHEDULE=false
-        BLOB_SCHEDULE=""
-
-        # The default value is already in the environment from defaults.env
-        DEFAULT_BPO_EPOCH="18446744073709551615"
-
-        for i in {1..5}; do
-            var_epoch="BPO_${i}_EPOCH"
-            var_blobs="BPO_${i}_MAX_BLOBS"
-
-            # Check if this BPO has a non-default value
-            if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$DEFAULT_BPO_EPOCH" ]; then
-                if [ "$INCLUDE_SCHEDULE" = false ]; then
-                    # First non-default BPO - add header
-                    BLOB_SCHEDULE="
-# Blob Scheduling
-# ---------------------------------------------------------------
-
-BLOB_SCHEDULE:"
-                    INCLUDE_SCHEDULE=true
-                fi
-
-                # Add this BPO entry
-                BLOB_SCHEDULE="$BLOB_SCHEDULE
-  - EPOCH: ${!var_epoch}
-    MAX_BLOBS_PER_BLOCK: ${!var_blobs}"
-            fi
-        done
-
-        # Append BLOB_SCHEDULE section if any non-default BPOs were found
-        if [ "$INCLUDE_SCHEDULE" = true ]; then
-            echo "$BLOB_SCHEDULE" >> /data/metadata/config.yaml
-        fi
+        # Add BLOB_SCHEDULE if needed
+        add_blob_schedule /data/metadata/config.yaml
 
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
