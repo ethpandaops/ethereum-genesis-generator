@@ -463,6 +463,7 @@ genesis_add_bpo() {
         }'
         genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
             "bpo'"$i"'": {
+                "timestamp": '"$bpo_time"',
                 "target": '"${!target_var}"',
                 "max": '"${!max_var}"',
                 "baseFeeUpdateFraction": '"$fraction_value"'
