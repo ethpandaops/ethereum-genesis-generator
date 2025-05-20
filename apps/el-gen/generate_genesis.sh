@@ -389,8 +389,9 @@ genesis_add_fulu() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7692TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7594TransitionTimestamp": "'$osaka_time_hex'"
+        "eip7594TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7823TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7883TransitionTimestamp": "'$osaka_time_hex'"
     }'
     genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
         "osaka": {
