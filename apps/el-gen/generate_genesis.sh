@@ -286,13 +286,17 @@ genesis_add_deneb() {
         "eip5656TransitionTimestamp": "'$cancun_time_hex'",
         "eip6780TransitionTimestamp": "'$cancun_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule = {
-        "cancun": {
-            "target": '"$target_blobs_per_block_cancun"',
-            "max": '"$max_blobs_per_block_cancun"',
-            "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun_hex'"
-        }
-    }'
+
+    if [ "$ELECTRA_FORK_EPOCH" != "0" ]; then
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+            {
+                "timestamp": "'$cancun_time_hex'",
+                "target": '"$target_blobs_per_block_cancun"',
+                "max": '"$max_blobs_per_block_cancun"',
+                "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun_hex'"
+            }
+        ]'
+    fi
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
@@ -343,13 +347,17 @@ genesis_add_electra() {
         "eip7623TransitionTimestamp": "'$prague_time_hex'",
         "eip7702TransitionTimestamp": "'$prague_time_hex'"
     }'
-    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
-        "prague": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
-        }
-    }'
+
+    if [ "$FULU_FORK_EPOCH" != "0" ]; then
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+            {
+                "timestamp": "'$prague_time_hex'",
+                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
+            }
+        ]'
+    fi
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
@@ -393,7 +401,7 @@ genesis_add_fulu() {
         "eip7823TransitionTimestamp": "'$osaka_time_hex'",
         "eip7883TransitionTimestamp": "'$osaka_time_hex'"
     }'
-    # blob schedule will only be added via bpo not via osaka
+    # blob schedule will only be added via bpo not from osaka onwards
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
@@ -465,14 +473,14 @@ genesis_add_bpo() {
         }'
 
         # chainspec.json
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += {
-            "bpo'"$i"'": {
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+            {
                 "timestamp": "'$bpo_time_hex'",
                 "target": '"${!target_var}"',
                 "max": '"${!max_var}"',
                 "baseFeeUpdateFraction": "'$fraction_var_hex'"
             }
-        }'
+        ]'
 
         # besu.json
         genesis_add_json $tmp_dir/besu.json '.config += {
