@@ -3,3 +3,4 @@
   count: $NUMBER_OF_VALIDATORS
   wd_address: $WITHDRAWAL_ADDRESS
   wd_prefix: $WITHDRAWAL_TYPE
+  balance: $VALIDATOR_BALANCE
