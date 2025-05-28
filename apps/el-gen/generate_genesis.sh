@@ -28,25 +28,25 @@ generate_genesis() {
         has_fork="5" # electra
         wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/genesis.json
         wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/besu_genesis.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
         has_fork="5" # electra
         wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/genesis.json
         wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/besu_genesis.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
         has_fork="5" # electra
         wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/genesis.json
         wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/besu_genesis.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "560048" ]; then
         # hoodi shadowfork
         has_fork="5" # electra
         wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/genesis.json
         wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/besu_genesis.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/besu.json
     else
         # Generate base genesis.json, chainspec.json and besu.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
