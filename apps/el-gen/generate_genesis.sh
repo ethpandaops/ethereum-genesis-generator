@@ -25,28 +25,28 @@ generate_genesis() {
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
-        has_fork="4" # deneb
-        cp /apps/el-gen/mainnet/genesis.json   $tmp_dir/genesis.json
-        cp /apps/el-gen/mainnet/chainspec.json $tmp_dir/chainspec.json
-        cp /apps/el-gen/mainnet/besu_genesis.json $tmp_dir/besu.json
+        has_fork="5" # electra
+        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/genesis.json
+        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/chainspec.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
         has_fork="5" # electra
-        cp /apps/el-gen/sepolia/genesis.json   $tmp_dir/genesis.json
-        cp /apps/el-gen/sepolia/chainspec.json $tmp_dir/chainspec.json
-        cp /apps/el-gen/sepolia/besu_genesis.json $tmp_dir/besu.json
+        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/genesis.json
+        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/chainspec.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
         has_fork="5" # electra
-        cp /apps/el-gen/holesky/genesis.json   $tmp_dir/genesis.json
-        cp /apps/el-gen/holesky/chainspec.json $tmp_dir/chainspec.json
-        cp /apps/el-gen/holesky/besu_genesis.json $tmp_dir/besu.json
+        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/genesis.json
+        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/chainspec.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/besu.json
     elif [ "$CHAIN_ID" == "560048" ]; then
         # hoodi shadowfork
         has_fork="5" # electra
-        cp /apps/el-gen/hoodi/genesis.json   $tmp_dir/genesis.json
-        cp /apps/el-gen/hoodi/chainspec.json $tmp_dir/chainspec.json
-        cp /apps/el-gen/hoodi/besu_genesis.json $tmp_dir/besu.json
+        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/genesis.json
+        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/chainspec.json
+        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/besu.json
     else
         # Generate base genesis.json, chainspec.json and besu.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
