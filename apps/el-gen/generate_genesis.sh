@@ -399,20 +399,15 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/chainspec.json '.params += {
         "eip7594TransitionTimestamp": "'$osaka_time_hex'",
         "eip7823TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7883TransitionTimestamp": "'$osaka_time_hex'"
+        "eip7825TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7883TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7918TransitionTimestamp": "'$osaka_time_hex'"
     }'
     # blob schedule will only be added via bpo not from osaka onwards
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
-    }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
     }'
 }
 
