@@ -393,7 +393,9 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/chainspec.json '.params += {
         "eip7594TransitionTimestamp": "'$osaka_time_hex'",
         "eip7823TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7883TransitionTimestamp": "'$osaka_time_hex'"
+        "eip7825TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7883TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7918TransitionTimestamp": "'$osaka_time_hex'"
     }'
     # blob schedule will only be added via bpo not from osaka onwards
 
@@ -401,7 +403,6 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    # blob schedule will only be added via bpo not from osaka onwards
 }
 
 # add eip7805 fork properties
