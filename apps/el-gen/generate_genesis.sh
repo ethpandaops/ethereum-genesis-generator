@@ -354,6 +354,7 @@ genesis_add_electra() {
                 "timestamp": "'$prague_time_hex'",
                 "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
                 "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
                 "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
             }
         ]'
@@ -387,13 +388,24 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
+    if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
             "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
-    }'
+            }
+        }'
+    else
+        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+            "osaka": {
+                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+            }
+        }'
+    fi
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -409,6 +421,26 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
+
+    if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "osaka": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+            "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+            }
+        }'
+    else
+        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+            "osaka": {
+                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
+            }
+        }'
+    fi
+
 }
 
 # add eip7805 fork properties
@@ -454,40 +486,78 @@ genesis_add_bpo() {
         fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
         fraction_value=${!fraction_var}
         fraction_var_hex="0x$(printf "%x" $fraction_value)"
+        max_blobs_per_tx_var="BPO_${i}_MAX_BLOBS_PER_TX"
 
         # genesis.json
         genesis_add_json $tmp_dir/genesis.json '.config += {
             "bpo'"$i"'Time": '"$bpo_time"'
         }'
-        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-            "bpo'"$i"'": {
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": '"$fraction_value"'
-            }
-        }'
+        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
+            genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+                "bpo'"$i"'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
+                    "baseFeeUpdateFraction": '"$fraction_value"'
+                }
+            }'
+        else
+            genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+                "bpo'"$i"'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": '"$fraction_value"'
+                }
+            }'
+        fi
 
         # chainspec.json
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$bpo_time_hex'",
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": "'$fraction_var_hex'"
-            }
-        ]'
+        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
+            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+                {
+                    "timestamp": "'$bpo_time_hex'",
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
+                    "baseFeeUpdateFraction": "'$fraction_var_hex'"
+                }
+            ]'
+        else
+            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+                {
+                    "timestamp": "'$bpo_time_hex'",
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": "'$fraction_var_hex'"
+                }
+            ]'
+        fi
 
         # besu.json
         genesis_add_json $tmp_dir/besu.json '.config += {
             "bpo'"$i"'Time": '"$bpo_time"'
         }'
 
-        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-            "bpo'"$i"'": {
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": '"$fraction_value"'
-            }
-        }'
+        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
+            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+                "bpo'"$i"'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
+                    "baseFeeUpdateFraction": '"$fraction_value"'
+                }
+            }'
+        else
+            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+                "bpo'"$i"'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": '"$fraction_value"'
+                }
+            }'
+        fi
+
+
+
     done
 }
