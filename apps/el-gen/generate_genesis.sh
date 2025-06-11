@@ -455,8 +455,6 @@ genesis_add_bpo() {
         fraction_value=${!fraction_var}
         fraction_var_hex="0x$(printf "%x" $fraction_value)"
         max_blobs_per_tx_var="BPO_${i}_MAX_BLOBS_PER_TX"
-        max_blobs_per_tx_value=${!max_blobs_per_tx_var}
-        max_blobs_per_tx_value_hex="0x$(printf "%x" $max_blobs_per_tx_value)"
 
         # genesis.json
         genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -477,7 +475,7 @@ genesis_add_bpo() {
                 "timestamp": "'$bpo_time_hex'",
                 "target": '"${!target_var}"',
                 "max": '"${!max_var}"',
-                "maxBlobsPerTx": '"$max_blobs_per_tx_value_hex"',
+                "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
                 "baseFeeUpdateFraction": "'$fraction_var_hex'"
             }
         ]'
