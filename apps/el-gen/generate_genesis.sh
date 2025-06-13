@@ -414,7 +414,9 @@ genesis_add_fulu() {
         "eip7825TransitionTimestamp": "'$osaka_time_hex'",
         "eip7883TransitionTimestamp": "'$osaka_time_hex'",
         "eip7918TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7939TransitionTimestamp": "'$osaka_time_hex'"
+        "eip7934TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7939TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7951TransitionTimestamp": "'$osaka_time_hex'"
     }'
     # blob schedule will only be added via bpo not from osaka onwards
 
