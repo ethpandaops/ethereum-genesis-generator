@@ -349,15 +349,26 @@ genesis_add_electra() {
     }'
 
     if [ "$FULU_FORK_EPOCH" != "0" ]; then
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$prague_time_hex'",
-                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
-                "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
-            }
-        ]'
+        if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
+            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+                {
+                    "timestamp": "'$prague_time_hex'",
+                    "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                    "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                    "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
+                    "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
+                }
+            ]'
+        else
+            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+                {
+                    "timestamp": "'$prague_time_hex'",
+                    "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                    "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                    "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
+                }
+            ]'
+        fi
     fi
 
     # besu.json
@@ -559,8 +570,5 @@ genesis_add_bpo() {
                 }
             }'
         fi
-
-
-
     done
 }
