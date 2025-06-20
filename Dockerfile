@@ -18,7 +18,15 @@ RUN apt-get update && \
 
 COPY apps /apps
 
-RUN curl -L https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -o /usr/local/bin/jq && \
+# Install jq with architecture detection
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        curl -L https://github.com/jqlang/jq/releases/latest/download/jq-linux-amd64 -o /usr/local/bin/jq; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        curl -L https://github.com/jqlang/jq/releases/latest/download/jq-linux-arm64 -o /usr/local/bin/jq; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
     chmod +x /usr/local/bin/jq
 
 ENV PATH="/root/.cargo/bin:${PATH}"
