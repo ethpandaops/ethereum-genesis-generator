@@ -424,6 +424,7 @@ genesis_add_fulu() {
         "eip7823TransitionTimestamp": "'$osaka_time_hex'",
         "eip7825TransitionTimestamp": "'$osaka_time_hex'",
         "eip7883TransitionTimestamp": "'$osaka_time_hex'",
+        "eip7907TransitionTimestamp": "'$osaka_time_hex'",
         "eip7918TransitionTimestamp": "'$osaka_time_hex'",
         "eip7934TransitionTimestamp": "'$osaka_time_hex'",
         "eip7939TransitionTimestamp": "'$osaka_time_hex'",
