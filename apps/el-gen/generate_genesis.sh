@@ -99,9 +99,15 @@ generate_genesis() {
             additional_contracts=$(cat $tmp_dir/el-genesis-config.json | jq -cr '.additional_preloaded_contracts')
             if ! [[ "$(echo "$additional_contracts" | sed -e 's/^[[:space:]]*//')" == {* ]]; then
                 echo "Additional contracts file: $additional_contracts"
-                if [ -f "$additional_contracts" ]; then
+                if [[ "$additional_contracts" =~ ^https?:// ]]; then
+                    additional_contracts=$(wget -qO- "$additional_contracts")
+                elif [ -f "$additional_contracts" ]; then
                     additional_contracts=$(cat $additional_contracts)
+                    if [[ "$additional_contracts" =~ ^https?:// ]]; then
+                        additional_contracts=$(wget -qO- "$additional_contracts")
+                    fi
                 else
+                    echo "Additional contracts file not found: $additional_contracts"
                     additional_contracts="{}"
                 fi
             fi
