@@ -355,26 +355,14 @@ genesis_add_electra() {
     }'
 
     if [ "$FULU_FORK_EPOCH" != "0" ]; then
-        if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
-            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-                {
-                    "timestamp": "'$prague_time_hex'",
-                    "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                    "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                    "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
-                    "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
-                }
-            ]'
-        else
-            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-                {
-                    "timestamp": "'$prague_time_hex'",
-                    "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                    "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                    "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
-                }
-            ]'
-        fi
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+            {
+                "timestamp": "'$prague_time_hex'",
+                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+                "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
+            }
+        ]'
     fi
 
     # besu.json
@@ -405,24 +393,14 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
+
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
             "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-            }
-        }'
-    else
-        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-            "osaka": {
-                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-            }
-        }'
-    fi
+        }
+    }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -443,24 +421,13 @@ genesis_add_fulu() {
         "osakaTime": '"$osaka_time"'
     }'
 
-    if [ "$FULU_MAX_BLOBS_PER_TX" -gt 0 ]; then
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
         "osaka": {
             "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "maxBlobsPerTx": '"$FULU_MAX_BLOBS_PER_TX"',
             "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-            }
-        }'
-    else
-        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-            "osaka": {
-                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-            }
-        }'
-    fi
+        }
+    }'
 
 }
 
@@ -513,69 +480,38 @@ genesis_add_bpo() {
         genesis_add_json $tmp_dir/genesis.json '.config += {
             "bpo'"$i"'Time": '"$bpo_time"'
         }'
-        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
-            genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-                "bpo'"$i"'": {
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
-                    "baseFeeUpdateFraction": '"$fraction_value"'
-                }
-            }'
-        else
-            genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-                "bpo'"$i"'": {
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": '"$fraction_value"'
-                }
-            }'
-        fi
+        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+            "bpo'"$i"'": {
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": '"$fraction_value"'
+            }
+        }'
+
 
         # chainspec.json
-        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
-            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-                {
-                    "timestamp": "'$bpo_time_hex'",
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
-                    "baseFeeUpdateFraction": "'$fraction_var_hex'"
-                }
-            ]'
-        else
-            genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-                {
-                    "timestamp": "'$bpo_time_hex'",
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": "'$fraction_var_hex'"
-                }
-            ]'
-        fi
+
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+            {
+                "timestamp": "'$bpo_time_hex'",
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": "'$fraction_var_hex'"
+            }
+        ]'
 
         # besu.json
         genesis_add_json $tmp_dir/besu.json '.config += {
             "bpo'"$i"'Time": '"$bpo_time"'
         }'
 
-        if [ "${!max_blobs_per_tx_var}" -gt 0 ]; then
-            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-                "bpo'"$i"'": {
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "maxBlobsPerTx": '"${!max_blobs_per_tx_var}"',
-                    "baseFeeUpdateFraction": '"$fraction_value"'
-                }
-            }'
-        else
-            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-                "bpo'"$i"'": {
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": '"$fraction_value"'
-                }
-            }'
-        fi
+
+        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+            "bpo'"$i"'": {
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": '"$fraction_value"'
+            }
+        }'
     done
 }
