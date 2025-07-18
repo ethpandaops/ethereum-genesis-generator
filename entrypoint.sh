@@ -98,9 +98,16 @@ BLOB_SCHEDULE:"
         fi
     done
 
-    # Append BLOB_SCHEDULE section if any non-default BPOs were found
+    # Append BLOB_SCHEDULE section
     if [ "$INCLUDE_SCHEDULE" = true ]; then
         echo "$BLOB_SCHEDULE" >> "$config_file"
+    else
+        # Add empty BLOB_SCHEDULE if no non-default BPOs were found
+        echo "
+# Blob Scheduling
+# ---------------------------------------------------------------
+
+BLOB_SCHEDULE: []" >> "$config_file"
     fi
 }
 
