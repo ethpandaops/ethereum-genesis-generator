@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /apps/el-gen/calculate_basefee_fraction.sh
+
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -323,6 +325,15 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
+    
+    # Calculate basefee update fraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
+        echo "Calculating optimal BASEFEE_UPDATE_FRACTION_ELECTRA..."
+        # Calculate with verbosity disabled
+        VERBOSE="0" BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA = $BASEFEE_UPDATE_FRACTION_ELECTRA"
+    fi
+    
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
     # load electra system contracts
     system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
@@ -387,6 +398,15 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    
+    # Calculate basefee update fraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
+        echo "Calculating optimal BASEFEE_UPDATE_FRACTION_ELECTRA..."
+        # Calculate with verbosity disabled
+        VERBOSE="0" BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA = $BASEFEE_UPDATE_FRACTION_ELECTRA"
+    fi
+    
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
 
     # genesis.json
@@ -472,6 +492,15 @@ genesis_add_bpo() {
         max_var="BPO_${i}_MAX_BLOBS"
         fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
         fraction_value=${!fraction_var}
+        
+        # Calculate basefee update fraction if not specified
+        if [ -z "$fraction_value" ] || [ "$fraction_value" == "0" ]; then
+            echo "Calculating optimal BPO_${i}_BASE_FEE_UPDATE_FRACTION..."
+            # Calculate with verbosity disabled
+            VERBOSE="0" fraction_value=$(calculate_basefee_fraction ${!max_var} ${!target_var})
+            echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION = $fraction_value"
+        fi
+        
         fraction_var_hex="0x$(printf "%x" $fraction_value)"
         max_blobs_per_tx_var="BPO_${i}_MAX_BLOBS_PER_TX"
 
