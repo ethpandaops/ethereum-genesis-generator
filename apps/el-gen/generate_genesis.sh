@@ -152,7 +152,7 @@ calculate_basefee_update_fraction() {
     GAS_PER_BLOB=$((2**17))
     BASE_FEE_UPDATE_FRACTION=$(echo "($MAX_BLOBS * $GAS_PER_BLOB) / (2 * l(1.125))" | bc -l)
 
-    echo $BASE_FEE_UPDATE_FRACTION
+    echo "($BASE_FEE_UPDATE_FRACTION + 0.5)/1" | bc
 }
 
 analyze_basefee_update_fraction() {
@@ -169,8 +169,8 @@ analyze_basefee_update_fraction() {
     fee_up_pct=$(echo "100 * ($fee_up - 1)" | bc -l)
     fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
 
-    printf "  Blob fee increase with %d blobs: +%.2f%%" "$MAX_BLOBS" "$fee_up_pct"
-    printf "  Blob fee decrease with %d blobs: +%.2f%%" "$TARGET_BLOBS" "$fee_up_pct"
+    printf "  Blob fee increase with %d blobs: +%.2f%%\n" "$MAX_BLOBS" "$fee_up_pct"
+    printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_up_pct"
 }
 
 genesis_add_json() {
@@ -354,7 +354,7 @@ genesis_add_electra() {
     
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
-        BASEFEE_UPDATE_FRACTION_ELECTRA=$(genesis_get_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
         echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
         analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
@@ -426,7 +426,7 @@ genesis_add_fulu() {
     
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
-        BASEFEE_UPDATE_FRACTION_ELECTRA=$(genesis_get_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
         echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
         analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
@@ -519,7 +519,7 @@ genesis_add_bpo() {
         
         # Calculate basefee update fraction if not specified
         if [ -z "$fraction_value" ] || [ "$fraction_value" == "0" ]; then
-            fraction_value=$(genesis_get_basefee_update_fraction ${!max_var} ${!target_var})
+            fraction_value=$(calculate_basefee_update_fraction ${!max_var} ${!target_var})
             echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION: $fraction_value"
             analyze_basefee_update_fraction ${!max_var} ${!target_var} $fraction_value
         fi
