@@ -170,7 +170,7 @@ analyze_basefee_update_fraction() {
     fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
 
     printf "  Blob fee increase with %d blobs: +%.2f%%\n" "$MAX_BLOBS" "$fee_up_pct"
-    printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_up_pct"
+    printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_down_pct"
 }
 
 genesis_add_json() {
