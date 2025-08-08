@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source /apps/el-gen/calculate_basefee_fraction.sh
-
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -145,6 +143,34 @@ genesis_get_activation_time() {
         epoch_delay=$(( $SLOT_DURATION_IN_SECONDS * $slots_per_epoch * $1 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
+}
+
+calculate_basefee_update_fraction() {
+    MAX_BLOBS=$1
+
+    # BASE_FEE_UPDATE_FRACTION = round((MAX_BLOBS * GAS_PER_BLOB) / (2 * math.log(1.125)))
+    GAS_PER_BLOB=$((2**17))
+    BASE_FEE_UPDATE_FRACTION=$(echo "($MAX_BLOBS * $GAS_PER_BLOB) / (2 * l(1.125))" | bc -l)
+
+    echo $BASE_FEE_UPDATE_FRACTION
+}
+
+analyze_basefee_update_fraction() {
+    MAX_BLOBS=$1
+    TARGET_BLOBS=$2
+    BASE_FEE_UPDATE_FRACTION=$3
+    
+    GAS_PER_BLOB=$((2**17))
+    
+    fee_up=$(echo "e((($MAX_BLOBS - $TARGET_BLOBS) * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    fee_down=$(echo "e(-($TARGET_BLOBS * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    
+    # Calculate percentages
+    fee_up_pct=$(echo "100 * ($fee_up - 1)" | bc -l)
+    fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
+
+    printf "  Blob fee increase with %d blobs: +%.2f%%" "$MAX_BLOBS" "$fee_up_pct"
+    printf "  Blob fee decrease with %d blobs: +%.2f%%" "$TARGET_BLOBS" "$fee_up_pct"
 }
 
 genesis_add_json() {
@@ -328,10 +354,9 @@ genesis_add_electra() {
     
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
-        echo "Calculating optimal BASEFEE_UPDATE_FRACTION_ELECTRA..."
-        # Calculate with verbosity disabled
-        VERBOSE="0" BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA)
-        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA = $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(genesis_get_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
     
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
@@ -401,10 +426,9 @@ genesis_add_fulu() {
     
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
-        echo "Calculating optimal BASEFEE_UPDATE_FRACTION_ELECTRA..."
-        # Calculate with verbosity disabled
-        VERBOSE="0" BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA)
-        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA = $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(genesis_get_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
     
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
@@ -495,10 +519,9 @@ genesis_add_bpo() {
         
         # Calculate basefee update fraction if not specified
         if [ -z "$fraction_value" ] || [ "$fraction_value" == "0" ]; then
-            echo "Calculating optimal BPO_${i}_BASE_FEE_UPDATE_FRACTION..."
-            # Calculate with verbosity disabled
-            VERBOSE="0" fraction_value=$(calculate_basefee_fraction ${!max_var} ${!target_var})
-            echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION = $fraction_value"
+            fraction_value=$(genesis_get_basefee_update_fraction ${!max_var} ${!target_var})
+            echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION: $fraction_value"
+            analyze_basefee_update_fraction ${!max_var} ${!target_var} $fraction_value
         fi
         
         fraction_var_hex="0x$(printf "%x" $fraction_value)"
