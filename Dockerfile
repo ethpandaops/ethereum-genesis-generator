@@ -30,7 +30,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
     chmod +x /usr/local/bin/jq
 
 ENV PATH="/root/.cargo/bin:${PATH}"
-COPY --from=builder /work/eth-beacon-genesis/bin/eth-beacon-genesis /usr/local/bin/eth-beacon-genesis
+COPY --from=builder /work/eth-beacon-genesis/bin/eth-genesis-state-generator /usr/local/bin/eth-genesis-state-generator
 COPY --from=builder /go/bin/eth2-val-tools /usr/local/bin/eth2-val-tools
 COPY --from=builder /go/bin/geth-hdwallet /usr/local/bin/geth-hdwallet
 

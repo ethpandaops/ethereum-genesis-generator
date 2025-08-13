@@ -146,7 +146,7 @@ gen_cl_config(){
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Generate genesis
         genesis_args+=(
-          devnet
+          beaconchain
           --config /data/metadata/config.yaml
           --eth1-config /data/metadata/genesis.json
           --mnemonics $tmp_dir/mnemonics.yaml
@@ -169,7 +169,7 @@ gen_cl_config(){
           genesis_args+=(--additional-validators $validators_file)
         fi
 
-        /usr/local/bin/eth-beacon-genesis "${genesis_args[@]}"
+        /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"
         echo "Genesis block hash: $(jq -r '.latest_execution_payload_header.block_hash' /data/parsed/parsedConsensusGenesis.json)"
