@@ -77,9 +77,6 @@ add_blob_schedule() {
             if [ "$INCLUDE_SCHEDULE" = false ]; then
                 # First non-default BPO - add header
                 BLOB_SCHEDULE="
-# Blob Scheduling
-# ---------------------------------------------------------------
-
 BLOB_SCHEDULE:"
                 INCLUDE_SCHEDULE=true
             fi
@@ -97,9 +94,6 @@ BLOB_SCHEDULE:"
     else
         # Add empty BLOB_SCHEDULE if no non-default BPOs were found
         echo "
-# Blob Scheduling
-# ---------------------------------------------------------------
-
 BLOB_SCHEDULE: []" >> "$config_file"
     fi
 }
