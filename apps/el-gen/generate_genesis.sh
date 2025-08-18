@@ -145,6 +145,34 @@ genesis_get_activation_time() {
     fi
 }
 
+calculate_basefee_update_fraction() {
+    MAX_BLOBS=$1
+
+    # BASE_FEE_UPDATE_FRACTION = round((MAX_BLOBS * GAS_PER_BLOB) / (2 * math.log(1.125)))
+    GAS_PER_BLOB=$((2**17))
+    BASE_FEE_UPDATE_FRACTION=$(echo "($MAX_BLOBS * $GAS_PER_BLOB) / (2 * l(1.125))" | bc -l)
+
+    echo "($BASE_FEE_UPDATE_FRACTION + 0.5)/1" | bc
+}
+
+analyze_basefee_update_fraction() {
+    MAX_BLOBS=$1
+    TARGET_BLOBS=$2
+    BASE_FEE_UPDATE_FRACTION=$3
+    
+    GAS_PER_BLOB=$((2**17))
+    
+    fee_up=$(echo "e((($MAX_BLOBS - $TARGET_BLOBS) * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    fee_down=$(echo "e(-($TARGET_BLOBS * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    
+    # Calculate percentages
+    fee_up_pct=$(echo "100 * ($fee_up - 1)" | bc -l)
+    fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
+
+    printf "  Blob fee increase with %d blobs: +%.2f%%\n" "$MAX_BLOBS" "$fee_up_pct"
+    printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_down_pct"
+}
+
 genesis_add_json() {
     file=$1
     data=$2
@@ -323,6 +351,14 @@ genesis_add_electra() {
     echo "Adding electra genesis properties"
     prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
     prague_time_hex="0x$(printf "%x" $prague_time)"
+    
+    # Calculate basefee update fraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
+    fi
+    
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
     # load electra system contracts
     system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
@@ -387,6 +423,14 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    
+    # Calculate basefee update fraction if not specified
+    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
+        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
+        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
+        analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
+    fi
+    
     basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
 
     # genesis.json
@@ -472,6 +516,14 @@ genesis_add_bpo() {
         max_var="BPO_${i}_MAX_BLOBS"
         fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
         fraction_value=${!fraction_var}
+        
+        # Calculate basefee update fraction if not specified
+        if [ -z "$fraction_value" ] || [ "$fraction_value" == "0" ]; then
+            fraction_value=$(calculate_basefee_update_fraction ${!max_var} ${!target_var})
+            echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION: $fraction_value"
+            analyze_basefee_update_fraction ${!max_var} ${!target_var} $fraction_value
+        fi
+        
         fraction_var_hex="0x$(printf "%x" $fraction_value)"
         max_blobs_per_tx_var="BPO_${i}_MAX_BLOBS_PER_TX"
 
