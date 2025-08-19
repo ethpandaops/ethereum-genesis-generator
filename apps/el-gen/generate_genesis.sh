@@ -21,7 +21,8 @@ generate_genesis() {
     # 4 - deneb / cancun
     # 5 - electra / prague
     # 6 - fulu / osaka
-    # 7 - eip7805 / eip7805
+    # 7 - gloas / amsterdam
+    # 8 - eip7805 / eip7805
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -484,7 +485,7 @@ genesis_add_gloas() {
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "amsterdamTime": '"$gloas_time"'
+        "amsterdamTime": '"$amsterdam_time"'
     }'
 
     # chainspec.json
