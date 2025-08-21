@@ -55,46 +55,44 @@ gen_minimal_config() {
   done
 }
 
-# This function conditionally adds the BLOB_SCHEDULE section to the config.yaml file
-# It only adds the section if any BPO is non-default
+# This function adds the BLOB_SCHEDULE section to the config.yaml file.
 add_blob_schedule() {
     # Takes config file path as argument
     local config_file=$1
 
-    # Check if any BPO is non-default and build BLOB_SCHEDULE if needed
-    INCLUDE_SCHEDULE=false
     BLOB_SCHEDULE=""
 
-    # The default value is already in the environment from defaults.env
-    DEFAULT_BPO_EPOCH="18446744073709551615"
+    include_blob_schedule "$EIP7782_FORK_EPOCH" "$MAX_BLOBS_PER_BLOCK_EIP7782"
 
     for i in {1..5}; do
-        var_epoch="BPO_${i}_EPOCH"
-        var_blobs="BPO_${i}_MAX_BLOBS"
+        local var_epoch="BPO_${i}_EPOCH"
+        local var_blobs="BPO_${i}_MAX_BLOBS"
 
-        # Check if this BPO has a non-default value
-        if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$DEFAULT_BPO_EPOCH" ]; then
-            if [ "$INCLUDE_SCHEDULE" = false ]; then
-                # First non-default BPO - add header
-                BLOB_SCHEDULE="
-BLOB_SCHEDULE:"
-                INCLUDE_SCHEDULE=true
-            fi
-
-            # Add this BPO entry
-            BLOB_SCHEDULE="$BLOB_SCHEDULE
-  - EPOCH: ${!var_epoch}
-    MAX_BLOBS_PER_BLOCK: ${!var_blobs}"
-        fi
+        include_blob_schedule "${!var_epoch}" "${!var_blobs}"
     done
 
-    # Append BLOB_SCHEDULE section
-    if [ "$INCLUDE_SCHEDULE" = true ]; then
-        echo "$BLOB_SCHEDULE" >> "$config_file"
-    else
-        # Add empty BLOB_SCHEDULE if no non-default BPOs were found
-        echo "
-BLOB_SCHEDULE: []" >> "$config_file"
+    # If BLOB_SCHEDULE is empty, set it to value "[]"
+    if [[ -z "$BLOB_SCHEDULE" ]]; then
+        BLOB_SCHEDULE=" []"
+    fi
+
+    echo "BLOB_SCHEDULE:$BLOB_SCHEDULE" >> "$config_file"
+}
+
+# This function adds blob schedule to BLOB_SCHEDULE variable if fork epoch is non-default
+include_blob_schedule() {
+    # 1st argument is fork epoch
+    local fork_epoch=$1
+    # 2nd argument is MAX_BLOBS_PER_BLOCK
+    local max_blobs_per_block=$2
+
+    # The default value is already in the environment from defaults.env
+    DEFAULT_EPOCH="18446744073709551615"
+  
+    if [ -n "$fork_epoch" ] && [ "$fork_epoch" != "$DEFAULT_EPOCH" ]; then
+        BLOB_SCHEDULE="$BLOB_SCHEDULE
+  - EPOCH: $fork_epoch
+    MAX_BLOBS_PER_BLOCK: $max_blobs_per_block"
     fi
 }
 

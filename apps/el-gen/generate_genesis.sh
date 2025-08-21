@@ -22,7 +22,8 @@ generate_genesis() {
     # 5 - electra / prague
     # 6 - fulu / osaka
     # 7 - gloas / amsterdam
-    # 8 - eip7805 / eip7805
+    # 8 - eip7782 / eip7782
+    # 9 - eip7805 / eip7805
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -64,7 +65,8 @@ generate_genesis() {
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
-    [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
+    [ $has_fork -lt 8 ] && [ ! "$EIP7782_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7782 $tmp_dir
+    [ $has_fork -lt 9 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
     genesis_add_bpo $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
@@ -496,6 +498,52 @@ genesis_add_gloas() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
+    }'
+}
+
+# add eip7782 fork properties
+genesis_add_eip7782() {
+    tmp_dir=$1
+    echo "Adding eip7782 genesis properties"
+    eip7782_time=$(genesis_get_activation_time $EIP7782_FORK_EPOCH)
+    eip7782_time_hex="0x$(printf "%x" $eip7782_time)"
+    basefee_update_fraction_eip7782_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_EIP7782)"
+
+    # genesis.json
+    genesis_add_json $tmp_dir/genesis.json '.config += {
+        "eip7782Time": '"$eip7782_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "eip7782": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_EIP7782"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_EIP7782"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_EIP7782"'
+        }
+    }'
+
+    # chainspec.json
+    genesis_add_json $tmp_dir/chainspec.json '.params += {
+        "eip7782TransitionTimestamp": "'$eip7782_time_hex'"
+    }'
+    genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
+        {
+            "timestamp": "'$eip7782_time_hex'",
+            "target": '"$TARGET_BLOBS_PER_BLOCK_EIP7782"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_EIP7782"',
+            "baseFeeUpdateFraction": "'$basefee_update_fraction_eip7782_hex'"
+        }
+    ]'
+
+    # besu.json
+    genesis_add_json $tmp_dir/besu.json '.config += {
+        "eip7782Time": '"$eip7782_time"'
+    }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "eip7782": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_EIP7782"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_EIP7782"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_EIP7782"'
+        }
     }'
 }
 
