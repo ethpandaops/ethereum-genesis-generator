@@ -45,13 +45,15 @@ curl -H "Content-Type: application/json" --data-raw '{ "jsonrpc":"2.0","method":
 v1 -> bellatrix genesis state
 v2 -> capella genesis state
 v3 -> deneb genesis state
+v4 -> electra genesis state
+v5 -> fulu genesis state
+v6 -> gloas genesis state
 verkle-gen -> verkle genesis state
 
 ### Available tools within the image
 
 Name | Source
 ---- | ----
-eth2-testnet-genesis | https://github.com/protolambda/eth2-testnet-genesis
+eth-beacon-genesis | https://github.com/ethpandaops/eth-beacon-genesis
 eth2-val-tools | https://github.com/protolambda/eth2-val-tools
-zcli | https://github.com/protolambda/zcli
 el-gen | [apps/el-gen](apps/el-gen)

@@ -1,6 +1,3 @@
-preset_base: ${PRESET_BASE}
-chain_id: ${CHAIN_ID}
-deposit_contract_address: "${DEPOSIT_CONTRACT_ADDRESS}"
 mnemonic: ${EL_AND_CL_MNEMONIC}
 el_premine:
   "m/44'/60'/0'/0/0": 1000000000ETH
@@ -26,9 +23,3 @@ el_premine:
   "m/44'/60'/0'/0/20": 1000000000ETH
 el_premine_addrs: ${EL_PREMINE_ADDRS}
 additional_preloaded_contracts: ${ADDITIONAL_PRELOADED_CONTRACTS}
-genesis_timestamp: ${GENESIS_TIMESTAMP}
-genesis_delay: ${GENESIS_DELAY}
-genesis_gaslimit: ${GENESIS_GASLIMIT}
-slot_duration_in_seconds: ${SLOT_DURATION_IN_SECONDS}
-electra_fork_epoch: ${ELECTRA_FORK_EPOCH}
-fulu_fork_epoch: ${FULU_FORK_EPOCH}
