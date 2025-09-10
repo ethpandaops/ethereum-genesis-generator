@@ -116,6 +116,13 @@ gen_cl_config(){
         # Add BLOB_SCHEDULE if needed
         add_blob_schedule /data/metadata/config.yaml
 
+        # Validate mnemonics.yaml for overlapping validator ranges
+        echo "Validating mnemonics configuration..."
+        if ! /apps/validate-mnemonics.sh /config/cl/mnemonics.yaml; then
+            echo "ERROR: Mnemonics validation failed. Please fix overlapping validator ranges." >&2
+            exit 1
+        fi
+
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
