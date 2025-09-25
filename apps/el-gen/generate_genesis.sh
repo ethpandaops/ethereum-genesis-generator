@@ -63,7 +63,7 @@ generate_genesis() {
     [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
-    [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
+    [ $has_fork -lt 7 ] && ([ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ] || [ ! "$EIP7928_FORK_EPOCH" == "18446744073709551615" ]) && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
     genesis_add_bpo $tmp_dir
 
@@ -480,7 +480,11 @@ genesis_add_fulu() {
 genesis_add_gloas() {
     tmp_dir=$1
     echo "Adding gloas genesis properties"
-    amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
+    if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
+        amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
+    elif [ ! "$EIP7928_FORK_EPOCH" == "18446744073709551615" ]; then
+        amsterdam_time=$(genesis_get_activation_time $EIP7928_FORK_EPOCH)
+    fi
     amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
 
     # genesis.json
