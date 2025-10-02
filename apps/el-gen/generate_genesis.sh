@@ -1,5 +1,25 @@
 #!/bin/bash
 
+setup_shadowfork() {
+    local network_name=$1
+    local tmp_dir=$2
+
+    # Set shadowfork properties
+    has_fork="5" # electra
+
+    # Download genesis files from base network
+    wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/genesis.json
+    wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/chainspec.json
+    wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/besu.json
+
+    # Validate deposit contract address matches base network
+    base_deposit_contract=$(wget -qO- https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/deposit_contract.txt)
+    if [ "$DEPOSIT_CONTRACT_ADDRESS" != "$base_deposit_contract" ]; then
+        echo "ERROR: DEPOSIT_CONTRACT_ADDRESS ($DEPOSIT_CONTRACT_ADDRESS) must match $network_name ($base_deposit_contract) for shadowfork"
+        exit 1
+    fi
+}
+
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -26,28 +46,16 @@ generate_genesis() {
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
-        has_fork="5" # electra
-        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/genesis.json
-        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/mainnet/refs/heads/main/metadata/besu.json
+        setup_shadowfork "mainnet" "$tmp_dir"
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
-        has_fork="5" # electra
-        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/genesis.json
-        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/sepolia/refs/heads/main/metadata/besu.json
+        setup_shadowfork "sepolia" "$tmp_dir"
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
-        has_fork="5" # electra
-        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/genesis.json
-        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/holesky/refs/heads/main/metadata/besu.json
+        setup_shadowfork "holesky" "$tmp_dir"
     elif [ "$CHAIN_ID" == "560048" ]; then
         # hoodi shadowfork
-        has_fork="5" # electra
-        wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/genesis.json
-        wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/chainspec.json
-        wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/hoodi/refs/heads/main/metadata/besu.json
+        setup_shadowfork "hoodi" "$tmp_dir"
     else
         # Generate base genesis.json, chainspec.json and besu.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
