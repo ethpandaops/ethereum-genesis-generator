@@ -496,6 +496,14 @@ genesis_add_gloas() {
         "amsterdamTime": '"$amsterdam_time"'
     }'
 
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "amsterdam": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
+        }
+    }'
+
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
         "eip7928TransitionTimestamp": "'$amsterdam_time_hex'"
@@ -504,6 +512,14 @@ genesis_add_gloas() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
+    }'
+
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "amsterdam": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
+        }
     }'
 }
 
