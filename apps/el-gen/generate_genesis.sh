@@ -73,7 +73,9 @@ generate_genesis() {
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
-    genesis_add_bpo $tmp_dir
+
+    # generate blob schedule based on Forks and BPO only forks
+    [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_blobschedule $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -446,13 +448,11 @@ genesis_add_fulu() {
         "osakaTime": '"$osaka_time"'
     }'
 
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
-    }'
+    # Queue osaka as a special BPO to be processed in genesis_add_blobschedule
+    export OSAKA_BPO_EPOCH="$FULU_FORK_EPOCH"
+    export OSAKA_BPO_TARGET="$TARGET_BLOBS_PER_BLOCK_ELECTRA"
+    export OSAKA_BPO_MAX="$MAX_BLOBS_PER_BLOCK_ELECTRA"
+    export OSAKA_BPO_FRACTION="$BASEFEE_UPDATE_FRACTION_ELECTRA"
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -472,14 +472,6 @@ genesis_add_fulu() {
         "osakaTime": '"$osaka_time"'
     }'
 
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
-    }'
-
 }
 
 # Add gloas fork properties
@@ -494,13 +486,11 @@ genesis_add_gloas() {
         "amsterdamTime": '"$amsterdam_time"'
     }'
 
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "amsterdam": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
-        }
-    }'
+    # Queue amsterdam as a special BPO to be processed in genesis_add_blobschedule
+    export AMSTERDAM_BPO_EPOCH="$GLOAS_FORK_EPOCH"
+    export AMSTERDAM_BPO_TARGET="$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"
+    export AMSTERDAM_BPO_MAX="$MAX_BLOBS_PER_BLOCK_AMSTERDAM"
+    export AMSTERDAM_BPO_FRACTION="$BASEFEE_UPDATE_FRACTION_AMSTERDAM"
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -512,13 +502,6 @@ genesis_add_gloas() {
         "amsterdamTime": '"$amsterdam_time"'
     }'
 
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "amsterdam": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
-        }
-    }'
 }
 
 # add eip7805 fork properties
@@ -544,72 +527,124 @@ genesis_add_eip7805() {
     }'
 }
 
-genesis_add_bpo() {
+genesis_add_blobschedule() {
     tmp_dir=$1
-    echo "Adding bpo genesis properties"
-    for i in {1..5}; do
-        bpo_var="BPO_${i}_EPOCH"
-        bpo_val=${!bpo_var}
+    echo "Adding blob schedule (BPOs and fork-based entries)"
 
-        # Skip if variable is not defined, is empty, or has max value
-        if [ -z "$bpo_val" ] || [ "$bpo_val" = "18446744073709551615" ]; then
-            continue
+    # Collect all BPO entries: epoch|name|target|max|fraction
+    declare -a bpo_entries
+
+    # Add osaka if queued
+    if [ -n "$OSAKA_BPO_EPOCH" ] && [ "$OSAKA_BPO_EPOCH" != "18446744073709551615" ]; then
+        bpo_entries+=("$OSAKA_BPO_EPOCH|osaka|$OSAKA_BPO_TARGET|$OSAKA_BPO_MAX|$OSAKA_BPO_FRACTION")
+    fi
+
+    # Add amsterdam if queued
+    if [ -n "$AMSTERDAM_BPO_EPOCH" ] && [ "$AMSTERDAM_BPO_EPOCH" != "18446744073709551615" ]; then
+        bpo_entries+=("$AMSTERDAM_BPO_EPOCH|amsterdam|$AMSTERDAM_BPO_TARGET|$AMSTERDAM_BPO_MAX|$AMSTERDAM_BPO_FRACTION")
+    fi
+
+    # Add regular BPO_1 through BPO_N
+    i=1
+    while true; do
+        bpo_epoch_var="BPO_${i}_EPOCH"
+        bpo_epoch="${!bpo_epoch_var}"
+
+        # Break if variable is not defined
+        if [ -z "$bpo_epoch" ]; then
+            break
         fi
 
-        bpo_time=$(genesis_get_activation_time $bpo_val)
+        # Skip if has max value (not scheduled)
+        if [ "$bpo_epoch" != "18446744073709551615" ]; then
+            target_var="BPO_${i}_TARGET_BLOBS"
+            max_var="BPO_${i}_MAX_BLOBS"
+            fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
+
+            bpo_entries+=("$bpo_epoch|bpo$i|${!target_var}|${!max_var}|${!fraction_var}")
+        fi
+
+        i=$((i + 1))
+    done
+
+    # Sort entries by epoch
+    IFS=$'\n' sorted_entries=($(printf '%s\n' "${bpo_entries[@]}" | sort -t'|' -k1 -n))
+    unset IFS
+
+    # Process entries with inheritance
+    prev_target=""
+    prev_max=""
+    prev_fraction=""
+
+    for entry in "${sorted_entries[@]}"; do
+        IFS='|' read -r epoch name target max fraction <<< "$entry"
+
+        echo "Processing $name at epoch $epoch..."
+
+        # Inherit from previous entry if values are empty or 0
+        if [ -n "$prev_target" ]; then
+            [ -z "$target" ] && target="$prev_target"
+            [ -z "$max" ] && max="$prev_max"
+            [ -z "$fraction" ] || [ "$fraction" = "0" ] && fraction="$prev_fraction"
+        fi
+
+        # Calculate fraction if still not set or is 0
+        if [ -z "$fraction" ] || [ "$fraction" = "0" ]; then
+            fraction=$(calculate_basefee_update_fraction "$max")
+            echo "  Calculated baseFeeUpdateFraction: $fraction"
+            analyze_basefee_update_fraction "$max" "$target" "$fraction"
+        fi
+
+        # Store for next iteration
+        prev_target="$target"
+        prev_max="$max"
+        prev_fraction="$fraction"
+
+        # Calculate timestamps
+        bpo_time=$(genesis_get_activation_time "$epoch")
         bpo_time_hex="0x$(printf "%x" $bpo_time)"
+        fraction_hex="0x$(printf "%x" $fraction)"
 
-        target_var="BPO_${i}_TARGET_BLOBS"
-        max_var="BPO_${i}_MAX_BLOBS"
-        fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
-        fraction_value=${!fraction_var}
+        echo "  Final values: target=$target, max=$max, baseFeeUpdateFraction=$fraction"
 
-        # Calculate basefee update fraction if not specified
-        if [ -z "$fraction_value" ] || [ "$fraction_value" == "0" ]; then
-            fraction_value=$(calculate_basefee_update_fraction ${!max_var} ${!target_var})
-            echo "Calculated BPO_${i}_BASE_FEE_UPDATE_FRACTION: $fraction_value"
-            analyze_basefee_update_fraction ${!max_var} ${!target_var} $fraction_value
-        fi
-
-        fraction_var_hex="0x$(printf "%x" $fraction_value)"
-        max_blobs_per_tx_var="BPO_${i}_MAX_BLOBS_PER_TX"
-
-        # genesis.json
+        # Add to genesis.json
         genesis_add_json $tmp_dir/genesis.json '.config += {
-            "bpo'"$i"'Time": '"$bpo_time"'
+            "'"$name"'Time": '"$bpo_time"'
         }'
         genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-            "bpo'"$i"'": {
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": '"$fraction_value"'
+            "'"$name"'": {
+                "target": '"$target"',
+                "max": '"$max"',
+                "baseFeeUpdateFraction": '"$fraction"'
             }
         }'
 
-
-        # chainspec.json
-
+        # Add to chainspec.json (array format, will be sorted by timestamp)
         genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
             {
                 "timestamp": "'$bpo_time_hex'",
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": "'$fraction_var_hex'"
+                "target": '"$target"',
+                "max": '"$max"',
+                "baseFeeUpdateFraction": "'$fraction_hex'"
             }
         ]'
 
-        # besu.json
+        # Add to besu.json
         genesis_add_json $tmp_dir/besu.json '.config += {
-            "bpo'"$i"'Time": '"$bpo_time"'
+            "'"$name"'Time": '"$bpo_time"'
         }'
-
-
         genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-            "bpo'"$i"'": {
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": '"$fraction_value"'
+            "'"$name"'": {
+                "target": '"$target"',
+                "max": '"$max"',
+                "baseFeeUpdateFraction": '"$fraction"'
             }
         }'
     done
+
+    # Sort chainspec.json blobSchedule array by timestamp
+    if [ ${#sorted_entries[@]} -gt 0 ]; then
+        echo "Sorting chainspec.json blobSchedule by timestamp..."
+        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule |= sort_by(.timestamp)'
+    fi
 }
