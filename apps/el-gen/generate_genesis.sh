@@ -187,8 +187,6 @@ genesis_add_json() {
     file=$1
     data=$2
 
-    echo "$data" > /data/change.json
-    cp "$file" /data/input.json
     jq -c "$data" "$file" > "$file.out"
     mv "$file.out" "$file"
 }
