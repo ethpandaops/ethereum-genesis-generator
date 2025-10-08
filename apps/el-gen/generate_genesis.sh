@@ -486,11 +486,21 @@ genesis_add_gloas() {
         "amsterdamTime": '"$amsterdam_time"'
     }'
 
+<<<<<<< HEAD
     # Queue amsterdam as a special BPO to be processed in genesis_add_blobschedule
     export AMSTERDAM_BPO_EPOCH="$GLOAS_FORK_EPOCH"
     export AMSTERDAM_BPO_TARGET="$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"
     export AMSTERDAM_BPO_MAX="$MAX_BLOBS_PER_BLOCK_AMSTERDAM"
     export AMSTERDAM_BPO_FRACTION="$BASEFEE_UPDATE_FRACTION_AMSTERDAM"
+=======
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "amsterdam": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
+        }
+    }'
+>>>>>>> master
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -502,6 +512,16 @@ genesis_add_gloas() {
         "amsterdamTime": '"$amsterdam_time"'
     }'
 
+<<<<<<< HEAD
+=======
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "amsterdam": {
+            "target": '"$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "max": '"$MAX_BLOBS_PER_BLOCK_AMSTERDAM"',
+            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_AMSTERDAM"'
+        }
+    }'
+>>>>>>> master
 }
 
 # add eip7805 fork properties
