@@ -581,14 +581,13 @@ genesis_add_blobschedule() {
 
         echo "Processing $name at epoch $epoch..."
 
-        # Inherit from previous entry if values are empty or 0
+        # Inherit target/max from previous entry if empty
         if [ -n "$prev_target" ]; then
             [ -z "$target" ] && target="$prev_target"
             [ -z "$max" ] && max="$prev_max"
-            [ -z "$fraction" ] || [ "$fraction" = "0" ] && fraction="$prev_fraction"
         fi
 
-        # Calculate fraction if still not set or is 0
+        # Calculate fraction based on max value (or use explicit if provided and non-zero)
         if [ -z "$fraction" ] || [ "$fraction" = "0" ]; then
             fraction=$(calculate_basefee_update_fraction "$max")
             echo "  Calculated baseFeeUpdateFraction: $fraction"
