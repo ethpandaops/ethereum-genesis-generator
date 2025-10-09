@@ -720,14 +720,16 @@ genesis_add_bpos() {
             fi
 
             echo "Adding BPO $i at epoch $bpo_epoch (target: ${!target_var}, max: ${!max_var}, fraction: $fraction)"
+            local activation_time=$(genesis_get_activation_time $bpo_epoch)
 
             genesis_add_blob_schedule $tmp_dir '{
-                "timestamp": '"$(genesis_get_activation_time $bpo_epoch)"',
+                "timestamp": '"$activation_time"',
                 "target": '"${!target_var}"',
                 "max": '"${!max_var}"',
                 "baseFeeUpdateFraction": '"$fraction"'
             }'
 
+            genesis_add_json $tmp_dir/genesis.json '.config.bpo'$i'Time = '"$activation_time"
             genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
                 "bpo'$i'": {
                     "target": '"${!target_var}"',
@@ -736,6 +738,7 @@ genesis_add_bpos() {
                 }
             }'
 
+            genesis_add_json $tmp_dir/besu.json '.config.bpo'$i'Time = '"$activation_time"
             genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
                 "bpo'$i'": {
                     "target": '"${!target_var}"',
