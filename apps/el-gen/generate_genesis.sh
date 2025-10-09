@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Main function that generates ethereum execution layer genesis configuration files
+# Creates genesis.json, chainspec.json, and besu.json for different EL clients
+# Supports both new networks and shadowforks of existing networks
+# Args:
+#   $1: Output directory for generated genesis files
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -140,6 +145,16 @@ generate_genesis() {
     rm -rf $tmp_dir
 }
 
+# Loads base genesis configuration from an existing network for shadowfork creation
+# Downloads genesis files from eth-clients repository and determines the latest active fork
+# Args:
+#   $1: Network name (mainnet, sepolia, holesky, hoodi)
+#   $2: Temporary directory to store downloaded files
+# Sets global variables:
+#   has_fork: Latest active fork number
+#   has_bpos: Latest active BPO number
+#   shadowfork_cutoff_time: Timestamp for shadowfork cutoff
+#   shadowfork_blob_schedule: Latest active blob schedule
 genesis_load_base_genesis() {
     local network_name=$1
     local tmp_dir=$2
@@ -213,35 +228,51 @@ genesis_load_base_genesis() {
         fi
     done
 
-    # remove unscheduled BPOs from chainspec.json (timestamp is in hex)
+    # Remove future BPOs that haven't activated yet at shadowfork time
+    # First, filter chainspec blob schedule entries (uses hex timestamps)
     genesis_add_json $tmp_dir/chainspec.json '
         def hx: ltrimstr("0x") | explode | reduce .[] as $c (0; . * 16 + (if $c>96 then $c-87 else $c-48 end));
         .params.blobSchedule |= map(select((.timestamp | hx) <= '"$shadowfork_cutoff_time"'))
     '
+    # Remove future BPO configurations from genesis files
     for ((i=max_bpos; i>has_bpos; i--)); do
         genesis_add_json $tmp_dir/genesis.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
         genesis_add_json $tmp_dir/besu.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
     done
 }
 
+# Calculates the activation timestamp for a given epoch
+# Converts epoch number to Unix timestamp based on genesis delay and slot duration
+# Args:
+#   $1: Epoch number (0 for immediate activation)
+# Returns:
+#   Activation timestamp in seconds since Unix epoch
 genesis_get_activation_time() {
     if [ "$1" == "0" ]; then
         echo "0"
     else
+        # Calculate slots per epoch based on preset
         if [ "$PRESET_BASE" == "minimal" ]; then
             slots_per_epoch=8
         else
             slots_per_epoch=32
         fi
+        # Convert epoch to timestamp: genesis_time + genesis_delay + (epoch * slots * slot_duration)
         epoch_delay=$(( $SLOT_DURATION_IN_SECONDS * $slots_per_epoch * $1 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
 }
 
+# Retrieves the active blob schedule for a given timestamp
+# Searches through all blob schedules to find the most recent one before the timestamp
+# Args:
+#   $1: Temporary directory containing blob_schedule.json
+#   $2: Timestamp to find active schedule for
+# Returns:
+#   JSON object containing blob schedule parameters (target, max, baseFeeUpdateFraction)
 genesis_get_blob_schedule() {
     local tmp_dir=$1
     local timestamp=$2
-    local remove_timestamp=$3
 
     # get latest active blob schedule based on timestamp
     local active_blob_schedule="$shadowfork_blob_schedule"
@@ -254,13 +285,17 @@ genesis_get_blob_schedule() {
         active_blob_schedule="$matching_blob_schedule"
     fi
 
-    if [ -n "$remove_timestamp" ]; then
-        active_blob_schedule=$(echo "$active_blob_schedule" | jq "del(.timestamp)")
-    fi
+    # remove timestamp field from returned schedule (geth/besu format)
+    active_blob_schedule=$(echo "$active_blob_schedule" | jq "del(.timestamp)")
 
     echo "$active_blob_schedule"
 }
 
+# Adds a new blob schedule entry to the blob schedule tracking file
+# Ensures entries are ordered by timestamp and prevents duplicates
+# Args:
+#   $1: Temporary directory containing blob_schedule.json
+#   $2: JSON object with blob schedule (must include timestamp field)
 genesis_add_blob_schedule() {
     local tmp_dir=$1
     local blob_schedule=$2
@@ -279,6 +314,10 @@ genesis_add_blob_schedule() {
     '
 }
 
+# Applies all blob schedules to the chainspec.json file
+# Converts decimal timestamps to hex format for chainspec compatibility
+# Args:
+#   $1: Temporary directory containing blob_schedule.json and chainspec.json
 genesis_apply_blob_schedule() {
     local tmp_dir=$1
 
@@ -290,6 +329,12 @@ genesis_apply_blob_schedule() {
     genesis_add_json "$tmp_dir/chainspec.json" '.params.blobSchedule += '"$blob_schedule"
 }
 
+# Calculates the base fee update fraction for blob pricing
+# Uses the formula: round((MAX_BLOBS * GAS_PER_BLOB) / (2 * log(1.125)))
+# Args:
+#   $1: Maximum number of blobs per block
+# Returns:
+#   Base fee update fraction as an integer
 calculate_basefee_update_fraction() {
     local MAX_BLOBS=$1
 
@@ -300,6 +345,12 @@ calculate_basefee_update_fraction() {
     echo "($BASE_FEE_UPDATE_FRACTION + 0.5)/1" | bc
 }
 
+# Analyzes and displays the blob fee percentage changes for debugging
+# Shows how much fees increase with max blobs and decrease with target blobs
+# Args:
+#   $1: Maximum number of blobs per block
+#   $2: Target number of blobs per block
+#   $3: Base fee update fraction
 analyze_basefee_update_fraction() {
     local MAX_BLOBS=$1
     local TARGET_BLOBS=$2
@@ -318,6 +369,11 @@ analyze_basefee_update_fraction() {
     printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_down_pct"
 }
 
+# Updates a JSON file with a JQ query in-place
+# Executes the JQ query and overwrites the original file
+# Args:
+#   $1: Path to the JSON file to update
+#   $2: JQ query string to apply to the file
 genesis_add_json() {
     local file=$1
     local data=$2
@@ -326,6 +382,12 @@ genesis_add_json() {
     mv "$file.out" "$file"
 }
 
+# Updates a JSON file with large data using JQ slurpfile
+# Used when data is too large for command line arguments
+# Args:
+#   $1: Path to the JSON file to update
+#   $2: Large JSON data to be used in query
+#   $3: JQ query string that references $input[0] for the data
 genesis_add_big_json() {
     local file=$1
     local data=$2
@@ -337,6 +399,12 @@ genesis_add_big_json() {
     rm "$file.inp"
 }
 
+# Adds an address allocation to the allocations file
+# Converts ETH balance notation to wei (e.g., "1 ETH" -> "1000000000000000000")
+# Args:
+#   $1: Temporary directory containing allocations.json
+#   $2: Ethereum address (with 0x prefix)
+#   $3: Allocation object (JSON) with balance and optional code/storage
 genesis_add_allocation() {
     local tmp_dir=$1
     local address=$2
@@ -346,6 +414,10 @@ genesis_add_allocation() {
     echo "$allocation" | jq -c '.balance |= gsub(" *ETH"; "000000000000000000") | {("'"$address"'"): .}' >> $tmp_dir/allocations.json
 }
 
+# Deploys system contracts required by various EIPs
+# Adds deposit contract and fork-specific system contracts (EIP-4788, EIP-2935, etc.)
+# Args:
+#   $1: Temporary directory for storing allocations
 genesis_add_system_contracts() {
     local tmp_dir=$1
     local system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
@@ -382,6 +454,10 @@ genesis_add_system_contracts() {
     fi
 }
 
+# Adds Bellatrix (Merge) fork properties to genesis files
+# Sets up proof-of-stake transition with terminal total difficulty of 0
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_bellatrix() {
     local tmp_dir=$1
     echo "Adding bellatrix genesis properties"
@@ -407,7 +483,10 @@ genesis_add_bellatrix() {
     }'
 }
 
-# add capella fork properties
+# Adds Capella (Shanghai) fork properties to genesis files
+# Enabled EIPs: 4895, 3855, 3651, 3860
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_capella() {
     local tmp_dir=$1
     echo "Adding capella genesis properties"
@@ -433,7 +512,10 @@ genesis_add_capella() {
     }'
 }
 
-# add deneb fork properties
+# Adds Deneb (Cancun) fork properties to genesis files
+# Enabled EIPs: 4844, 4788, 1153, 5656, 6780
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_deneb() {
     local tmp_dir=$1
     echo "Adding deneb genesis properties"
@@ -483,7 +565,10 @@ genesis_add_deneb() {
     }'
 }
 
-# add electra fork properties
+# Adds Electra (Prague) fork properties to genesis files
+# Enabled EIPs: 2537, 2935, 6110, 7002, 7251, 7623, 7702
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_electra() {
     local tmp_dir=$1
     echo "Adding electra genesis properties"
@@ -497,10 +582,10 @@ genesis_add_electra() {
         analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
 
-    # load electra system contracts
+    # Load system contract addresses for Electra
     local system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
-    local eip7002_contract=$(echo "$system_contracts" | jq -r '.eip7002_address')
-    local eip7251_contract=$(echo "$system_contracts" | jq -r '.eip7251_address')
+    local eip7002_contract=$(echo "$system_contracts" | jq -r '.eip7002_address')  # Withdrawal requests
+    local eip7251_contract=$(echo "$system_contracts" | jq -r '.eip7251_address')  # Consolidation requests
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -549,13 +634,16 @@ genesis_add_electra() {
     }'
 }
 
-# add fulu fork properties
+# Adds Fulu (Osaka) fork properties to genesis files
+# Enabled EIPs: 7594, 7823, 7825, 7883, 7918, 7934, 7939, 7951
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_fulu() {
     local tmp_dir=$1
     echo "Adding fulu genesis properties"
     local osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     local osaka_time_hex="0x$(printf "%x" $osaka_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $osaka_time "1")
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $osaka_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -587,7 +675,12 @@ genesis_add_fulu() {
     }'
 }
 
-# add bpos to blob schedule
+# Adds BPOs (Blob Parameter Only) to the blob schedule
+# BPOs allow dynamic blob parameter updates without hard forks
+# Args:
+#   $1: Temporary directory containing genesis files
+#   $2: Minimum BPO number to process
+#   $3: Maximum BPO number to process
 genesis_add_bpos() {
     local tmp_dir=$1
     local min_bpo=$2
@@ -651,13 +744,16 @@ genesis_add_bpos() {
     done
 }
 
-# Add gloas fork properties
+# Adds Gloas (Amsterdam) fork properties to genesis files
+# Enabled EIPs: 7928
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_gloas() {
     local tmp_dir=$1
     echo "Adding gloas genesis properties"
     local amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
     local amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $amsterdam_time "1")
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $amsterdam_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -682,13 +778,16 @@ genesis_add_gloas() {
 
 }
 
-# add eip7805 fork properties
+# Adds EIP-7805 fork properties to genesis files
+# Enabled EIPs: 7805
+# Args:
+#   $1: Temporary directory containing genesis files
 genesis_add_eip7805() {
     local tmp_dir=$1
     echo "Adding eip7805 genesis properties"
     local eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
     local eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $eip7805_time "1")
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $eip7805_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
