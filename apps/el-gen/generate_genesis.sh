@@ -233,6 +233,16 @@ genesis_load_base_genesis() {
         fi
     done
 
+    # Extract max blobs from parent network for already activated BPOs
+    for ((i=1; i<=has_bpos; i++)); do
+        max_blobs=$(cat $tmp_dir/genesis.json | jq -r ".config.blobSchedule.bpo${i}.max")
+        echo "Active BPO $i max_blobs: $max_blobs"
+
+        # set BPO_$i_EPOCH & BPO_$i_MAX_BLOBS to the values of the parent network
+        export BPO_${i}_EPOCH="0"
+        export BPO_${i}_MAX_BLOBS="$max_blobs"
+    done
+
     # Remove future BPOs that haven't activated yet at shadowfork time
     # First, filter chainspec blob schedule entries (uses hex timestamps)
     genesis_add_json $tmp_dir/chainspec.json '
