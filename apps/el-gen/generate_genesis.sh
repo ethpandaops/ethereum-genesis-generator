@@ -1,25 +1,5 @@
 #!/bin/bash
 
-setup_shadowfork() {
-    local network_name=$1
-    local tmp_dir=$2
-
-    # Set shadowfork properties
-    has_fork="5" # electra
-
-    # Download genesis files from base network
-    wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/genesis.json
-    wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/chainspec.json
-    wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/besu.json
-
-    # Validate deposit contract address matches base network
-    base_deposit_contract=$(wget -qO- https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/deposit_contract.txt)
-    if [ "$DEPOSIT_CONTRACT_ADDRESS" != "$base_deposit_contract" ]; then
-        echo "ERROR: DEPOSIT_CONTRACT_ADDRESS ($DEPOSIT_CONTRACT_ADDRESS) must match $network_name ($base_deposit_contract) for shadowfork"
-        exit 1
-    fi
-}
-
 generate_genesis() {
     set +x
     export CHAIN_ID_HEX="0x$(printf "%x" $CHAIN_ID)"
@@ -27,11 +7,19 @@ generate_genesis() {
     export GENESIS_GASLIMIT_HEX="0x$(printf "%x" $GENESIS_GASLIMIT)"
     export GENESIS_DIFFICULTY_HEX="0x$(printf "%x" $GENESIS_DIFFICULTY)"
 
-    out_dir=$1
-    tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-
+    # settings
+    max_bpos=5
+    
+    # variables
     is_shadowfork="1"
     has_fork="0"
+    has_bpos="0"
+    shadowfork_cutoff_time="0"
+    shadowfork_blob_schedule=""
+
+    # output directory
+    local out_dir=$1
+    local tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
 
     # has_fork tracks the fork version of the input genesis
     # 0 - phase0
@@ -46,24 +34,32 @@ generate_genesis() {
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
-        setup_shadowfork "mainnet" "$tmp_dir"
+        genesis_load_base_genesis "mainnet" "$tmp_dir"
     elif [ "$CHAIN_ID" == "11155111" ]; then
         # sepolia shadowfork
-        setup_shadowfork "sepolia" "$tmp_dir"
+        genesis_load_base_genesis "sepolia" "$tmp_dir"
     elif [ "$CHAIN_ID" == "17000" ]; then
         # holesky shadowfork
-        setup_shadowfork "holesky" "$tmp_dir"
+        genesis_load_base_genesis "holesky" "$tmp_dir"
     elif [ "$CHAIN_ID" == "560048" ]; then
         # hoodi shadowfork
-        setup_shadowfork "hoodi" "$tmp_dir"
+        genesis_load_base_genesis "hoodi" "$tmp_dir"
     else
         # Generate base genesis.json, chainspec.json and besu.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
         envsubst < /apps/el-gen/tpl-chainspec.json > $tmp_dir/chainspec.json
         envsubst < /apps/el-gen/tpl-besu.json      > $tmp_dir/besu.json
         is_shadowfork="0"
-        has_fork="0"
     fi
+
+    if [ "$is_shadowfork" == "1" ]; then
+        echo "Shadowfork summary:"
+        echo "  Shadowfork cutoff time: $shadowfork_cutoff_time"
+        echo "  Latest active fork: $has_fork"
+        echo "  Latest active BPO:  $has_bpos"
+    fi
+
+    echo "[]" > $tmp_dir/blob_schedule.json
 
     # Add additional fork properties
     [ $has_fork -lt 2 ] && genesis_add_bellatrix $tmp_dir
@@ -71,11 +67,12 @@ generate_genesis() {
     [ $has_fork -lt 4 ] && [ ! "$DENEB_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_deneb $tmp_dir
     [ $has_fork -lt 5 ] && [ ! "$ELECTRA_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_electra $tmp_dir
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
+                           [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
 
-    # generate blob schedule based on Forks and BPO only forks
-    [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_blobschedule $tmp_dir
+    # apply special chainspec blob schedule format
+    genesis_apply_blob_schedule $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -143,6 +140,90 @@ generate_genesis() {
     rm -rf $tmp_dir
 }
 
+genesis_load_base_genesis() {
+    local network_name=$1
+    local tmp_dir=$2
+
+    # Download genesis files from base network
+    wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/genesis.json
+    wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/chainspec.json
+    wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/besu.json
+
+    # Validate deposit contract address matches base network
+    local base_deposit_contract=$(wget -qO- https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/deposit_contract.txt)
+    if [ "$DEPOSIT_CONTRACT_ADDRESS" != "$base_deposit_contract" ]; then
+        echo "ERROR: DEPOSIT_CONTRACT_ADDRESS ($DEPOSIT_CONTRACT_ADDRESS) must match $network_name ($base_deposit_contract) for shadowfork"
+        #exit 1
+    fi
+
+    # Get parent network cutoff time
+    local block_json
+    if [[ $SHADOW_FORK_RPC != "" ]]; then
+        local block_number_hex=$(curl -s -X POST -H "Content-Type: application/json" \
+            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+            "$SHADOW_FORK_RPC" | jq -r '.result')
+        block_json=$(curl -s -X POST -H "Content-Type: application/json" \
+            --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"$block_number_hex\", true],\"id\":2}" \
+            "$SHADOW_FORK_RPC")
+    elif [[ $SHADOW_FORK_FILE != "" ]]; then
+        block_json=$(cat $SHADOW_FORK_FILE)
+    fi
+
+    # Convert from hex to decimal
+    local hex_timestamp=$(echo "$block_json" | jq -r '.result.timestamp')
+    if [[ "$hex_timestamp" == 0x* ]]; then
+        shadowfork_cutoff_time=$((hex_timestamp))
+    else
+        shadowfork_cutoff_time=$hex_timestamp
+    fi
+
+    if [ "$shadowfork_cutoff_time" == "0" ]; then
+        echo "ERROR: Could not determine shadowfork cutoff time"
+        exit 1
+    fi
+
+    # determinate latest active fork based on cutoff time and parent network's genesis.json
+    if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="7" # gloas
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.amsterdam + { \"timestamp\": .config.amsterdamTime }")"
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="6" # fulu
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.osaka + { \"timestamp\": .config.osakaTime }")"
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.pragueTime and .config.pragueTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="5" # electra
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")"
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.cancunTime and .config.cancunTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="4" # deneb
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.cancun + { \"timestamp\": .config.cancunTime }")"
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.shanghaiTime and .config.shanghaiTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="3" # capella
+    else
+        has_fork="2" # bellatrix
+    fi
+
+    # determinate latest active BPO based on cutoff time and parent network's genesis.json
+    for ((i=max_bpos; i>=1; i--)); do
+        if jq -e ".config.bpo${i}Time != null and .config.bpo${i}Time < $shadowfork_cutoff_time" "$tmp_dir/genesis.json" >/dev/null; then
+            has_bpos="$i"
+
+            if [ -z "$shadowfork_blob_schedule" ] || [ "$(jq -r ".timestamp" <<< "$shadowfork_blob_schedule")" -lt "$(jq -r ".config.bpo${i}Time" "$tmp_dir/genesis.json")" ]; then
+                shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.bpo${i} + { \"timestamp\": .config.bpo${i}Time }")"
+            fi
+            break
+        fi
+    done
+
+    # remove unscheduled BPOs from chainspec.json (timestamp is in hex)
+    genesis_add_json $tmp_dir/chainspec.json '
+        def hx: ltrimstr("0x") | explode | reduce .[] as $c (0; . * 16 + (if $c>96 then $c-87 else $c-48 end));
+        .params.blobSchedule |= map(select((.timestamp | hx) <= '"$shadowfork_cutoff_time"'))
+    '
+    for ((i=max_bpos; i>has_bpos; i--)); do
+        genesis_add_json $tmp_dir/genesis.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
+        genesis_add_json $tmp_dir/besu.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
+    done
+}
+
 genesis_get_activation_time() {
     if [ "$1" == "0" ]; then
         echo "0"
@@ -157,46 +238,98 @@ genesis_get_activation_time() {
     fi
 }
 
+genesis_get_blob_schedule() {
+    local tmp_dir=$1
+    local timestamp=$2
+    local remove_timestamp=$3
+
+    # get latest active blob schedule based on timestamp
+    local active_blob_schedule="$shadowfork_blob_schedule"
+
+    local matching_blob_schedule=$(jq --argjson t "$timestamp" '
+        (map(select(.timestamp <= $t)) | sort_by(.timestamp) | last) // ""
+    ' $tmp_dir/blob_schedule.json)
+
+    if [ -n "$matching_blob_schedule" ]; then
+        active_blob_schedule="$matching_blob_schedule"
+    fi
+
+    if [ -n "$remove_timestamp" ]; then
+        active_blob_schedule=$(echo "$active_blob_schedule" | jq "del(.timestamp)")
+    fi
+
+    echo "$active_blob_schedule"
+}
+
+genesis_add_blob_schedule() {
+    local tmp_dir=$1
+    local blob_schedule=$2
+
+    NEW_BLOB_SCHEDULE="$blob_schedule" \
+    genesis_add_json "$tmp_dir/blob_schedule.json" '
+        (env.NEW_BLOB_SCHEDULE | fromjson) as $n
+        | (.[-1]?.timestamp // -1) as $last
+        | if $n.timestamp > $last then
+            . + [$n]
+          elif $n.timestamp == $last then
+            .[:-1] + [$n]
+          else
+            error("new entry has lower timestamp than latest: \($n.timestamp) < \($last)")
+          end
+    '
+}
+
+genesis_apply_blob_schedule() {
+    local tmp_dir=$1
+
+    local blob_schedule=$(jq '
+    def tohex: .|tonumber as $n | def go($x): if $x<16 then ("0123456789abcdef"[$x:$x+1]) else (go(($x/16|floor)) + ("0123456789abcdef"[($x%16):($x%16+1)])) end; go($n);
+    map(.timestamp |= ("0x" + (.|tonumber|tohex)) | .baseFeeUpdateFraction |= ("0x" + (.|tonumber|tohex)))
+    ' $tmp_dir/blob_schedule.json)
+
+    genesis_add_json "$tmp_dir/chainspec.json" '.params.blobSchedule += '"$blob_schedule"
+}
+
 calculate_basefee_update_fraction() {
-    MAX_BLOBS=$1
+    local MAX_BLOBS=$1
 
     # BASE_FEE_UPDATE_FRACTION = round((MAX_BLOBS * GAS_PER_BLOB) / (2 * math.log(1.125)))
-    GAS_PER_BLOB=$((2**17))
-    BASE_FEE_UPDATE_FRACTION=$(echo "($MAX_BLOBS * $GAS_PER_BLOB) / (2 * l(1.125))" | bc -l)
+    local GAS_PER_BLOB=$((2**17))
+    local BASE_FEE_UPDATE_FRACTION=$(echo "($MAX_BLOBS * $GAS_PER_BLOB) / (2 * l(1.125))" | bc -l)
 
     echo "($BASE_FEE_UPDATE_FRACTION + 0.5)/1" | bc
 }
 
 analyze_basefee_update_fraction() {
-    MAX_BLOBS=$1
-    TARGET_BLOBS=$2
-    BASE_FEE_UPDATE_FRACTION=$3
+    local MAX_BLOBS=$1
+    local TARGET_BLOBS=$2
+    local BASE_FEE_UPDATE_FRACTION=$3
 
-    GAS_PER_BLOB=$((2**17))
+    local GAS_PER_BLOB=$((2**17))
 
-    fee_up=$(echo "e((($MAX_BLOBS - $TARGET_BLOBS) * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
-    fee_down=$(echo "e(-($TARGET_BLOBS * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    local fee_up=$(echo "e((($MAX_BLOBS - $TARGET_BLOBS) * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
+    local fee_down=$(echo "e(-($TARGET_BLOBS * $GAS_PER_BLOB) / $BASE_FEE_UPDATE_FRACTION)" | bc -l)
 
     # Calculate percentages
-    fee_up_pct=$(echo "100 * ($fee_up - 1)" | bc -l)
-    fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
+    local fee_up_pct=$(echo "100 * ($fee_up - 1)" | bc -l)
+    local fee_down_pct=$(echo "100 * (1 - $fee_down)" | bc -l)
 
     printf "  Blob fee increase with %d blobs: +%.2f%%\n" "$MAX_BLOBS" "$fee_up_pct"
     printf "  Blob fee decrease with %d blobs: -%.2f%%\n" "$TARGET_BLOBS" "$fee_down_pct"
 }
 
 genesis_add_json() {
-    file=$1
-    data=$2
+    local file=$1
+    local data=$2
 
     jq -c "$data" "$file" > "$file.out"
     mv "$file.out" "$file"
 }
 
 genesis_add_big_json() {
-    file=$1
-    data=$2
-    query=$3
+    local file=$1
+    local data=$2
+    local query=$3
 
     echo "$data" > "$file.inp"
     jq -c --slurpfile input "$file.inp" "$query" "$file" > "$file.out"
@@ -205,17 +338,18 @@ genesis_add_big_json() {
 }
 
 genesis_add_allocation() {
-    tmp_dir=$1
-    address=$2
-    allocation=$3
+    local tmp_dir=$1
+    local address=$2
+    local allocation=$3
 
     echo "  adding allocation for $address"
     echo "$allocation" | jq -c '.balance |= gsub(" *ETH"; "000000000000000000") | {("'"$address"'"): .}' >> $tmp_dir/allocations.json
 }
 
 genesis_add_system_contracts() {
-    tmp_dir=$1
-    system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
+    local tmp_dir=$1
+    local system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
+    local target_address
 
     echo "Adding system contracts"
 
@@ -249,7 +383,7 @@ genesis_add_system_contracts() {
 }
 
 genesis_add_bellatrix() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding bellatrix genesis properties"
 
     # genesis.json
@@ -275,10 +409,10 @@ genesis_add_bellatrix() {
 
 # add capella fork properties
 genesis_add_capella() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding capella genesis properties"
-    shanghai_time=$(genesis_get_activation_time $CAPELLA_FORK_EPOCH)
-    shanghai_time_hex="0x$(printf "%x" $shanghai_time)"
+    local shanghai_time=$(genesis_get_activation_time $CAPELLA_FORK_EPOCH)
+    local shanghai_time_hex="0x$(printf "%x" $shanghai_time)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -301,14 +435,13 @@ genesis_add_capella() {
 
 # add deneb fork properties
 genesis_add_deneb() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding deneb genesis properties"
-    cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
-    cancun_time_hex="0x$(printf "%x" $cancun_time)"
-    target_blobs_per_block_cancun=3
-    max_blobs_per_block_cancun=6
-    base_fee_update_fraction_cancun=3338477
-    base_fee_update_fraction_cancun_hex="0x$(printf "%x" $base_fee_update_fraction_cancun)"
+    local cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
+    local cancun_time_hex="0x$(printf "%x" $cancun_time)"
+    local target_blobs_per_block_cancun=3
+    local max_blobs_per_block_cancun=6
+    local base_fee_update_fraction_cancun=3338477
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -330,17 +463,12 @@ genesis_add_deneb() {
         "eip5656TransitionTimestamp": "'$cancun_time_hex'",
         "eip6780TransitionTimestamp": "'$cancun_time_hex'"
     }'
-
-    if [ "$ELECTRA_FORK_EPOCH" != "0" ]; then
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$cancun_time_hex'",
-                "target": '"$target_blobs_per_block_cancun"',
-                "max": '"$max_blobs_per_block_cancun"',
-                "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun_hex'"
-            }
-        ]'
-    fi
+    genesis_add_blob_schedule $tmp_dir '{
+        "timestamp": '$cancun_time',
+        "target": '"$target_blobs_per_block_cancun"',
+        "max": '"$max_blobs_per_block_cancun"',
+        "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun'"
+    }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
@@ -357,10 +485,10 @@ genesis_add_deneb() {
 
 # add electra fork properties
 genesis_add_electra() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding electra genesis properties"
-    prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
-    prague_time_hex="0x$(printf "%x" $prague_time)"
+    local prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
+    local prague_time_hex="0x$(printf "%x" $prague_time)"
 
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
@@ -369,11 +497,10 @@ genesis_add_electra() {
         analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
 
-    basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
     # load electra system contracts
-    system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
-    EIP7002_CONTRACT_ADDRESS=$(echo "$system_contracts" | jq -r '.eip7002_address')
-    EIP7251_CONTRACT_ADDRESS=$(echo "$system_contracts" | jq -r '.eip7251_address')
+    local system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
+    local eip7002_contract=$(echo "$system_contracts" | jq -r '.eip7002_address')
+    local eip7251_contract=$(echo "$system_contracts" | jq -r '.eip7251_address')
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -399,23 +526,18 @@ genesis_add_electra() {
         "eip7623TransitionTimestamp": "'$prague_time_hex'",
         "eip7702TransitionTimestamp": "'$prague_time_hex'"
     }'
-
-    if [ "$FULU_FORK_EPOCH" != "0" ]; then
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$prague_time_hex'",
-                "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-                "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-                "baseFeeUpdateFraction": "'$basefee_update_fraction_electra_hex'"
-            }
-        ]'
-    fi
+    genesis_add_blob_schedule $tmp_dir '{
+        "timestamp": '$prague_time',
+        "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
+        "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
+        "baseFeeUpdateFraction": "'$BASEFEE_UPDATE_FRACTION_ELECTRA'"
+    }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
-        "withdrawalRequestContractAddress": "'"$EIP7002_CONTRACT_ADDRESS"'",
-        "consolidationRequestContractAddress": "'"$EIP7251_CONTRACT_ADDRESS"'",
+        "withdrawalRequestContractAddress": "'"$eip7002_contract"'",
+        "consolidationRequestContractAddress": "'"$eip7251_contract"'",
         "pragueTime": '"$prague_time"'
     }'
     genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
@@ -429,30 +551,19 @@ genesis_add_electra() {
 
 # add fulu fork properties
 genesis_add_fulu() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding fulu genesis properties"
-    osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
-    osaka_time_hex="0x$(printf "%x" $osaka_time)"
-
-    # Calculate basefee update fraction if not specified
-    if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
-        BASEFEE_UPDATE_FRACTION_ELECTRA=$(calculate_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA)
-        echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
-        analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
-    fi
-
-    basefee_update_fraction_electra_hex="0x$(printf "%x" $BASEFEE_UPDATE_FRACTION_ELECTRA)"
+    local osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
+    local osaka_time_hex="0x$(printf "%x" $osaka_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $osaka_time "1")
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-
-    # Queue osaka as a special BPO to be processed in genesis_add_blobschedule
-    export OSAKA_BPO_EPOCH="$FULU_FORK_EPOCH"
-    export OSAKA_BPO_TARGET="$TARGET_BLOBS_PER_BLOCK_ELECTRA"
-    export OSAKA_BPO_MAX="$MAX_BLOBS_PER_BLOCK_ELECTRA"
-    export OSAKA_BPO_FRACTION="$BASEFEE_UPDATE_FRACTION_ELECTRA"
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "osaka": '"$latest_blob_schedule"'
+    }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -465,32 +576,96 @@ genesis_add_fulu() {
         "eip7939TransitionTimestamp": "'$osaka_time_hex'",
         "eip7951TransitionTimestamp": "'$osaka_time_hex'"
     }'
-    # blob schedule will only be added via bpo not from osaka onwards
+    # blob schedule will only be added via bpo from osaka onwards
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "osaka": '"$latest_blob_schedule"'
+    }'
+}
 
+# add bpos to blob schedule
+genesis_add_bpos() {
+    local tmp_dir=$1
+    local min_bpo=$2
+    local max_bpo=$3
+    echo "Adding blob schedule (BPOs and fork-based entries)"
+
+    # Add regular BPO_N through BPO_M
+    local i
+    for ((i=min_bpo; i<=max_bpo; i++)); do
+        local bpo_epoch_var="BPO_${i}_EPOCH"
+        local bpo_epoch="${!bpo_epoch_var}"
+
+        if [ "$i" -le "$has_bpos" ]; then
+            continue
+        fi
+
+        # Break if variable is not defined
+        if [ -z "$bpo_epoch" ]; then
+            break
+        fi
+
+        # Skip if has max value (not scheduled)
+        if [ "$bpo_epoch" != "18446744073709551615" ]; then
+            local target_var="BPO_${i}_TARGET_BLOBS"
+            local max_var="BPO_${i}_MAX_BLOBS"
+            local fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
+
+            # Calculate fraction based on max value (or use explicit if provided and non-zero)
+            local fraction="${!fraction_var}"
+            if [ -z "$fraction" ] || [ "$fraction" = "0" ]; then
+                fraction=$(calculate_basefee_update_fraction "${!max_var}")
+                echo "  Calculated baseFeeUpdateFraction: $fraction"
+                analyze_basefee_update_fraction "${!max_var}" "${!target_var}" "$fraction"
+            fi
+
+            echo "Adding BPO $i at epoch $bpo_epoch (target: ${!target_var}, max: ${!max_var}, fraction: $fraction)"
+
+            genesis_add_blob_schedule $tmp_dir '{
+                "timestamp": '"$(genesis_get_activation_time $bpo_epoch)"',
+                "target": '"${!target_var}"',
+                "max": '"${!max_var}"',
+                "baseFeeUpdateFraction": "'$fraction'"
+            }'
+
+            genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+                "bpo'$i'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": "'$fraction'"
+                }
+            }'
+
+            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+                "bpo'$i'": {
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": "'$fraction'"
+                }
+            }'
+        fi
+    done
 }
 
 # Add gloas fork properties
 genesis_add_gloas() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding gloas genesis properties"
-    amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
-    amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
+    local amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
+    local amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $amsterdam_time "1")
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
     }'
-
-    # Queue amsterdam as a special BPO to be processed in genesis_add_blobschedule
-    export AMSTERDAM_BPO_EPOCH="$GLOAS_FORK_EPOCH"
-    export AMSTERDAM_BPO_TARGET="$TARGET_BLOBS_PER_BLOCK_AMSTERDAM"
-    export AMSTERDAM_BPO_MAX="$MAX_BLOBS_PER_BLOCK_AMSTERDAM"
-    export AMSTERDAM_BPO_FRACTION="$BASEFEE_UPDATE_FRACTION_AMSTERDAM"
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "amsterdam": '"$latest_blob_schedule"'
+    }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
@@ -501,19 +676,26 @@ genesis_add_gloas() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
     }'
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "amsterdam": '"$latest_blob_schedule"'
+    }'
 
 }
 
 # add eip7805 fork properties
 genesis_add_eip7805() {
-    tmp_dir=$1
+    local tmp_dir=$1
     echo "Adding eip7805 genesis properties"
-    eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
-    eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
+    local eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
+    local eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $eip7805_time "1")
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "eip7805Time": '"$eip7805_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "eip7805": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
@@ -525,125 +707,7 @@ genesis_add_eip7805() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "eip7805Time": '"$eip7805_time"'
     }'
-}
-
-genesis_add_blobschedule() {
-    tmp_dir=$1
-    echo "Adding blob schedule (BPOs and fork-based entries)"
-
-    # Collect all BPO entries: epoch|name|target|max|fraction
-    declare -a bpo_entries
-
-    # Add osaka if queued
-    if [ -n "$OSAKA_BPO_EPOCH" ] && [ "$OSAKA_BPO_EPOCH" != "18446744073709551615" ]; then
-        bpo_entries+=("$OSAKA_BPO_EPOCH|osaka|$OSAKA_BPO_TARGET|$OSAKA_BPO_MAX|$OSAKA_BPO_FRACTION")
-    fi
-
-    # Add amsterdam if queued
-    if [ -n "$AMSTERDAM_BPO_EPOCH" ] && [ "$AMSTERDAM_BPO_EPOCH" != "18446744073709551615" ]; then
-        bpo_entries+=("$AMSTERDAM_BPO_EPOCH|amsterdam|$AMSTERDAM_BPO_TARGET|$AMSTERDAM_BPO_MAX|$AMSTERDAM_BPO_FRACTION")
-    fi
-
-    # Add regular BPO_1 through BPO_N
-    i=1
-    while true; do
-        bpo_epoch_var="BPO_${i}_EPOCH"
-        bpo_epoch="${!bpo_epoch_var}"
-
-        # Break if variable is not defined
-        if [ -z "$bpo_epoch" ]; then
-            break
-        fi
-
-        # Skip if has max value (not scheduled)
-        if [ "$bpo_epoch" != "18446744073709551615" ]; then
-            target_var="BPO_${i}_TARGET_BLOBS"
-            max_var="BPO_${i}_MAX_BLOBS"
-            fraction_var="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
-
-            bpo_entries+=("$bpo_epoch|bpo$i|${!target_var}|${!max_var}|${!fraction_var}")
-        fi
-
-        i=$((i + 1))
-    done
-
-    # Sort entries by epoch
-    IFS=$'\n' sorted_entries=($(printf '%s\n' "${bpo_entries[@]}" | sort -t'|' -k1 -n))
-    unset IFS
-
-    # Process entries with inheritance
-    prev_target=""
-    prev_max=""
-    prev_fraction=""
-
-    for entry in "${sorted_entries[@]}"; do
-        IFS='|' read -r epoch name target max fraction <<< "$entry"
-
-        echo "Processing $name at epoch $epoch..."
-
-        # Inherit target/max from previous entry if empty
-        if [ -n "$prev_target" ]; then
-            [ -z "$target" ] && target="$prev_target"
-            [ -z "$max" ] && max="$prev_max"
-        fi
-
-        # Calculate fraction based on max value (or use explicit if provided and non-zero)
-        if [ -z "$fraction" ] || [ "$fraction" = "0" ]; then
-            fraction=$(calculate_basefee_update_fraction "$max")
-            echo "  Calculated baseFeeUpdateFraction: $fraction"
-            analyze_basefee_update_fraction "$max" "$target" "$fraction"
-        fi
-
-        # Store for next iteration
-        prev_target="$target"
-        prev_max="$max"
-        prev_fraction="$fraction"
-
-        # Calculate timestamps
-        bpo_time=$(genesis_get_activation_time "$epoch")
-        bpo_time_hex="0x$(printf "%x" $bpo_time)"
-        fraction_hex="0x$(printf "%x" $fraction)"
-
-        echo "  Final values: target=$target, max=$max, baseFeeUpdateFraction=$fraction"
-
-        # Add to genesis.json
-        genesis_add_json $tmp_dir/genesis.json '.config += {
-            "'"$name"'Time": '"$bpo_time"'
-        }'
-        genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-            "'"$name"'": {
-                "target": '"$target"',
-                "max": '"$max"',
-                "baseFeeUpdateFraction": '"$fraction"'
-            }
-        }'
-
-        # Add to chainspec.json (array format, will be sorted by timestamp)
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$bpo_time_hex'",
-                "target": '"$target"',
-                "max": '"$max"',
-                "baseFeeUpdateFraction": "'$fraction_hex'"
-            }
-        ]'
-
-        # Add to besu.json
-        genesis_add_json $tmp_dir/besu.json '.config += {
-            "'"$name"'Time": '"$bpo_time"'
-        }'
-        genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-            "'"$name"'": {
-                "target": '"$target"',
-                "max": '"$max"',
-                "baseFeeUpdateFraction": '"$fraction"'
-            }
-        }'
-    done
-
-    # Sort chainspec.json blobSchedule array by timestamp
-    if [ ${#sorted_entries[@]} -gt 0 ]; then
-        echo "Sorting chainspec.json blobSchedule by timestamp..."
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule |= sort_by(.timestamp)'
-    fi
+    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
+        "eip7805": '"$latest_blob_schedule"'
+    }'
 }
