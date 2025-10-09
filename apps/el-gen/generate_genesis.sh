@@ -670,9 +670,7 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "osaka": '"$latest_blob_schedule"'
-    }'
+    # no named blob schedule for besu
 }
 
 # Adds BPOs (Blob Parameter Only) to the blob schedule
@@ -772,9 +770,6 @@ genesis_add_gloas() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
     }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "amsterdam": '"$latest_blob_schedule"'
-    }'
 
 }
 
@@ -805,8 +800,5 @@ genesis_add_eip7805() {
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "eip7805Time": '"$eip7805_time"'
-    }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "eip7805": '"$latest_blob_schedule"'
     }'
 }
