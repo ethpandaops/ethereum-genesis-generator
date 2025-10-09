@@ -168,7 +168,7 @@ genesis_load_base_genesis() {
     local base_deposit_contract=$(wget -qO- https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/deposit_contract.txt)
     if [ "$DEPOSIT_CONTRACT_ADDRESS" != "$base_deposit_contract" ]; then
         echo "ERROR: DEPOSIT_CONTRACT_ADDRESS ($DEPOSIT_CONTRACT_ADDRESS) must match $network_name ($base_deposit_contract) for shadowfork"
-        #exit 1
+        exit 1
     fi
 
     # Get parent network cutoff time
@@ -283,10 +283,10 @@ genesis_get_blob_schedule() {
     local active_blob_schedule="$shadowfork_blob_schedule"
 
     local matching_blob_schedule=$(jq --argjson t "$timestamp" '
-        (map(select(.timestamp <= $t)) | sort_by(.timestamp) | last) // ""
+        (map(select(.timestamp <= $t)) | sort_by(.timestamp) | last)
     ' $tmp_dir/blob_schedule.json)
 
-    if [ -n "$matching_blob_schedule" ]; then
+    if [ "$matching_blob_schedule" != "null" ]; then
         active_blob_schedule="$matching_blob_schedule"
     fi
 
