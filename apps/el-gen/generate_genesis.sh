@@ -467,7 +467,7 @@ genesis_add_deneb() {
         "timestamp": '$cancun_time',
         "target": '"$target_blobs_per_block_cancun"',
         "max": '"$max_blobs_per_block_cancun"',
-        "baseFeeUpdateFraction": "'$base_fee_update_fraction_cancun'"
+        "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
     }'
 
     # besu.json
@@ -530,7 +530,7 @@ genesis_add_electra() {
         "timestamp": '$prague_time',
         "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
         "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-        "baseFeeUpdateFraction": "'$BASEFEE_UPDATE_FRACTION_ELECTRA'"
+        "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
     }'
 
     # besu.json
@@ -629,14 +629,14 @@ genesis_add_bpos() {
                 "timestamp": '"$(genesis_get_activation_time $bpo_epoch)"',
                 "target": '"${!target_var}"',
                 "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": "'$fraction'"
+                "baseFeeUpdateFraction": '"$fraction"'
             }'
 
             genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
                 "bpo'$i'": {
                     "target": '"${!target_var}"',
                     "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": "'$fraction'"
+                    "baseFeeUpdateFraction": '"$fraction"'
                 }
             }'
 
@@ -644,7 +644,7 @@ genesis_add_bpos() {
                 "bpo'$i'": {
                     "target": '"${!target_var}"',
                     "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": "'$fraction'"
+                    "baseFeeUpdateFraction": '"$fraction"'
                 }
             }'
         fi
