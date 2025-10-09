@@ -473,15 +473,6 @@ genesis_add_fulu() {
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "osaka": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
-    }'
-
 }
 
 # Add gloas fork properties
