@@ -181,7 +181,12 @@ genesis_load_base_genesis() {
             --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"$block_number_hex\", true],\"id\":2}" \
             "$SHADOW_FORK_RPC")
     elif [[ $SHADOW_FORK_FILE != "" ]]; then
-        block_json=$(cat $SHADOW_FORK_FILE)
+        # Check if SHADOW_FORK_FILE is a URL (starts with http:// or https://)
+        if [[ "$SHADOW_FORK_FILE" =~ ^https?:// ]]; then
+            block_json=$(curl -s "$SHADOW_FORK_FILE")
+        else
+            block_json=$(cat $SHADOW_FORK_FILE)
+        fi
     fi
 
     # Convert from hex to decimal
