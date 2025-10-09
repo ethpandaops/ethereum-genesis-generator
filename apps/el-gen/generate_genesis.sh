@@ -572,17 +572,28 @@ genesis_add_bpo() {
             }
         }'
 
-
         # chainspec.json
-
-        genesis_add_json $tmp_dir/chainspec.json '.params.blobSchedule += [
-            {
-                "timestamp": "'$bpo_time_hex'",
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": "'$fraction_var_hex'"
-            }
-        ]'
+        # Update timestamp if matching entry exists, otherwise append
+        genesis_add_json $tmp_dir/chainspec.json '
+            .params.blobSchedule as $schedule |
+            ($schedule | map(select(.target == '"${!target_var}"' and .max == '"${!max_var}"' and .baseFeeUpdateFraction == "'$fraction_var_hex'")) | length) as $match_count |
+            if $match_count > 0 then
+                .params.blobSchedule |= map(
+                    if .target == '"${!target_var}"' and .max == '"${!max_var}"' and .baseFeeUpdateFraction == "'$fraction_var_hex'" then
+                        .timestamp = "'$bpo_time_hex'"
+                    else
+                        .
+                    end
+                )
+            else
+                .params.blobSchedule += [{
+                    "timestamp": "'$bpo_time_hex'",
+                    "target": '"${!target_var}"',
+                    "max": '"${!max_var}"',
+                    "baseFeeUpdateFraction": "'$fraction_var_hex'"
+                }]
+            end
+        '
 
         # besu.json
         genesis_add_json $tmp_dir/besu.json '.config += {
