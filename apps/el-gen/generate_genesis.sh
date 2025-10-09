@@ -170,7 +170,7 @@ genesis_load_base_genesis() {
     fi
 
     # Convert from hex to decimal
-    local hex_timestamp=$(echo "$block_json" | jq -r '.result.timestamp')
+    local hex_timestamp=$(echo "$block_json" | jq -r '.result.timestamp // "0"')
     if [[ "$hex_timestamp" == 0x* ]]; then
         shadowfork_cutoff_time=$((hex_timestamp))
     else
