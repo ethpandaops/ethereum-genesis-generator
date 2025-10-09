@@ -6,12 +6,14 @@ echo "================================"
 echo "Building docker image with tag :master"
 echo "================================"
 echo ""
-docker build -t ethpandaops/ethereum-genesis-generator:master "$(dirname "$0")"
+docker build -t ethpandaops/ethereum-genesis-generator:master "$(dirname "$0")/.."
 
 echo "================================"
 echo "Running All BPO Inheritance Tests"
 echo "================================"
 echo ""
+
+mkdir -p output
 
 echo "=== Test Case 1: Osaka only ==="
 echo "Expected: osaka: target=6, max=9 (inherits from Electra)"
