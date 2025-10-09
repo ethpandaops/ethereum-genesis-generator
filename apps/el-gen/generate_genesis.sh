@@ -253,7 +253,7 @@ genesis_load_base_genesis() {
 # Returns:
 #   Activation timestamp in seconds since Unix epoch
 genesis_get_activation_time() {
-    if [ "$1" == "0" ]; then
+    if [ "$1" == "0" ] && [ "$is_shadowfork" == "0" ]; then
         echo "0"
     else
         # Calculate slots per epoch based on preset
