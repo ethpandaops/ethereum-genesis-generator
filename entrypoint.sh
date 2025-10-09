@@ -71,12 +71,12 @@ add_blob_schedule() {
         var_epoch="BPO_${i}_EPOCH"
         var_blobs="BPO_${i}_MAX_BLOBS"
 
-        var_next_epoch="BPO_${i+1}_EPOCH"
+        var_next_epoch="BPO_$((i+1))_EPOCH"
 
         # Check if this BPO has a non-default value
         if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$DEFAULT_BPO_EPOCH" ]; then
             if [ "${!var_next_epoch}" == "${!var_epoch}" ]; then
-                echo "BPO $i has the same activation epoch as the followup BPO, skipping for CL config..."
+                echo "BPO $i has the same activation epoch as the followup BPO $((i+1)), skipping for CL config..."
                 continue
             fi
 
