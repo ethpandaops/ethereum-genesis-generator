@@ -205,10 +205,10 @@ genesis_load_base_genesis() {
     # determinate latest active fork based on cutoff time and parent network's genesis.json
     if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.amsterdam + { \"timestamp\": .config.amsterdamTime }")"
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="6" # fulu
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.osaka + { \"timestamp\": .config.osakaTime }")"
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.pragueTime and .config.pragueTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="5" # electra
         shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")"
@@ -658,14 +658,10 @@ genesis_add_fulu() {
     echo "Adding fulu genesis properties"
     local osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
     local osaka_time_hex="0x$(printf "%x" $osaka_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $osaka_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "osakaTime": '"$osaka_time"'
-    }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "osaka": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
@@ -679,13 +675,11 @@ genesis_add_fulu() {
         "eip7939TransitionTimestamp": "'$osaka_time_hex'",
         "eip7951TransitionTimestamp": "'$osaka_time_hex'"
     }'
-    # blob schedule will only be added via bpo from osaka onwards
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
-    # no named blob schedule for besu
 }
 
 # Adds BPOs (Blob Parameter Only) to the blob schedule
@@ -769,14 +763,10 @@ genesis_add_gloas() {
     echo "Adding gloas genesis properties"
     local amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
     local amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $amsterdam_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
-    }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "amsterdam": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
@@ -800,14 +790,10 @@ genesis_add_eip7805() {
     echo "Adding eip7805 genesis properties"
     local eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
     local eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $eip7805_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "eip7805Time": '"$eip7805_time"'
-    }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "eip7805": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
