@@ -205,10 +205,10 @@ genesis_load_base_genesis() {
     # determinate latest active fork based on cutoff time and parent network's genesis.json
     if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.amsterdam + { \"timestamp\": .config.amsterdamTime }")"
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="6" # fulu
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.osaka + { \"timestamp\": .config.osakaTime }")"
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.pragueTime and .config.pragueTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="5" # electra
         shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")"
