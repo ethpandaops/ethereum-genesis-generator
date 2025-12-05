@@ -14,7 +14,7 @@ generate_genesis() {
 
     # settings
     max_bpos=5
-    
+
     # variables
     is_shadowfork="1"
     has_fork="0"
@@ -774,9 +774,6 @@ genesis_add_gloas() {
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
-    }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "amsterdam": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
