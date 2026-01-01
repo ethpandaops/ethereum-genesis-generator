@@ -441,8 +441,31 @@ genesis_add_system_contracts() {
     echo "Adding system contracts"
 
     # add deposit contract
-    echo -e "  genesis contract:\t$DEPOSIT_CONTRACT_ADDRESS"
-    genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$system_contracts" | jq -c '.deposit')
+    if [ "$DEPOSIT_CONTRACT_GATED" == "true" ]; then
+        local gated_deposit_contract=$(cat /apps/el-gen/gated-deposit-contract.yaml | yq -c)
+        genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$gated_deposit_contract" | jq -c '.deposit')
+        target_address=$(echo "$gated_deposit_contract" | jq -r '.deposit_gater_address')
+        local deposit_gater=$(echo "$gated_deposit_contract" | jq -c '.deposit_gater')
+        # add admin addresses
+        for admin in $(echo "$DEPOSIT_CONTRACT_ADMINS" | jq -r '.[]'); do
+            # Cut off 0x prefix if present
+            local clean_admin=$admin
+            if [[ "$clean_admin" == 0x* ]]; then
+                clean_admin="${clean_admin:2}"
+            fi
+            # Ensure admin is 40 chars, pad with 0s on left if shorter
+            while [ ${#clean_admin} -lt 40 ]; do
+                clean_admin="0$clean_admin"
+            done
+
+            deposit_gater=$(echo "$deposit_gater" | jq -c '.storage += {"0xacce55000000000000000000'"$clean_admin"'": "0x0000000000000000000000000000000000000000000000000000000000000001"}')
+        done
+
+        genesis_add_allocation $tmp_dir "$target_address" "$deposit_gater"
+    else
+        echo -e "  deposit contract:\t$DEPOSIT_CONTRACT_ADDRESS"
+        genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$system_contracts" | jq -c '.deposit')
+    fi
 
     if [ ! "$DENEB_FORK_EPOCH" == "18446744073709551615" ]; then
         # EIP-4788: Beacon block root in the EVM
