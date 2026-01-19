@@ -458,7 +458,7 @@ genesis_add_system_contracts() {
                 clean_admin="0$clean_admin"
             done
 
-            deposit_gater=$(echo "$deposit_gater" | jq -c '.storage += {"0xacce55000000000000000000'"$clean_admin"'": "0x0000000000000000000000000000000000000000000000000000000000000001"}')
+            deposit_gater=$(echo "$deposit_gater" | jq -c '.storage += {"0xacce55000000000000000000'"$clean_admin"'": "0x0000000000000000000000000000000000000000000000000000000000000002"}')
             echo "  adding admin 0x$clean_admin to deposit contract"
         done
 
