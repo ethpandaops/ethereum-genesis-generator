@@ -47,6 +47,8 @@ gen_minimal_config() {
     # EIP7441
     [EPOCHS_PER_SHUFFLING_PHASE]=4
     [PROPOSER_SELECTION_GAP]=1
+    # Gloas
+    [MIN_BUILDER_WITHDRAWABILITY_DELAY]=8
   )
 
   for key in "${!replacements[@]}"; do
@@ -141,7 +143,7 @@ gen_cl_config(){
         grep DEPOSIT_CONTRACT_ADDRESS /data/metadata/config.yaml | cut -d " " -f2 > /data/metadata/deposit_contract.txt
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
-        
+
         # Generate genesis
         genesis_args+=(
           beaconchain
