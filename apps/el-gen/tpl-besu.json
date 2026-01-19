@@ -10,7 +10,8 @@
         "petersburgBlock": 0,
         "istanbulBlock": 0,
         "berlinBlock": 0,
-        "londonBlock": 0
+        "londonBlock": 0,
+        "verkleTime": 0
     },
     "alloc": {},
     "coinbase": "0x0000000000000000000000000000000000000000",
