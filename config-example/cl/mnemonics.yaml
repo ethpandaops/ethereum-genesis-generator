@@ -4,3 +4,4 @@
   wd_address: $WITHDRAWAL_ADDRESS
   wd_prefix: $WITHDRAWAL_TYPE
   balance: $VALIDATOR_BALANCE
+  status: 0 # 0: active, 1: slashed, 2: exited

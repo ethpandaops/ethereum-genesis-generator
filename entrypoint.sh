@@ -47,6 +47,8 @@ gen_minimal_config() {
     # EIP7441
     [EPOCHS_PER_SHUFFLING_PHASE]=4
     [PROPOSER_SELECTION_GAP]=1
+    # Gloas
+    [MIN_BUILDER_WITHDRAWABILITY_DELAY]=8
   )
 
   for key in "${!replacements[@]}"; do
@@ -122,7 +124,16 @@ gen_cl_config(){
         # Add BLOB_SCHEDULE if needed
         add_blob_schedule /data/metadata/config.yaml
 
+        # Envsubst mnemonics file
+        if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
+          export WITHDRAWAL_ADDRESS="null"
+        fi
         envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+        if [ -n "$ADDITIONAL_VALIDATOR_MNEMONICS" ] && [ "$ADDITIONAL_VALIDATOR_MNEMONICS" != "[]" ]; then
+          echo "Adding additional validator mnemonics..."
+          echo "$ADDITIONAL_VALIDATOR_MNEMONICS" | yq --yaml-output >> $tmp_dir/mnemonics.yaml
+        fi
+
         # Conditionally override values if preset is "minimal"
         if [[ "$PRESET_BASE" == "minimal" ]]; then
           gen_minimal_config
@@ -132,11 +143,7 @@ gen_cl_config(){
         grep DEPOSIT_CONTRACT_ADDRESS /data/metadata/config.yaml | cut -d " " -f2 > /data/metadata/deposit_contract.txt
         echo $CL_EXEC_BLOCK > /data/metadata/deposit_contract_block.txt
         echo $BEACON_STATIC_ENR > /data/metadata/bootstrap_nodes.txt
-        # Envsubst mnemonics
-        if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
-          export WITHDRAWAL_ADDRESS="null"
-        fi
-        envsubst < /config/cl/mnemonics.yaml > $tmp_dir/mnemonics.yaml
+
         # Generate genesis
         genesis_args+=(
           beaconchain
