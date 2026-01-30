@@ -769,15 +769,12 @@ genesis_add_gloas() {
     echo "Adding gloas genesis properties"
     local amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
     local amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $amsterdam_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
     }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "amsterdam": '"$latest_blob_schedule"'
-    }'
+    # no named blob schedule for amsterdam - blob schedule is inherited via BPO
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
