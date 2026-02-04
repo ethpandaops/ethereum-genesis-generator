@@ -92,6 +92,27 @@ generate_genesis() {
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
 
             el_mnemonic=$(jq -r '.mnemonic // env.EL_AND_CL_MNEMONIC' $tmp_dir/el-genesis-config.json)
+            el_premine_count=${EL_PREMINE_COUNT:-21}
+            el_premine_balance=${EL_PREMINE_BALANCE:-1000000000ETH}
+
+            # Dynamically generate el_premine entries based on EL_PREMINE_COUNT
+            if [ "$el_premine_count" -gt 0 ]; then
+                echo "Generating $el_premine_count premine accounts..."
+                el_premine_json="{"
+                for ((i=0; i<el_premine_count; i++)); do
+                    if [ $i -gt 0 ]; then
+                        el_premine_json+=","
+                    fi
+                    el_premine_json+="\"m/44'/60'/0'/0/$i\": \"$el_premine_balance\""
+                done
+                el_premine_json+="}"
+                jq --argjson prem "$el_premine_json" '.el_premine = $prem' $tmp_dir/el-genesis-config.json > $tmp_dir/el-genesis-config.json.tmp
+                mv $tmp_dir/el-genesis-config.json.tmp $tmp_dir/el-genesis-config.json
+            else
+                echo "Skipping premine accounts (EL_PREMINE_COUNT=0)"
+                jq '.el_premine = {}' $tmp_dir/el-genesis-config.json > $tmp_dir/el-genesis-config.json.tmp
+                mv $tmp_dir/el-genesis-config.json.tmp $tmp_dir/el-genesis-config.json
+            fi
 
             # Process all premine wallets in one pass
             echo "Adding premine wallets from mnemonic..."
