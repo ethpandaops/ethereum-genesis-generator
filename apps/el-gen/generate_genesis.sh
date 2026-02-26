@@ -35,7 +35,7 @@ generate_genesis() {
     # 5 - electra / prague
     # 6 - fulu / osaka
     # 7 - gloas / amsterdam
-    # 8 - eip7805 / eip7805
+    # 8 - heze / heze
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -74,7 +74,7 @@ generate_genesis() {
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
                            [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
-    [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
+    [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
 
     # apply special chainspec blob schedule format
     genesis_apply_blob_schedule $tmp_dir
@@ -816,32 +816,32 @@ genesis_add_gloas() {
 
 }
 
-# Adds EIP-7805 fork properties to genesis files
+# Adds Heze fork properties to genesis files
 # Enabled EIPs: 7805
 # Args:
 #   $1: Temporary directory containing genesis files
-genesis_add_eip7805() {
+genesis_add_heze() {
     local tmp_dir=$1
-    echo "Adding eip7805 genesis properties"
-    local eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
-    local eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $eip7805_time)
+    echo "Adding heze genesis properties"
+    local heze_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
+    local heze_time_hex="0x$(printf "%x" $heze_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $heze_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "eip7805Time": '"$eip7805_time"'
+        "hezeTime": '"$heze_time"'
     }'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "eip7805": '"$latest_blob_schedule"'
+        "heze": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7805TransitionTimestamp": "'$eip7805_time_hex'"
+        "eip7805TransitionTimestamp": "'$heze_time_hex'"
     }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
-        "eip7805Time": '"$eip7805_time"'
+        "hezeTime": '"$heze_time"'
     }'
 }
