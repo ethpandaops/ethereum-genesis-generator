@@ -74,7 +74,7 @@ generate_genesis() {
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
                            [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
-    [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bogota $tmp_dir
+    [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
 
     # apply special chainspec blob schedule format
     genesis_apply_blob_schedule $tmp_dir
@@ -879,7 +879,7 @@ genesis_add_gloas() {
 # Enabled EIPs: 7805
 # Args:
 #   $1: Temporary directory containing genesis files
-genesis_add_bogota() {
+genesis_add_heze() {
     local tmp_dir=$1
     echo "Adding bogota genesis properties"
     local bogota_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
