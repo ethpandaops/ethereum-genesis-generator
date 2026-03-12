@@ -224,11 +224,11 @@ genesis_load_base_genesis() {
     fi
 
     # determinate latest active fork based on cutoff time and parent network's genesis.json
-    if [ "$(cat $tmp_dir/genesis.json | jq ".config.bogotaTime and .config.bogotaTime < $shadowfork_cutoff_time")" == "true" ]; then
-        has_fork="8" # heze
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
-    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
+    if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.bogotaTime and .config.bogotaTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="8" # heze
         shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="6" # fulu
