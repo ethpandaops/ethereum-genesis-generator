@@ -35,7 +35,7 @@ generate_genesis() {
     # 5 - electra / prague
     # 6 - fulu / osaka
     # 7 - gloas / amsterdam
-    # 8 - heze / heze
+    # 8 - heze / bogota
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -224,7 +224,10 @@ genesis_load_base_genesis() {
     fi
 
     # determinate latest active fork based on cutoff time and parent network's genesis.json
-    if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
+    if [ "$(cat $tmp_dir/genesis.json | jq ".config.bogotaTime and .config.bogotaTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="8" # heze
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
         shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
@@ -836,7 +839,7 @@ genesis_add_bpos() {
 }
 
 # Adds Gloas (Amsterdam) fork properties to genesis files
-# Enabled EIPs: 7843, 7928, 7708, 7778, 8024
+# Enabled EIPs: 7708, 7778, 7843, 7928, 7954, 8024, 8037
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_gloas() {
@@ -856,11 +859,13 @@ genesis_add_gloas() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7928TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7708TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7778TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8024TransitionTimestamp": "'$amsterdam_time_hex'"
+        "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7928TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7954TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8024TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'"
     }'
 
     # besu.json
@@ -870,32 +875,32 @@ genesis_add_gloas() {
 
 }
 
-# Adds Heze fork properties to genesis files
+# Adds Bogota (Heze) fork properties to genesis files
 # Enabled EIPs: 7805
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_heze() {
     local tmp_dir=$1
-    echo "Adding heze genesis properties"
-    local heze_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
-    local heze_time_hex="0x$(printf "%x" $heze_time)"
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $heze_time)
+    echo "Adding bogota genesis properties"
+    local bogota_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
+    local bogota_time_hex="0x$(printf "%x" $bogota_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $bogota_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "hezeTime": '"$heze_time"'
+        "bogotaTime": '"$bogota_time"'
     }'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "heze": '"$latest_blob_schedule"'
+        "bogota": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7805TransitionTimestamp": "'$heze_time_hex'"
+        "eip7805TransitionTimestamp": "'$bogota_time_hex'"
     }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
-        "hezeTime": '"$heze_time"'
+        "bogotaTime": '"$bogota_time"'
     }'
 }
