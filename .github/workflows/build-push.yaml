@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.setup.outputs.platforms }}
-      tag: ${{ steps.setup.outputs.tag }}
+      tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -29,6 +29,17 @@ jobs:
       - name: Prepare Matrix
         id: setup
         uses: ./.github/actions/prepare
+      - name: Resolve tag
+        id: resolve_tag
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            branch_name="${GITHUB_HEAD_REF}"
+            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
+            echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
+          fi
   deploy:
     needs:
       - prepare
