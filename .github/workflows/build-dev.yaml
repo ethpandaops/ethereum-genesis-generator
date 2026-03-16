@@ -1,0 +1,119 @@
+name: Build DEV docker image
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Docker Tag (leave blank to skip docker build)"
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prinfo:
+    name: "Get PR info"
+    runs-on: ubuntu-latest
+    outputs:
+      run_builds: ${{ steps.loadinfo.outputs.run_builds }}
+      commit_ref: ${{ steps.loadinfo.outputs.commit_ref }}
+      docker_tag: ${{ steps.loadinfo.outputs.docker_tag }}
+    steps:
+    - name: "Load PR info"
+      id: loadinfo
+      run: |
+        has_docker_image_label="${{ contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}"
+        run_builds="$has_docker_image_label"
+        echo "docker image label: $has_docker_image_label"
+
+        branch_name="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+        branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
+        echo "branch name: $branch_name"
+
+        commit_ref="${{ github.event.pull_request.head.sha }}"
+        if [[ -z "$commit_ref" ]]; then
+          commit_ref="${{ github.sha }}"
+        fi
+        echo "commit: $commit_ref"
+
+        manual_tag="${{ inputs.docker_tag }}"
+        if [[ ! -z "$manual_tag" ]]; then
+          branch_name="$manual_tag"
+          run_builds="true"
+        fi
+
+        if [[ "$branch_name" == "master" ]] || [[ "$branch_name" =~ ^v[0-9] ]]; then
+          echo "Invalid branch name! Skipping builds"
+          run_builds="false"
+        fi
+
+        echo "run_builds=$run_builds" >> $GITHUB_OUTPUT
+        echo "commit_ref=$commit_ref" >> $GITHUB_OUTPUT
+        echo "docker_tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+
+  prepare:
+    needs: [prinfo]
+    if: ${{ needs.prinfo.outputs.run_builds == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.setup_platforms.outputs.platforms }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prinfo.outputs.commit_ref }}
+      - uses: mikefarah/yq@6609ed76ecb69f9d8254345292d90ea72f641715 # v4.35.1
+      - name: Generate platform and runner matrix from config files
+        id: setup_platforms
+        run: |
+          PLATFORMS_JSON="["
+
+          platforms=$(yq e ".ethereum-genesis-generator[]" platforms.yaml)
+
+          for platform in $platforms; do
+            slug=$(echo "$platform" | tr '/' '-')
+            runner=$(yq e ".\"$platform\"" runners.yaml)
+            PLATFORMS_JSON+="{\"platform\":\"$platform\", \"runner\":\"$runner\", \"slug\":\"$slug\"},"
+          done
+
+          PLATFORMS_JSON="${PLATFORMS_JSON%,}]"
+          echo "platforms=$PLATFORMS_JSON" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs:
+      - prinfo
+      - prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include: ${{fromJson(needs.prepare.outputs.platforms)}}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prinfo.outputs.commit_ref }}
+      - uses: ./.github/actions/deploy
+        with:
+          platform: ${{ matrix.platform }}
+          tag: ${{ needs.prinfo.outputs.docker_tag }}
+          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
+          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+
+  manifest:
+    needs:
+      - prinfo
+      - prepare
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prinfo.outputs.commit_ref }}
+      - uses: ./.github/actions/manifest
+        with:
+          tag: ${{ needs.prinfo.outputs.docker_tag }}
+          repository: ethpandaops/ethereum-genesis-generator
+          platforms: ${{ needs.prepare.outputs.platforms }}
+          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
+          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
