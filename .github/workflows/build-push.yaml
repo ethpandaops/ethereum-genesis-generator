@@ -5,19 +5,41 @@ on:
       - master
     tags:
       - '**'
+  pull_request_target:
+    types: [labeled, synchronize]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   prepare:
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.setup.outputs.platforms }}
-      tag: ${{ steps.setup.outputs.tag }}
+      tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Prepare Matrix
         id: setup
         uses: ./.github/actions/prepare
+      - name: Resolve tag
+        id: resolve_tag
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            branch_name="${GITHUB_HEAD_REF}"
+            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
+            echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
+          fi
   deploy:
     needs:
       - prepare
@@ -27,6 +49,8 @@ jobs:
         include: ${{fromJson(needs.prepare.outputs.platforms)}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/deploy
         with:
           platform: ${{ matrix.platform }}
@@ -40,6 +64,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/manifest
         with:
           tag: ${{ needs.prepare.outputs.tag }}
