@@ -17,37 +17,31 @@ import yaml
 EXCLUDED_FIELDS = {
     # Network identity - intentionally differs for testnets
     "CONFIG_NAME",
-    "PRESET_BASE",
-    # Merge transition params - testnet-configurable
+    # Merge transition - testnets start post-merge with TTD=0
     "TERMINAL_TOTAL_DIFFICULTY",
-    "TERMINAL_BLOCK_HASH",
-    "TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH",
     # Genesis params - testnet-configurable
     "MIN_GENESIS_ACTIVE_VALIDATOR_COUNT",
     "MIN_GENESIS_TIME",  # explicitly excluded per user requirement
     "GENESIS_FORK_VERSION",
     "GENESIS_DELAY",
-    # Fork versions and activation epochs - testnet-configurable
+    # Fork versions - testnet-specific values
     "ALTAIR_FORK_VERSION",
-    "ALTAIR_FORK_EPOCH",
     "BELLATRIX_FORK_VERSION",
-    "BELLATRIX_FORK_EPOCH",
     "CAPELLA_FORK_VERSION",
-    "CAPELLA_FORK_EPOCH",
     "DENEB_FORK_VERSION",
-    "DENEB_FORK_EPOCH",
     "ELECTRA_FORK_VERSION",
-    "ELECTRA_FORK_EPOCH",
     "FULU_FORK_VERSION",
-    "FULU_FORK_EPOCH",
     "GLOAS_FORK_VERSION",
-    "GLOAS_FORK_EPOCH",
     "HEZE_FORK_VERSION",
-    "HEZE_FORK_EPOCH",
     "EIP7928_FORK_VERSION",
-    "EIP7928_FORK_EPOCH",
     "EIP8025_FORK_VERSION",
-    "EIP8025_FORK_EPOCH",
+    # Fork activation epochs - testnets activate all forks at epoch 0
+    "ALTAIR_FORK_EPOCH",
+    "BELLATRIX_FORK_EPOCH",
+    "CAPELLA_FORK_EPOCH",
+    "DENEB_FORK_EPOCH",
+    "ELECTRA_FORK_EPOCH",
+    "FULU_FORK_EPOCH",
     # Deposit contract - testnet-configurable
     "DEPOSIT_CHAIN_ID",
     "DEPOSIT_NETWORK_ID",
