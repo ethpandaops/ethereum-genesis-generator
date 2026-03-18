@@ -2,8 +2,8 @@
 """
 Compares a generated config.yaml against the upstream consensus-specs config.
 
-Exits non-zero if any non-excluded fields have different values or are missing
-from our config relative to the upstream spec.
+Exits non-zero if any non-excluded fields have different values, are missing
+from our config, or are present in our config but absent from the upstream spec.
 """
 
 import argparse
@@ -21,7 +21,7 @@ EXCLUDED_FIELDS = {
     "TERMINAL_TOTAL_DIFFICULTY",
     # Genesis params - testnet-configurable
     "MIN_GENESIS_ACTIVE_VALIDATOR_COUNT",
-    "MIN_GENESIS_TIME",  # explicitly excluded per user requirement
+    "MIN_GENESIS_TIME",
     "GENESIS_FORK_VERSION",
     "GENESIS_DELAY",
     # Fork versions - testnet-specific values
@@ -42,14 +42,16 @@ EXCLUDED_FIELDS = {
     "DENEB_FORK_EPOCH",
     "ELECTRA_FORK_EPOCH",
     "FULU_FORK_EPOCH",
+    "GLOAS_FORK_EPOCH",
+    "HEZE_FORK_EPOCH",
+    "EIP7928_FORK_EPOCH",
+    "EIP8025_FORK_EPOCH",
     # Deposit contract - testnet-configurable
     "DEPOSIT_CHAIN_ID",
     "DEPOSIT_NETWORK_ID",
     "DEPOSIT_CONTRACT_ADDRESS",
-    # Blob schedule - explicitly excluded per user requirement
+    # Blob schedule - explicitly excluded
     "BLOB_SCHEDULE",
-    # Deprecated field moved to preset files, not present in spec configs
-    "SECONDS_PER_SLOT",
 }
 
 
@@ -63,7 +65,6 @@ def load_yaml(path_or_url: str) -> dict:
 
 def compare_configs(our_config: dict, spec_config: dict) -> bool:
     failures = []
-    warnings = []
 
     spec_keys = {k for k in spec_config if k not in EXCLUDED_FIELDS}
     our_keys = {k for k in our_config if k not in EXCLUDED_FIELDS}
@@ -84,15 +85,9 @@ def compare_configs(our_config: dict, spec_config: dict) -> bool:
             )
 
     for key in sorted(our_keys - spec_keys):
-        warnings.append(
+        failures.append(
             f"  EXTRA field in our config (not in spec): {key!r} = {our_config[key]!r}"
         )
-
-    if warnings:
-        print("Warnings (fields present in our config but not in the upstream spec):")
-        for w in warnings:
-            print(w)
-        print()
 
     if failures:
         print(f"FAILED: {len(failures)} issue(s) found:")
