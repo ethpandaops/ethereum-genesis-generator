@@ -1,0 +1,105 @@
+name: Check - Consensus Spec Values
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 8 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------
+  # Static check: compare our config template (envsubst'd with defaults)
+  # against the upstream consensus-specs config — no Docker required.
+  # ------------------------------------------------------------------
+  check-spec-values:
+    name: Static config check (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [mainnet, minimal]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install pyyaml
+        run: pip install pyyaml --quiet
+
+      - name: Download upstream consensus-specs config
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/ethereum/consensus-specs/master/configs/${{ matrix.preset }}.yaml" \
+            -o /tmp/spec-${{ matrix.preset }}.yaml
+
+      - name: Generate our config via envsubst
+        run: |
+          set -a
+          source defaults/defaults.env
+          set +a
+          # Replicate exactly what entrypoint.sh does in gen_cl_config():
+          # strip the BLOB_SCHEDULE block, drop the human-time placeholder comment,
+          # then substitute environment variables.
+          cat config-example/cl/config.yaml \
+            | sed '/^BLOB_SCHEDULE:/,$ d' \
+            | sed 's/#HUMAN_TIME_PLACEHOLDER//' \
+            | envsubst \
+            > /tmp/our-config-${{ matrix.preset }}.yaml
+
+          # Replicate gen_minimal_config() overrides from entrypoint.sh
+          if [[ "${{ matrix.preset }}" == "minimal" ]]; then
+            sed -i "s/MIN_PER_EPOCH_CHURN_LIMIT:.*/MIN_PER_EPOCH_CHURN_LIMIT: 2/" /tmp/our-config-minimal.yaml
+            sed -i "s/MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA:.*/MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA: 64000000000/" /tmp/our-config-minimal.yaml
+            sed -i "s/MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT:.*/MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT: 128000000000/" /tmp/our-config-minimal.yaml
+            sed -i "s/MIN_BUILDER_WITHDRAWABILITY_DELAY:.*/MIN_BUILDER_WITHDRAWABILITY_DELAY: 8/" /tmp/our-config-minimal.yaml
+          fi
+
+      - name: Compare values against upstream spec
+        run: |
+          python3 .github/check-consensus-spec-values.py \
+            --our-config /tmp/our-config-${{ matrix.preset }}.yaml \
+            --spec-config /tmp/spec-${{ matrix.preset }}.yaml
+
+  # ------------------------------------------------------------------
+  # Genesis run check: build the Docker image, run a full genesis
+  # generation for each preset, then compare the emitted config.yaml
+  # against the upstream consensus-specs config.
+  # ------------------------------------------------------------------
+  check-genesis-output:
+    name: Genesis output check (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [mainnet, minimal]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build Docker image
+        run: docker build -t ethereum-genesis-generator:ci-test .
+
+      - name: Run genesis (${{ matrix.preset }})
+        run: |
+          mkdir -p output
+          docker run --rm -u "$(id -u):$(id -g)" \
+            -v "$PWD/output:/data" \
+            -v "$PWD/test/test-cases/${{ matrix.preset }}-spec-check.env:/config/values.env" \
+            ethereum-genesis-generator:ci-test all
+
+      - name: Install pyyaml
+        run: pip install pyyaml --quiet
+
+      - name: Download upstream consensus-specs config
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/ethereum/consensus-specs/master/configs/${{ matrix.preset }}.yaml" \
+            -o /tmp/spec-${{ matrix.preset }}.yaml
+
+      - name: Compare genesis output config against upstream spec
+        run: |
+          python3 .github/check-consensus-spec-values.py \
+            --our-config output/metadata/config.yaml \
+            --spec-config /tmp/spec-${{ matrix.preset }}.yaml
