@@ -49,12 +49,17 @@ jobs:
             | envsubst \
             > /tmp/our-config-${{ matrix.preset }}.yaml
 
-          # Replicate gen_minimal_config() overrides from entrypoint.sh
+          # Replicate gen_minimal_config() overrides from entrypoint.sh — must stay in sync.
           if [[ "${{ matrix.preset }}" == "minimal" ]]; then
+            sed -i "s/SLOT_DURATION_MS:.*/SLOT_DURATION_MS: 6000/" /tmp/our-config-minimal.yaml
+            sed -i "s/ETH1_FOLLOW_DISTANCE:.*/ETH1_FOLLOW_DISTANCE: 16/" /tmp/our-config-minimal.yaml
+            sed -i "s/SHARD_COMMITTEE_PERIOD:.*/SHARD_COMMITTEE_PERIOD: 64/" /tmp/our-config-minimal.yaml
             sed -i "s/MIN_PER_EPOCH_CHURN_LIMIT:.*/MIN_PER_EPOCH_CHURN_LIMIT: 2/" /tmp/our-config-minimal.yaml
+            sed -i "s/CHURN_LIMIT_QUOTIENT:.*/CHURN_LIMIT_QUOTIENT: 32/" /tmp/our-config-minimal.yaml
+            sed -i "s/MAX_PER_EPOCH_ACTIVATION_CHURN_LIMIT:.*/MAX_PER_EPOCH_ACTIVATION_CHURN_LIMIT: 4/" /tmp/our-config-minimal.yaml
             sed -i "s/MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA:.*/MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA: 64000000000/" /tmp/our-config-minimal.yaml
             sed -i "s/MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT:.*/MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT: 128000000000/" /tmp/our-config-minimal.yaml
-            sed -i "s/MIN_BUILDER_WITHDRAWABILITY_DELAY:.*/MIN_BUILDER_WITHDRAWABILITY_DELAY: 8/" /tmp/our-config-minimal.yaml
+            sed -i "s/MIN_BUILDER_WITHDRAWABILITY_DELAY:.*/MIN_BUILDER_WITHDRAWABILITY_DELAY: 2/" /tmp/our-config-minimal.yaml
           fi
 
       - name: Compare values against upstream spec
