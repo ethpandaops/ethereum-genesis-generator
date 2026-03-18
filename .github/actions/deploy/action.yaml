@@ -20,13 +20,18 @@ inputs:
     description: Docker hub tag to push to
     type: string
     required: true
+  push:
+    description: Whether to push the image to Docker Hub
+    default: "true"
+    type: string
+    required: false
   # Secrets
   DOCKER_USERNAME:
     required: true
   DOCKER_PASSWORD:
     required: true
   MACOS_PASSWORD:
-    required: true
+    required: false
 
 runs:
   using: composite
@@ -46,6 +51,7 @@ runs:
     run: |
       security -v unlock-keychain -p ${{ inputs.MACOS_PASSWORD }} ~/Library/Keychains/login.keychain-db
   - name: Login to Docker Hub
+    if: inputs.push == 'true'
     uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
     with:
       username: ${{ inputs.DOCKER_USERNAME }}
@@ -57,16 +63,23 @@ runs:
       echo "slug=$(echo '${{ inputs.platform }}' | tr '/' '-')" >> $GITHUB_OUTPUT
       echo "DEBUG"
       echo "${{ inputs.tag }}"
-  - name: Docker build & push
+  - name: Docker build
     id: docker_build
     uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
     with:
       context: '.'
       file: Dockerfile
       tags: ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
-      push: true
+      push: false
+      load: true
       platforms: ${{ inputs.platform }}
       build-args: ${{ inputs.build_args }}
+      cache-from: type=gha,scope=build-${{ steps.vars.outputs.slug }}
+      cache-to: type=gha,scope=build-${{ steps.vars.outputs.slug }},mode=max
+  - name: Docker push
+    if: inputs.push == 'true'
+    shell: bash
+    run: docker push ${{ inputs.tag }}-${{ steps.vars.outputs.slug }}
   - name: Image digest & tags
     shell: bash
     run: |

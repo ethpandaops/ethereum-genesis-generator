@@ -6,7 +6,7 @@ on:
     tags:
       - '**'
   pull_request_target:
-    types: [labeled, synchronize]
+    types: [opened, labeled, synchronize, reopened]
   workflow_dispatch:
 
 concurrency:
@@ -15,9 +15,6 @@ concurrency:
 
 jobs:
   prepare:
-    if: >-
-      github.event_name != 'pull_request_target' ||
-      contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.setup.outputs.platforms }}
@@ -55,12 +52,14 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           tag: ${{ needs.prepare.outputs.tag }}
+          push: ${{ github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
           DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
   manifest:
     needs:
       - prepare
       - deploy
+    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
