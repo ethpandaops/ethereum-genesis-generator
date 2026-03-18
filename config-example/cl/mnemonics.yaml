@@ -2,6 +2,6 @@
   start: 0  # account index to start from
   count: $NUMBER_OF_VALIDATORS
   wd_address: $WITHDRAWAL_ADDRESS
-  wd_prefix: $WITHDRAWAL_TYPE
+  wd_prefix: $WITHDRAWAL_TYPE  # 0x00=BLS, 0x01=execution address, 0x02=compounding, 0x03=builder (EIP-7732)
   balance: $VALIDATOR_BALANCE
   status: 0 # 0: active, 1: slashed, 2: exited
