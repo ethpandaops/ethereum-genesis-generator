@@ -7,6 +7,8 @@ on:
       - '**'
   pull_request_target:
     types: [opened, labeled, synchronize, reopened]
+  schedule:
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -37,6 +39,7 @@ jobs:
           else
             echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
           fi
+
   deploy:
     needs:
       - prepare
@@ -52,14 +55,68 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           tag: ${{ needs.prepare.outputs.tag }}
-          push: ${{ github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
+          push: ${{ github.event_name != 'pull_request_target' && github.event_name != 'schedule' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
           DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Export image artifact
+        if: matrix.platform == 'linux/amd64'
+        run: docker save "${{ needs.prepare.outputs.tag }}-linux-amd64" | gzip > /tmp/image.tar.gz
+      - name: Upload image artifact
+        if: matrix.platform == 'linux/amd64'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: docker-image
+          path: /tmp/image.tar.gz
+          retention-days: 1
+
+  check-genesis-output:
+    name: Check consensus spec values (${{ matrix.preset }})
+    needs:
+      - prepare
+      - deploy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [mainnet, minimal]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Load Docker image
+        run: |
+          docker load < /tmp/image.tar.gz
+          docker tag "${{ needs.prepare.outputs.tag }}-linux-amd64" ethereum-genesis-generator:ci-test
+      - name: Run genesis (${{ matrix.preset }})
+        run: |
+          mkdir -p output
+          docker run --rm -u "$(id -u):$(id -g)" \
+            -v "$PWD/output:/data" \
+            -v "$PWD/test/test-cases/${{ matrix.preset }}-spec-check.env:/config/values.env" \
+            ethereum-genesis-generator:ci-test all
+      - name: Install pyyaml
+        run: pip install pyyaml --quiet
+      - name: Download upstream consensus-specs config
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/ethereum/consensus-specs/master/configs/${{ matrix.preset }}.yaml" \
+            -o /tmp/spec-${{ matrix.preset }}.yaml
+      - name: Compare genesis output config against upstream spec
+        run: |
+          python3 .github/check-consensus-spec-values.py \
+            --our-config output/metadata/config.yaml \
+            --spec-config /tmp/spec-${{ matrix.preset }}.yaml
+
   manifest:
     needs:
       - prepare
       - deploy
-    if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
+    if: github.event_name != 'pull_request_target' && github.event_name != 'schedule' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
