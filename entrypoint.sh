@@ -41,11 +41,18 @@ gen_el_config(){
 
 gen_minimal_config() {
   declare -A replacements=(
+    # Time parameters
+    [SLOT_DURATION_MS]=6000
+    [ETH1_FOLLOW_DISTANCE]=16
+    [SHARD_COMMITTEE_PERIOD]=64
+    # Validator cycle
     [MIN_PER_EPOCH_CHURN_LIMIT]=2
+    [CHURN_LIMIT_QUOTIENT]=32
+    [MAX_PER_EPOCH_ACTIVATION_CHURN_LIMIT]=4
     [MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA]=64000000000
     [MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT]=128000000000
     # Gloas
-    [MIN_BUILDER_WITHDRAWABILITY_DELAY]=8
+    [MIN_BUILDER_WITHDRAWABILITY_DELAY]=2
   )
 
   for key in "${!replacements[@]}"; do
