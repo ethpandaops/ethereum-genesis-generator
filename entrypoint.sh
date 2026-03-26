@@ -1,5 +1,16 @@
 #!/bin/bash -e
 
+# Determine preset early: peek at values.env, fall back to env var, default to mainnet
+PRESET_PEEK=$(grep -s "^export PRESET_BASE=" /config/values.env 2>/dev/null | tail -1 | sed 's/export PRESET_BASE=//' | tr -d '"' | tr -d "'" || true)
+PRESET_BASE="${PRESET_PEEK:-${PRESET_BASE:-mainnet}}"
+
+# Source preset-specific defaults before mainnet defaults.
+# Uses :- syntax so docker env vars take precedence, while defaults.env
+# (also :-) won't override values already set here.
+if [[ "$PRESET_BASE" == "minimal" ]]; then
+    source /defaults/minimal.env
+fi
+
 # Load the default env vars into the environment
 source /defaults/defaults.env
 
@@ -39,26 +50,6 @@ gen_el_config(){
     fi
 }
 
-gen_minimal_config() {
-  declare -A replacements=(
-    # Time parameters
-    [SLOT_DURATION_MS]=6000
-    [ETH1_FOLLOW_DISTANCE]=16
-    [SHARD_COMMITTEE_PERIOD]=64
-    # Validator cycle
-    [MIN_PER_EPOCH_CHURN_LIMIT]=2
-    [CHURN_LIMIT_QUOTIENT]=32
-    [MAX_PER_EPOCH_ACTIVATION_CHURN_LIMIT]=4
-    [MIN_PER_EPOCH_CHURN_LIMIT_ELECTRA]=64000000000
-    [MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT]=128000000000
-    # Gloas
-    [MIN_BUILDER_WITHDRAWABILITY_DELAY]=2
-  )
-
-  for key in "${!replacements[@]}"; do
-    sed -i "s/$key:.*/$key: ${replacements[$key]}/" /data/metadata/config.yaml
-  done
-}
 
 # This function conditionally adds the BLOB_SCHEDULE section to the config.yaml file
 # It only adds the section if any BPO is non-default
@@ -138,10 +129,6 @@ gen_cl_config(){
           echo "$ADDITIONAL_VALIDATOR_MNEMONICS" | yq --yaml-output >> $tmp_dir/mnemonics.yaml
         fi
 
-        # Conditionally override values if preset is "minimal"
-        if [[ "$PRESET_BASE" == "minimal" ]]; then
-          gen_minimal_config
-        fi
         cp $tmp_dir/mnemonics.yaml /data/metadata/mnemonics.yaml
         # Create deposit_contract.txt and deposit_contract_block.txt
         grep DEPOSIT_CONTRACT_ADDRESS /data/metadata/config.yaml | cut -d " " -f2 > /data/metadata/deposit_contract.txt
