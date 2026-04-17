@@ -113,7 +113,7 @@ gen_cl_config(){
         export MAX_REQUEST_BLOB_SIDECARS_ELECTRA=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_ELECTRA))
 
         # Process main config file without BLOB_SCHEDULE
-        cat /config/cl/config.yaml | sed '/^BLOB_SCHEDULE:/,/^[a-zA-Z]/ d' | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
+        awk '/^BLOB_SCHEDULE:/{skip=1; next} /^[[:alpha:]]/{skip=0} !skip' /config/cl/config.yaml | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
         envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
 
         # Add BLOB_SCHEDULE if needed
