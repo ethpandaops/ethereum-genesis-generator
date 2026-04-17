@@ -223,3 +223,8 @@ MAX_BYTES_PER_INCLUSION_LIST: 8192
 # ---------------------------------------------------------------
 
 BLOB_SCHEDULE: []
+
+# Fast Confirmation Rule
+# ---------------------------------------------------------------
+# 25%
+CONFIRMATION_BYZANTINE_THRESHOLD: $CONFIRMATION_BYZANTINE_THRESHOLD
