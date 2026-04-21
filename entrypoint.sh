@@ -51,53 +51,39 @@ gen_el_config(){
 }
 
 
-# This function conditionally adds the BLOB_SCHEDULE section to the config.yaml file
-# It only adds the section if any BPO is non-default
-add_blob_schedule() {
-    # Takes config file path as argument
-    local config_file=$1
-
-    # Check if any BPO is non-default and build BLOB_SCHEDULE if needed
-    INCLUDE_SCHEDULE=false
-    BLOB_SCHEDULE=""
-
-    # The default value is already in the environment from defaults.env
-    DEFAULT_BPO_EPOCH="18446744073709551615"
+# Builds the BLOB_SCHEDULE YAML block from BPO_* env vars and echoes it.
+# Emits `BLOB_SCHEDULE: []` when no BPO is non-default.
+build_blob_schedule() {
+    local include_schedule=false
+    local schedule=""
+    local default_epoch="18446744073709551615"
 
     for i in {1..5}; do
-        var_epoch="BPO_${i}_EPOCH"
-        var_blobs="BPO_${i}_MAX_BLOBS"
+        local var_epoch="BPO_${i}_EPOCH"
+        local var_blobs="BPO_${i}_MAX_BLOBS"
+        local var_next_epoch="BPO_$((i+1))_EPOCH"
 
-        var_next_epoch="BPO_$((i+1))_EPOCH"
-
-        # Check if this BPO has a non-default value
-        if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$DEFAULT_BPO_EPOCH" ]; then
+        if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$default_epoch" ]; then
             if [ "${!var_next_epoch}" == "${!var_epoch}" ]; then
-                echo "BPO $i has the same activation epoch as the followup BPO $((i+1)), skipping for CL config..."
+                echo "BPO $i has the same activation epoch as the followup BPO $((i+1)), skipping for CL config..." >&2
                 continue
             fi
 
-            if [ "$INCLUDE_SCHEDULE" = false ]; then
-                # First non-default BPO - add header
-                BLOB_SCHEDULE="
-BLOB_SCHEDULE:"
-                INCLUDE_SCHEDULE=true
+            if [ "$include_schedule" = false ]; then
+                schedule="BLOB_SCHEDULE:"
+                include_schedule=true
             fi
 
-            # Add this BPO entry
-            BLOB_SCHEDULE="$BLOB_SCHEDULE
+            schedule="$schedule
   - EPOCH: ${!var_epoch}
     MAX_BLOBS_PER_BLOCK: ${!var_blobs}"
         fi
     done
 
-    # Append BLOB_SCHEDULE section
-    if [ "$INCLUDE_SCHEDULE" = true ]; then
-        echo "$BLOB_SCHEDULE" >> "$config_file"
+    if [ "$include_schedule" = true ]; then
+        echo "$schedule"
     else
-        # Add empty BLOB_SCHEDULE if no non-default BPOs were found
-        echo "
-BLOB_SCHEDULE: []" >> "$config_file"
+        echo "BLOB_SCHEDULE: []"
     fi
 }
 
@@ -112,12 +98,17 @@ gen_cl_config(){
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
         export MAX_REQUEST_BLOB_SIDECARS_ELECTRA=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_ELECTRA))
 
-        # Process main config file without BLOB_SCHEDULE
-        cat /config/cl/config.yaml | sed '/^BLOB_SCHEDULE:/,/^[a-zA-Z]/ d' | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
+        # Build BLOB_SCHEDULE block and substitute it in place so the
+        # section keeps its position in the template (i.e. above the
+        # Fast Confirmation Rule section).
+        export BLOB_SCHEDULE_YAML="$(build_blob_schedule)"
+        awk '
+            BEGIN { new_section = ENVIRON["BLOB_SCHEDULE_YAML"] }
+            /^BLOB_SCHEDULE:/ { print new_section; in_blob=1; next }
+            in_blob && /^[[:space:]]/ { next }
+            { in_blob=0; print }
+        ' /config/cl/config.yaml | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
         envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
-
-        # Add BLOB_SCHEDULE if needed
-        add_blob_schedule /data/metadata/config.yaml
 
         # Envsubst mnemonics file
         if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
