@@ -50,7 +50,7 @@ EXCLUDED_FIELDS = {
     "DEPOSIT_CONTRACT_ADDRESS",
     # Blob schedule - explicitly excluded
     "BLOB_SCHEDULE",
-    # Deprecated field removed from spec configs
+    # Deprecated fields removed from spec configs, kept for backwards compatibility with latest client releases
     "SECONDS_PER_SLOT",
 }
 

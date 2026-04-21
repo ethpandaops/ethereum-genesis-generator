@@ -33,7 +33,7 @@ jobs:
         id: resolve_tag
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
             branch_name="${GITHUB_HEAD_REF}"
             branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
             echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
