@@ -52,8 +52,6 @@ EXCLUDED_FIELDS = {
     "BLOB_SCHEDULE",
     # Deprecated fields removed from spec configs, kept for backwards compatibility with latest client releases
     "SECONDS_PER_SLOT",
-    "MAX_REQUEST_BLOB_SIDECARS_ELECTRA",
-    "MAX_REQUEST_DATA_COLUMN_SIDECARS",
 }
 
 
