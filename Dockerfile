@@ -3,7 +3,7 @@ WORKDIR /work
 ARG ETH_BEACON_GENESIS_SHA=bddffdc436768de180e653c526a89a6172773149
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
-    && git checkout -q ${ETH_BEACON_GENESIS_VERSION} \
+    && git checkout -q ${ETH_BEACON_GENESIS_SHA} \
     && make \
     && go install github.com/protolambda/eth2-val-tools@latest \
     && go install github.com/miguelmota/go-ethereum-hdwallet/cmd/geth-hdwallet@latest
