@@ -1,7 +1,7 @@
 FROM golang:1.26 AS builder
 WORKDIR /work
 ARG ETH_BEACON_GENESIS_VERSION=bbusa/fix-gloas-genesis-empty-parent
-ARG ETH_BEACON_GENESIS_SHA=38110c60ed0e5b023cf040c63c6c0b5024d3784f
+ARG ETH_BEACON_GENESIS_SHA=e14024e417474ef1f2e2a22d357eda79e178007d
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
     && git checkout -q ${ETH_BEACON_GENESIS_VERSION} \
