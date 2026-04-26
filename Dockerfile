@@ -1,15 +1,9 @@
 FROM golang:1.26 AS builder
 WORKDIR /work
-ARG ETH_BEACON_GENESIS_VERSION=v0.0.1
-ARG ETH_BEACON_GENESIS_SHA=2515c422570d0ba780d5f64d6d284c63845e3666
+ARG ETH_BEACON_GENESIS_SHA=bddffdc436768de180e653c526a89a6172773149
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
-    && git checkout -q ${ETH_BEACON_GENESIS_VERSION} \
-    && actual_sha=$(git rev-parse HEAD) \
-    && [ "${actual_sha}" = "${ETH_BEACON_GENESIS_SHA}" ] || { \
-         echo "eth-beacon-genesis ${ETH_BEACON_GENESIS_VERSION} resolved to ${actual_sha}, expected ${ETH_BEACON_GENESIS_SHA}" >&2; \
-         exit 1; \
-       } \
+    && git checkout -q ${ETH_BEACON_GENESIS_SHA} \
     && make \
     && go install github.com/protolambda/eth2-val-tools@latest \
     && go install github.com/miguelmota/go-ethereum-hdwallet/cmd/geth-hdwallet@latest
