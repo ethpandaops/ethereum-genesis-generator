@@ -67,8 +67,6 @@ EIP7928_FORK_EPOCH: $EIP7928_FORK_EPOCH
 
 # Time parameters
 # ---------------------------------------------------------------
-# 12 seconds (*deprecated*)
-SECONDS_PER_SLOT: $SLOT_DURATION_IN_SECONDS
 # 12000 milliseconds
 SLOT_DURATION_MS: $SLOT_DURATION_MS
 # 14 (estimate from Eth1 mainnet)

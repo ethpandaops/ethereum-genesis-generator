@@ -297,7 +297,7 @@ genesis_get_activation_time() {
             slots_per_epoch=32
         fi
         # Convert epoch to timestamp: genesis_time + genesis_delay + (epoch * slots * slot_duration)
-        epoch_delay=$(( $SLOT_DURATION_IN_SECONDS * $slots_per_epoch * $1 ))
+        epoch_delay=$(( $SLOT_DURATION_MS * $slots_per_epoch * $1 / 1000 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
 }
