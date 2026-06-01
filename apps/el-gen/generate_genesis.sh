@@ -87,6 +87,11 @@ generate_genesis() {
         # Add system contracts
         genesis_add_system_contracts $tmp_dir
 
+        # Add well-known, chain-agnostic contracts (deterministic deployment
+        # proxy, etc.). Placed before premine/additional contracts so explicit
+        # config can still override them.
+        genesis_add_well_known_contracts $tmp_dir
+
         # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
@@ -545,6 +550,33 @@ genesis_add_system_contracts() {
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
     fi
+}
+
+# Deploys well-known, chain-agnostic contracts that are expected at the same
+# address on (nearly) every EVM chain, e.g. the deterministic deployment /
+# CREATE2 proxy. The contracts are inert until called, so predeploying them is
+# safe. Controlled by PRELOAD_WELL_KNOWN_CONTRACTS (default: true); the contract
+# set is data-driven from apps/el-gen/well-known-contracts.yaml, so adding a new
+# one needs no code change here.
+# Args:
+#   $1: Temporary directory for storing allocations
+genesis_add_well_known_contracts() {
+    local tmp_dir=$1
+
+    if [ "${PRELOAD_WELL_KNOWN_CONTRACTS:-true}" != "true" ]; then
+        echo "Skipping well-known contracts (PRELOAD_WELL_KNOWN_CONTRACTS=${PRELOAD_WELL_KNOWN_CONTRACTS:-true})"
+        return
+    fi
+
+    local well_known_contracts=$(cat /apps/el-gen/well-known-contracts.yaml | yq -c)
+
+    echo "Adding well-known contracts"
+    for name in $(echo "$well_known_contracts" | jq -r 'keys[]'); do
+        local target_address=$(echo "$well_known_contracts" | jq -r --arg n "$name" '.[$n].address')
+        local allocation=$(echo "$well_known_contracts" | jq -c --arg n "$name" '.[$n] | del(.address)')
+        echo -e "  $name:\t$target_address"
+        genesis_add_allocation $tmp_dir "$target_address" "$allocation"
+    done
 }
 
 # Adds Bellatrix (Merge) fork properties to genesis files
