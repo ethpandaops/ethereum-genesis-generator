@@ -4,7 +4,7 @@ ARG ETH_BEACON_GENESIS_VERSION=v0.0.3
 ARG ETH_BEACON_GENESIS_SHA=9bdd1b0ab91836ccfc1928bc4059121c2862aff2
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
-    && git checkout -b pk910/validator-mapping \
+    && git checkout pk910/validator-mapping \
     && actual_sha=$(git rev-parse HEAD) \
     && [ "${actual_sha}" = "${ETH_BEACON_GENESIS_SHA}" ] || { \
          echo "eth-beacon-genesis ${ETH_BEACON_GENESIS_VERSION} resolved to ${actual_sha}, expected ${ETH_BEACON_GENESIS_SHA}" >&2; \
