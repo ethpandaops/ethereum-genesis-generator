@@ -160,6 +160,11 @@ gen_cl_config(){
           genesis_args+=(--additional-validators $validators_file)
         fi
 
+        if [ "$SHUFFLE_VALIDATORS" = "true" ]; then
+          genesis_args+=(--shuffle-validators)
+          genesis_args+=(--validator-mapping-file /data/metadata/validator_names.yaml)
+        fi
+
         /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"

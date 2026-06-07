@@ -1,4 +1,5 @@
 - mnemonic: "${EL_AND_CL_MNEMONIC}"  # a 24 word BIP 39 mnemonic
+  name: "main-mnemonic"
   start: 0  # account index to start from
   count: $NUMBER_OF_VALIDATORS
   wd_address: $WITHDRAWAL_ADDRESS
