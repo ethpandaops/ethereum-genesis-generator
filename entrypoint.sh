@@ -153,7 +153,7 @@ gen_cl_config(){
 
         if [ "$SHUFFLE_VALIDATORS" = "true" ]; then
           genesis_args+=(--shuffle-validators)
-          genesis_args+=(--validator-mapping-file /data/metadata/validator_names.yaml)
+          genesis_args+=(--validators-mapping-output /data/metadata/validator_names.yaml)
         fi
 
         /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
