@@ -134,6 +134,7 @@ gen_cl_config(){
           --mnemonics $tmp_dir/mnemonics.yaml
           --state-output /data/metadata/genesis.ssz
           --json-output /data/parsed/parsedConsensusGenesis.json
+          --validators-mapping-output /data/metadata/validator_names.yaml
         )
 
         if [[ $SHADOW_FORK_FILE != "" ]]; then
@@ -153,7 +154,6 @@ gen_cl_config(){
 
         if [ "$SHUFFLE_VALIDATORS" = "true" ]; then
           genesis_args+=(--shuffle-validators)
-          genesis_args+=(--validators-mapping-output /data/metadata/validator_names.yaml)
         fi
 
         /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
