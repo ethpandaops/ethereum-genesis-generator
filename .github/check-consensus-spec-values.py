@@ -50,8 +50,11 @@ EXCLUDED_FIELDS = {
     "DEPOSIT_CONTRACT_ADDRESS",
     # Blob schedule - explicitly excluded
     "BLOB_SCHEDULE",
-    # Deprecated field removed from spec configs
+    # Deprecated fields removed from spec configs, kept for backwards compatibility with latest client releases
     "SECONDS_PER_SLOT",
+    # TODO: temporary teku compatibility shim, remove after the next teku mainnet release (see #283)
+    "MAX_REQUEST_BLOB_SIDECARS_ELECTRA",
+    "MAX_REQUEST_DATA_COLUMN_SIDECARS",
 }
 
 
