@@ -1,10 +1,10 @@
 FROM golang:1.26 AS builder
 WORKDIR /work
-ARG ETH_BEACON_GENESIS_VERSION=v0.0.3
-ARG ETH_BEACON_GENESIS_SHA=9bdd1b0ab91836ccfc1928bc4059121c2862aff2
+ARG ETH_BEACON_GENESIS_VERSION=v0.0.4
+ARG ETH_BEACON_GENESIS_SHA=6d60dcf20a9faffb5e4a0b819b661e6a4e08a9b4
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
-    && git checkout pk910/validator-mapping \
+    && git checkout -q ${ETH_BEACON_GENESIS_VERSION} \
     && actual_sha=$(git rev-parse HEAD) \
     && [ "${actual_sha}" = "${ETH_BEACON_GENESIS_SHA}" ] || { \
          echo "eth-beacon-genesis ${ETH_BEACON_GENESIS_VERSION} resolved to ${actual_sha}, expected ${ETH_BEACON_GENESIS_SHA}" >&2; \
