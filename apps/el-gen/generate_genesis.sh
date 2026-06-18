@@ -550,6 +550,18 @@ genesis_add_system_contracts() {
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
     fi
+
+    if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
+        # EIP-8282: Builder deposit requests (request type 0x03)
+        target_address=$(echo "$system_contracts" | jq -r '.eip8282_deposit_address')
+        echo -e "  EIP-8282 deposit contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_deposit')
+
+        # EIP-8282: Builder exit requests (request type 0x04)
+        target_address=$(echo "$system_contracts" | jq -r '.eip8282_exit_address')
+        echo -e "  EIP-8282 exit contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_exit')
+    fi
 }
 
 # Deploys well-known, chain-agnostic contracts that are expected at the same
