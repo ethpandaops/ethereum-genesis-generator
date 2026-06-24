@@ -883,7 +883,7 @@ genesis_add_bpos() {
 }
 
 # Adds Gloas (Amsterdam) fork properties to genesis files
-# Enabled EIPs: 7708, 7778, 7843, 7928, 7954, 7976, 7981, 8024, 8037
+# Enabled EIPs: 2780, 7708, 7778, 7843, 7928, 7954, 7976, 7981, 8024, 8037, 8038, 8246, 8282
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_gloas() {
@@ -903,6 +903,7 @@ genesis_add_gloas() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
+        "eip2780TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7708TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7778TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
@@ -911,7 +912,10 @@ genesis_add_gloas() {
         "eip7976TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7981TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip8024TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'"
+        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8038TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8246TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8282TransitionTimestamp": "'$amsterdam_time_hex'"
     }'
 
     # besu.json
