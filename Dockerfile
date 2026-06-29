@@ -1,7 +1,7 @@
 FROM golang:1.26 AS builder
 WORKDIR /work
 ARG ETH_BEACON_GENESIS_VERSION=glamsterdam-devnet-7
-ARG ETH_BEACON_GENESIS_SHA=0ee9410a3a78f7286f202d69a13dbea2b4b579e3
+ARG ETH_BEACON_GENESIS_SHA=c600926620858eae4f8dee9b6e7b71d1b707ab61
 RUN git clone -q https://github.com/ethpandaops/eth-beacon-genesis.git \
     && cd eth-beacon-genesis \
     && git checkout -q ${ETH_BEACON_GENESIS_VERSION} \
