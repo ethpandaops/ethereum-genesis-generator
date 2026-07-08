@@ -87,6 +87,11 @@ generate_genesis() {
         # Add system contracts
         genesis_add_system_contracts $tmp_dir
 
+        # Add well-known, chain-agnostic contracts (deterministic deployment
+        # proxy, etc.). Placed before premine/additional contracts so explicit
+        # config can still override them.
+        genesis_add_well_known_contracts $tmp_dir
+
         # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
@@ -545,6 +550,45 @@ genesis_add_system_contracts() {
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
     fi
+
+    if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
+        # EIP-8282: Builder deposit requests (request type 0x03)
+        target_address=$(echo "$system_contracts" | jq -r '.eip8282_deposit_address')
+        echo -e "  EIP-8282 deposit contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_deposit')
+
+        # EIP-8282: Builder exit requests (request type 0x04)
+        target_address=$(echo "$system_contracts" | jq -r '.eip8282_exit_address')
+        echo -e "  EIP-8282 exit contract:\t$target_address"
+        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_exit')
+    fi
+}
+
+# Deploys well-known, chain-agnostic contracts that are expected at the same
+# address on (nearly) every EVM chain, e.g. the deterministic deployment /
+# CREATE2 proxy. The contracts are inert until called, so predeploying them is
+# safe. Controlled by PRELOAD_WELL_KNOWN_CONTRACTS (default: true); the contract
+# set is data-driven from apps/el-gen/well-known-contracts.yaml, so adding a new
+# one needs no code change here.
+# Args:
+#   $1: Temporary directory for storing allocations
+genesis_add_well_known_contracts() {
+    local tmp_dir=$1
+
+    if [ "${PRELOAD_WELL_KNOWN_CONTRACTS:-true}" != "true" ]; then
+        echo "Skipping well-known contracts (PRELOAD_WELL_KNOWN_CONTRACTS=${PRELOAD_WELL_KNOWN_CONTRACTS:-true})"
+        return
+    fi
+
+    local well_known_contracts=$(cat /apps/el-gen/well-known-contracts.yaml | yq -c)
+
+    echo "Adding well-known contracts"
+    for name in $(echo "$well_known_contracts" | jq -r 'keys[]'); do
+        local target_address=$(echo "$well_known_contracts" | jq -r --arg n "$name" '.[$n].address')
+        local allocation=$(echo "$well_known_contracts" | jq -c --arg n "$name" '.[$n] | del(.address)')
+        echo -e "  $name:\t$target_address"
+        genesis_add_allocation $tmp_dir "$target_address" "$allocation"
+    done
 }
 
 # Adds Bellatrix (Merge) fork properties to genesis files
@@ -839,7 +883,7 @@ genesis_add_bpos() {
 }
 
 # Adds Gloas (Amsterdam) fork properties to genesis files
-# Enabled EIPs: 7708, 7778, 7843, 7928, 7954, 8024, 8037
+# Enabled EIPs: 2780, 7708, 7778, 7843, 7928, 7954, 7976, 7981, 8024, 8037, 8038, 8246, 8282
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_gloas() {
@@ -859,13 +903,19 @@ genesis_add_gloas() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
+        "eip2780TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7708TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7778TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7928TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip7954TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7976TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7981TransitionTimestamp": "'$amsterdam_time_hex'",
         "eip8024TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'"
+        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8038TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8246TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8282TransitionTimestamp": "'$amsterdam_time_hex'"
     }'
 
     # besu.json

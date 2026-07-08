@@ -45,6 +45,12 @@ Type | Name | Description
 `0x02` | Compounding | Like `0x01` but enables reward compounding. Effective balance can grow up to `MAX_EFFECTIVE_BALANCE_ELECTRA` (2048 ETH). Requires Electra or later.
 `0x03` | Builder | Identifies a builder validator (EIP-7732 ePBS). Same address structure as `0x01`/`0x02`. Builders participate in the decentralized block auction mechanism. Requires EIP-7732 or later.
 
+### Well-known contracts
+
+Chain-agnostic contracts that live at the same address on (nearly) every EVM chain — such as the deterministic deployment / CREATE2 proxy (`0x4e59…956C`) — are predeployed into genesis automatically. They are inert until called, so downstream tooling (and any CREATE2 address derived from them) works out of the box on a fresh devnet, without relying on a keyless bootstrap transaction.
+
+The set is data-driven from [`apps/el-gen/well-known-contracts.yaml`](apps/el-gen/well-known-contracts.yaml) — add a contract by appending an entry there, no code change needed. Toggle the feature with `PRELOAD_WELL_KNOWN_CONTRACTS` (default `true`). An `ADDITIONAL_PRELOADED_CONTRACTS` entry for the same address still overrides the default.
+
 ### Shadow Fork
 If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
 transactions. This can be done with the below call for example:
