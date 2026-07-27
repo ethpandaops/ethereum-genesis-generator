@@ -930,7 +930,7 @@ genesis_add_gloas() {
 }
 
 # Adds Bogota (Heze) fork properties to genesis files
-# Enabled EIPs: 7805
+# Enabled EIPs: 7805, 8141
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_heze() {
@@ -950,7 +950,8 @@ genesis_add_heze() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7805TransitionTimestamp": "'$bogota_time_hex'"
+        "eip7805TransitionTimestamp": "'$bogota_time_hex'",
+        "eip8141TransitionTimestamp": "'$bogota_time_hex'"
     }'
 
     # besu.json
