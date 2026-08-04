@@ -1,0 +1,30 @@
+# Well-known contracts
+#
+# Chain-agnostic contracts that live at the SAME address on (nearly) every EVM
+# chain and that downstream tooling expects to already exist. They are inert
+# until called, so predeploying them is safe and lets contracts and tools that
+# depend on them work out-of-the-box on a fresh devnet.
+#
+# Toggle with PRELOAD_WELL_KNOWN_CONTRACTS (default: true).
+# Add a contract by appending an entry below -- no code change required. Each
+# entry is a friendly name mapping to an `address` plus a standard allocation
+# body (`code`, and optionally `nonce`, `balance`, `storage`).
+
+# Deterministic deployment proxy -- "Nick's factory" / Arachnid CREATE2 factory
+# (https://github.com/Arachnid/deterministic-deployment-proxy). Normally
+# bootstrapped by a keyless, fixed-gas transaction; that bootstrap can no longer
+# be mined on chains whose contract-creation intrinsic gas exceeds the keyless
+# tx's fixed gas limit, so predeploying it guarantees the canonical 0x4e59...
+# factory (and every CREATE2 address derived from it) is available.
+deterministic_deployment_proxy: {
+  "address": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+  "balance": "0",
+  "nonce": "1",
+  "code": "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3"
+}
+
+# Further candidates -- add as standalone entries when needed (verify the exact
+# runtime code and canonical address for each before adding):
+#   eip2470_singleton_factory  0xce0042B868300000d44A59004Da54A005ffdcf9f
+#   multicall3                 0xcA11bde05977b3631167028862bE2a173976CA11
+#   createx                    0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed

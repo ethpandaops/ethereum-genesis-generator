@@ -34,6 +34,23 @@ SERVER_PORT    | 8000    | Web server port
 
 Besides that, you can also use ENV vars in your configuration files. One way of doing this is via the [values.env](config-example/values.env) configuration file. These will be replaced during runtime.
 
+### Validator withdrawal credential types
+
+The `WITHDRAWAL_TYPE` environment variable controls the withdrawal credential prefix for genesis validators. The `WITHDRAWAL_ADDRESS` must be set for all types except `0x00`.
+
+Type | Name | Description
+---- | ---- | -----------
+`0x00` | BLS withdrawal | Credentials derived from the validator's BLS withdrawal key. No execution address required. Validators must rotate to `0x01` or higher before withdrawals can be processed.
+`0x01` | Execution withdrawal | Credentials pointing to an execution layer address. Enables partial and full withdrawals to the specified address. Effective balance is capped at 32 ETH.
+`0x02` | Compounding | Like `0x01` but enables reward compounding. Effective balance can grow up to `MAX_EFFECTIVE_BALANCE_ELECTRA` (2048 ETH). Requires Electra or later.
+`0xB0` | Builder | Identifies a builder validator (EIP-7732 ePBS). Same address structure as `0x01`/`0x02`. Builders participate in the decentralized block auction mechanism. Requires EIP-7732 or later.
+
+### Well-known contracts
+
+Chain-agnostic contracts that live at the same address on (nearly) every EVM chain — such as the deterministic deployment / CREATE2 proxy (`0x4e59…956C`) — are predeployed into genesis automatically. They are inert until called, so downstream tooling (and any CREATE2 address derived from them) works out of the box on a fresh devnet, without relying on a keyless bootstrap transaction.
+
+The set is data-driven from [`apps/el-gen/well-known-contracts.yaml`](apps/el-gen/well-known-contracts.yaml) — add a contract by appending an entry there, no code change needed. Toggle the feature with `PRELOAD_WELL_KNOWN_CONTRACTS` (default `true`). An `ADDITIONAL_PRELOADED_CONTRACTS` entry for the same address still overrides the default.
+
 ### Shadow Fork
 If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
 transactions. This can be done with the below call for example:

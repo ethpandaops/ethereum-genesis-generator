@@ -35,7 +35,7 @@ generate_genesis() {
     # 5 - electra / prague
     # 6 - fulu / osaka
     # 7 - gloas / amsterdam
-    # 8 - eip7805 / eip7805
+    # 8 - heze / bogota
 
     if [ "$CHAIN_ID" == "1" ]; then
         # mainnet shadowfork
@@ -74,7 +74,7 @@ generate_genesis() {
     [ $has_fork -lt 6 ] && [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_fulu $tmp_dir
                            [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
-    [ $has_fork -lt 8 ] && [ ! "$EIP7805_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_eip7805 $tmp_dir
+    [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
 
     # apply special chainspec blob schedule format
     genesis_apply_blob_schedule $tmp_dir
@@ -87,11 +87,37 @@ generate_genesis() {
         # Add system contracts
         genesis_add_system_contracts $tmp_dir
 
+        # Add well-known, chain-agnostic contracts (deterministic deployment
+        # proxy, etc.). Placed before premine/additional contracts so explicit
+        # config can still override them.
+        genesis_add_well_known_contracts $tmp_dir
+
         # Build complete allocations object before applying
         if [ -f /config/el/genesis-config.yaml ]; then
             envsubst < /config/el/genesis-config.yaml | yq -c > $tmp_dir/el-genesis-config.json
 
             el_mnemonic=$(jq -r '.mnemonic // env.EL_AND_CL_MNEMONIC' $tmp_dir/el-genesis-config.json)
+            el_premine_count=${EL_PREMINE_COUNT:-21}
+            el_premine_balance=${EL_PREMINE_BALANCE:-1000000000ETH}
+
+            # Dynamically generate el_premine entries based on EL_PREMINE_COUNT
+            if [ "$el_premine_count" -gt 0 ]; then
+                echo "Generating $el_premine_count premine accounts..."
+                el_premine_json="{"
+                for ((i=0; i<el_premine_count; i++)); do
+                    if [ $i -gt 0 ]; then
+                        el_premine_json+=","
+                    fi
+                    el_premine_json+="\"m/44'/60'/0'/0/$i\": \"$el_premine_balance\""
+                done
+                el_premine_json+="}"
+                jq --argjson prem "$el_premine_json" '.el_premine = $prem' $tmp_dir/el-genesis-config.json > $tmp_dir/el-genesis-config.json.tmp
+                mv $tmp_dir/el-genesis-config.json.tmp $tmp_dir/el-genesis-config.json
+            else
+                echo "Skipping premine accounts (EL_PREMINE_COUNT=0)"
+                jq '.el_premine = {}' $tmp_dir/el-genesis-config.json > $tmp_dir/el-genesis-config.json.tmp
+                mv $tmp_dir/el-genesis-config.json.tmp $tmp_dir/el-genesis-config.json
+            fi
 
             # Process all premine wallets in one pass
             echo "Adding premine wallets from mnemonic..."
@@ -203,7 +229,10 @@ genesis_load_base_genesis() {
     fi
 
     # determinate latest active fork based on cutoff time and parent network's genesis.json
-    if [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
+    if [ "$(cat $tmp_dir/genesis.json | jq ".config.bogotaTime and .config.bogotaTime < $shadowfork_cutoff_time")" == "true" ]; then
+        has_fork="8" # heze
+        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
+    elif [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
         shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
@@ -441,8 +470,62 @@ genesis_add_system_contracts() {
     echo "Adding system contracts"
 
     # add deposit contract
-    echo -e "  genesis contract:\t$DEPOSIT_CONTRACT_ADDRESS"
-    genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$system_contracts" | jq -c '.deposit')
+    if [ "$DEPOSIT_CONTRACT_GATED" == "true" ]; then
+        local gated_deposit_contract=$(cat /apps/el-gen/gated-deposit-contract.yaml | yq -c)
+        genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$gated_deposit_contract" | jq -c '.deposit')
+        target_address=$(echo "$gated_deposit_contract" | jq -r '.deposit_gater_address')
+        local deposit_gater=$(echo "$gated_deposit_contract" | jq -c '.deposit_gater')
+        # add admin addresses
+        for admin in $(echo "$DEPOSIT_CONTRACT_ADMINS" | jq -r '.[]'); do
+            # Cut off 0x prefix if present
+            local clean_admin=$admin
+            if [[ "$clean_admin" == 0x* ]]; then
+                clean_admin="${clean_admin:2}"
+            fi
+            # Ensure admin is 40 chars, pad with 0s on left if shorter
+            while [ ${#clean_admin} -lt 40 ]; do
+                clean_admin="0$clean_admin"
+            done
+
+            deposit_gater=$(echo "$deposit_gater" | jq -c '.storage += {"0xacce55000000000000000000'"$clean_admin"'": "0x0000000000000000000000000000000000000000000000000000000000000002"}')
+            echo "  adding admin 0x$clean_admin to deposit contract"
+        done
+
+        # add custom prefix settings (keys: 0x00-0xff for withdrawal credential prefixes, 0xffff for topup)
+        if [ -n "$DEPOSIT_CONTRACT_SETTINGS" ] && [ "$DEPOSIT_CONTRACT_SETTINGS" != "{}" ] && [ "$DEPOSIT_CONTRACT_SETTINGS" != "null" ]; then
+            for prefix in $(echo "$DEPOSIT_CONTRACT_SETTINGS" | jq -r 'keys[]'); do
+                local value=$(echo "$DEPOSIT_CONTRACT_SETTINGS" | jq -r --arg p "$prefix" '.[$p]')
+
+                # Cut off 0x prefix if present
+                local clean_prefix=$prefix
+                if [[ "$clean_prefix" == 0x* ]]; then
+                    clean_prefix="${clean_prefix:2}"
+                fi
+                # Pad prefix to 2 bytes (4 hex chars) on the left
+                while [ ${#clean_prefix} -lt 4 ]; do
+                    clean_prefix="0$clean_prefix"
+                done
+
+                # Cut off 0x prefix from value if present
+                local clean_value=$value
+                if [[ "$clean_value" == 0x* ]]; then
+                    clean_value="${clean_value:2}"
+                fi
+                # Pad value to 32 bytes (64 hex chars) on the left
+                while [ ${#clean_value} -lt 64 ]; do
+                    clean_value="0$clean_value"
+                done
+
+                deposit_gater=$(echo "$deposit_gater" | jq -c '.storage += {"0x676174650000000000000000000000000000000000000000000000000000'"$clean_prefix"'": "0x'"$clean_value"'"}')
+                echo "  adding prefix 0x$clean_prefix settings to deposit contract: 0x$clean_value"
+            done
+        fi
+
+        genesis_add_allocation $tmp_dir "$target_address" "$deposit_gater"
+    else
+        echo -e "  deposit contract:\t$DEPOSIT_CONTRACT_ADDRESS"
+        genesis_add_allocation $tmp_dir "$DEPOSIT_CONTRACT_ADDRESS" $(echo "$system_contracts" | jq -c '.deposit')
+    fi
 
     if [ ! "$DENEB_FORK_EPOCH" == "18446744073709551615" ]; then
         # EIP-4788: Beacon block root in the EVM
@@ -467,6 +550,49 @@ genesis_add_system_contracts() {
         echo -e "  EIP-7251 contract:\t$target_address"
         genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
     fi
+
+    if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
+        if [ "${DEPLOY_EIP8282_CONTRACTS:-true}" == "true" ]; then
+            # EIP-8282: Builder deposit requests (request type 0x03)
+            target_address=$(echo "$system_contracts" | jq -r '.eip8282_deposit_address')
+            echo -e "  EIP-8282 deposit contract:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_deposit')
+
+            # EIP-8282: Builder exit requests (request type 0x04)
+            target_address=$(echo "$system_contracts" | jq -r '.eip8282_exit_address')
+            echo -e "  EIP-8282 exit contract:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_exit')
+        else
+            echo -e "  skipping EIP-8282 contracts (DEPLOY_EIP8282_CONTRACTS=${DEPLOY_EIP8282_CONTRACTS})"
+        fi
+    fi
+}
+
+# Deploys well-known, chain-agnostic contracts that are expected at the same
+# address on (nearly) every EVM chain, e.g. the deterministic deployment /
+# CREATE2 proxy. The contracts are inert until called, so predeploying them is
+# safe. Controlled by PRELOAD_WELL_KNOWN_CONTRACTS (default: true); the contract
+# set is data-driven from apps/el-gen/well-known-contracts.yaml, so adding a new
+# one needs no code change here.
+# Args:
+#   $1: Temporary directory for storing allocations
+genesis_add_well_known_contracts() {
+    local tmp_dir=$1
+
+    if [ "${PRELOAD_WELL_KNOWN_CONTRACTS:-true}" != "true" ]; then
+        echo "Skipping well-known contracts (PRELOAD_WELL_KNOWN_CONTRACTS=${PRELOAD_WELL_KNOWN_CONTRACTS:-true})"
+        return
+    fi
+
+    local well_known_contracts=$(cat /apps/el-gen/well-known-contracts.yaml | yq -c)
+
+    echo "Adding well-known contracts"
+    for name in $(echo "$well_known_contracts" | jq -r 'keys[]'); do
+        local target_address=$(echo "$well_known_contracts" | jq -r --arg n "$name" '.[$n].address')
+        local allocation=$(echo "$well_known_contracts" | jq -c --arg n "$name" '.[$n] | del(.address)')
+        echo -e "  $name:\t$target_address"
+        genesis_add_allocation $tmp_dir "$target_address" "$allocation"
+    done
 }
 
 # Adds Bellatrix (Merge) fork properties to genesis files
@@ -755,7 +881,7 @@ genesis_add_bpos() {
 }
 
 # Adds Gloas (Amsterdam) fork properties to genesis files
-# Enabled EIPs: 7928
+# Enabled EIPs: 2780, 7708, 7778, 7843, 7928, 7954, 7976, 7981, 8024, 8037, 8038, 8246, 8282
 # Args:
 #   $1: Temporary directory containing genesis files
 genesis_add_gloas() {
@@ -771,7 +897,19 @@ genesis_add_gloas() {
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7928TransitionTimestamp": "'$amsterdam_time_hex'"
+        "eip2780TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7708TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7778TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7928TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7954TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7976TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip7981TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8024TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8038TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8246TransitionTimestamp": "'$amsterdam_time_hex'",
+        "eip8282TransitionTimestamp": "'$amsterdam_time_hex'"
     }'
 
     # besu.json
@@ -781,28 +919,33 @@ genesis_add_gloas() {
 
 }
 
-# Adds EIP-7805 fork properties to genesis files
-# Enabled EIPs: 7805
+# Adds Bogota (Heze) fork properties to genesis files
+# Enabled EIPs: 7805, 8141
 # Args:
 #   $1: Temporary directory containing genesis files
-genesis_add_eip7805() {
+genesis_add_heze() {
     local tmp_dir=$1
-    echo "Adding eip7805 genesis properties"
-    local eip7805_time=$(genesis_get_activation_time $EIP7805_FORK_EPOCH)
-    local eip7805_time_hex="0x$(printf "%x" $eip7805_time)"
+    echo "Adding bogota genesis properties"
+    local bogota_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
+    local bogota_time_hex="0x$(printf "%x" $bogota_time)"
+    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $bogota_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "eip7805Time": '"$eip7805_time"'
+        "bogotaTime": '"$bogota_time"'
+    }'
+    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
+        "bogota": '"$latest_blob_schedule"'
     }'
 
     # chainspec.json
     genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7805TransitionTimestamp": "'$eip7805_time_hex'"
+        "eip7805TransitionTimestamp": "'$bogota_time_hex'",
+        "eip8141TransitionTimestamp": "'$bogota_time_hex'"
     }'
 
     # besu.json
     genesis_add_json $tmp_dir/besu.json '.config += {
-        "eip7805Time": '"$eip7805_time"'
+        "bogotaTime": '"$bogota_time"'
     }'
 }

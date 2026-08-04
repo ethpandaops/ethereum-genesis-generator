@@ -5,19 +5,42 @@ on:
       - master
     tags:
       - '**'
+  pull_request:
+  pull_request_target:
+    types: [labeled]  # runs in base-branch context with secrets, needed to push images from fork PRs
+  schedule:
+    - cron: '0 8 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.setup.outputs.platforms }}
-      tag: ${{ steps.setup.outputs.tag }}
+      tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Prepare Matrix
         id: setup
         uses: ./.github/actions/prepare
+      - name: Resolve tag
+        id: resolve_tag
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
+            branch_name="${GITHUB_HEAD_REF}"
+            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
+            echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
   deploy:
     needs:
       - prepare
@@ -26,20 +49,81 @@ jobs:
       matrix:
         include: ${{fromJson(needs.prepare.outputs.platforms)}}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/deploy
         with:
           platform: ${{ matrix.platform }}
           tag: ${{ needs.prepare.outputs.tag }}
+          push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
           DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Export image artifact
+        if: matrix.platform == 'linux/amd64'
+        run: docker save "${{ needs.prepare.outputs.tag }}-linux-amd64" | gzip > /tmp/image.tar.gz
+      - name: Upload image artifact
+        if: matrix.platform == 'linux/amd64'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docker-image
+          path: /tmp/image.tar.gz
+          retention-days: 1
+
+  check-genesis-output:
+    name: Check consensus spec values (${{ matrix.preset }})
+    needs:
+      - prepare
+      - deploy
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [mainnet, minimal]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Load Docker image
+        run: |
+          docker load < /tmp/image.tar.gz
+          docker tag "${{ needs.prepare.outputs.tag }}-linux-amd64" ethereum-genesis-generator:ci-test
+      - name: Run genesis (${{ matrix.preset }})
+        run: |
+          mkdir -p output
+          docker run --rm -u "$(id -u):$(id -g)" \
+            -v "$PWD/output:/data" \
+            -v "$PWD/test/test-cases/${{ matrix.preset }}-spec-check.env:/config/values.env" \
+            ethereum-genesis-generator:ci-test all
+      - name: Install pyyaml
+        run: pip install pyyaml --quiet
+      - name: Download upstream consensus-specs config
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/ethereum/consensus-specs/master/configs/${{ matrix.preset }}.yaml" \
+            -o /tmp/spec-${{ matrix.preset }}.yaml
+      - name: Compare genesis output config against upstream spec
+        run: |
+          python3 .github/check-consensus-spec-values.py \
+            --our-config output/metadata/config.yaml \
+            --spec-config /tmp/spec-${{ matrix.preset }}.yaml
+
   manifest:
     needs:
       - prepare
       - deploy
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/manifest
         with:
           tag: ${{ needs.prepare.outputs.tag }}
