@@ -43,7 +43,7 @@ Type | Name | Description
 `0x00` | BLS withdrawal | Credentials derived from the validator's BLS withdrawal key. No execution address required. Validators must rotate to `0x01` or higher before withdrawals can be processed.
 `0x01` | Execution withdrawal | Credentials pointing to an execution layer address. Enables partial and full withdrawals to the specified address. Effective balance is capped at 32 ETH.
 `0x02` | Compounding | Like `0x01` but enables reward compounding. Effective balance can grow up to `MAX_EFFECTIVE_BALANCE_ELECTRA` (2048 ETH). Requires Electra or later.
-`0x03` | Builder | Identifies a builder validator (EIP-7732 ePBS). Same address structure as `0x01`/`0x02`. Builders participate in the decentralized block auction mechanism. Requires EIP-7732 or later.
+`0xB0` | Builder | Identifies a builder validator (EIP-7732 ePBS). Same address structure as `0x01`/`0x02`. Builders participate in the decentralized block auction mechanism. Requires EIP-7732 or later.
 
 ### Well-known contracts
 
