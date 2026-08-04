@@ -96,7 +96,6 @@ gen_cl_config(){
         mkdir -p /data/parsed
         HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
-        export MAX_REQUEST_BLOB_SIDECARS_ELECTRA=$(($MAX_REQUEST_BLOCKS_DENEB * $MAX_BLOBS_PER_BLOCK_ELECTRA))
 
         # Build BLOB_SCHEDULE block and substitute it in place so the
         # section keeps its position in the template (i.e. above the
