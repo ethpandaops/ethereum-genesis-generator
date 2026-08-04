@@ -50,9 +50,6 @@ EXCLUDED_FIELDS = {
     "DEPOSIT_CONTRACT_ADDRESS",
     # Blob schedule - explicitly excluded
     "BLOB_SCHEDULE",
-    # TODO: temporary teku compatibility shim, remove after the next teku mainnet release (see #283)
-    "MAX_REQUEST_BLOB_SIDECARS_ELECTRA",
-    "MAX_REQUEST_DATA_COLUMN_SIDECARS",
 }
 
 
