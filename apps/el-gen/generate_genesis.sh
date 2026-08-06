@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Main function that generates ethereum execution layer genesis configuration files
-# Creates genesis.json, chainspec.json, and besu.json for different EL clients
+# Creates genesis.json for EL clients
 # Supports both new networks and shadowforks of existing networks
 # Args:
 #   $1: Output directory for generated genesis files
@@ -50,10 +50,8 @@ generate_genesis() {
         # hoodi shadowfork
         genesis_load_base_genesis "hoodi" "$tmp_dir"
     else
-        # Generate base genesis.json, chainspec.json and besu.json
+        # Generate base genesis.json
         envsubst < /apps/el-gen/tpl-genesis.json   > $tmp_dir/genesis.json
-        envsubst < /apps/el-gen/tpl-chainspec.json > $tmp_dir/chainspec.json
-        envsubst < /apps/el-gen/tpl-besu.json      > $tmp_dir/besu.json
         is_shadowfork="0"
     fi
 
@@ -75,9 +73,6 @@ generate_genesis() {
                            [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
-
-    # apply special chainspec blob schedule format
-    genesis_apply_blob_schedule $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -161,13 +156,9 @@ generate_genesis() {
         echo "Applying allocations to genesis files..."
         allocations=$(jq -s 'reduce .[] as $item ({}; . * $item)' $tmp_dir/allocations.json)
         genesis_add_big_json $tmp_dir/genesis.json "$allocations" '.alloc += $input[0]'
-        genesis_add_big_json $tmp_dir/chainspec.json "$allocations" '.accounts += $input[0]'
-        genesis_add_big_json $tmp_dir/besu.json "$allocations" '.alloc += $input[0]'
     fi
 
     cat $tmp_dir/genesis.json   | jq > $out_dir/genesis.json
-    cat $tmp_dir/chainspec.json | jq > $out_dir/chainspec.json
-    cat $tmp_dir/besu.json      | jq > $out_dir/besu.json
     rm -rf $tmp_dir
 }
 
@@ -187,8 +178,6 @@ genesis_load_base_genesis() {
 
     # Download genesis files from base network
     wget -O $tmp_dir/genesis.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/genesis.json
-    wget -O $tmp_dir/chainspec.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/chainspec.json
-    wget -O $tmp_dir/besu.json https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/besu.json
 
     # Validate deposit contract address matches base network
     local base_deposit_contract=$(wget -qO- https://raw.githubusercontent.com/eth-clients/$network_name/refs/heads/main/metadata/deposit_contract.txt)
@@ -272,16 +261,9 @@ genesis_load_base_genesis() {
         export BPO_${i}_MAX_BLOBS="$max_blobs"
     done
 
-    # Remove future BPOs that haven't activated yet at shadowfork time
-    # First, filter chainspec blob schedule entries (uses hex timestamps)
-    genesis_add_json $tmp_dir/chainspec.json '
-        def hx: ltrimstr("0x") | explode | reduce .[] as $c (0; . * 16 + (if $c>96 then $c-87 else $c-48 end));
-        .params.blobSchedule |= map(select((.timestamp | hx) <= '"$shadowfork_cutoff_time"'))
-    '
-    # Remove future BPO configurations from genesis files
+    # Remove future BPO configurations that haven't activated yet at shadowfork time
     for ((i=max_bpos; i>has_bpos; i--)); do
         genesis_add_json $tmp_dir/genesis.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
-        genesis_add_json $tmp_dir/besu.json "del(.config.bpo${i}Time) | del(.config.blobSchedule.bpo${i})"
     done
 }
 
@@ -329,7 +311,7 @@ genesis_get_blob_schedule() {
         active_blob_schedule="$matching_blob_schedule"
     fi
 
-    # remove timestamp field from returned schedule (geth/besu format)
+    # remove timestamp field from returned schedule (genesis blobSchedule format)
     active_blob_schedule=$(echo "$active_blob_schedule" | jq "del(.timestamp)")
 
     echo "$active_blob_schedule"
@@ -356,21 +338,6 @@ genesis_add_blob_schedule() {
             error("new entry has lower timestamp than latest: \($n.timestamp) < \($last)")
           end
     '
-}
-
-# Applies all blob schedules to the chainspec.json file
-# Converts decimal timestamps to hex format for chainspec compatibility
-# Args:
-#   $1: Temporary directory containing blob_schedule.json and chainspec.json
-genesis_apply_blob_schedule() {
-    local tmp_dir=$1
-
-    local blob_schedule=$(jq '
-    def tohex: .|tonumber as $n | def go($x): if $x<16 then ("0123456789abcdef"[$x:$x+1]) else (go(($x/16|floor)) + ("0123456789abcdef"[($x%16):($x%16+1)])) end; go($n);
-    map(.timestamp |= ("0x" + (.|tonumber|tohex)) | .baseFeeUpdateFraction |= ("0x" + (.|tonumber|tohex)))
-    ' $tmp_dir/blob_schedule.json)
-
-    genesis_add_json "$tmp_dir/chainspec.json" '.params.blobSchedule += '"$blob_schedule"
 }
 
 # Calculates the base fee update fraction for blob pricing
@@ -609,19 +576,6 @@ genesis_add_bellatrix() {
         "terminalTotalDifficulty": 0,
         "terminalTotalDifficultyPassed": true
     }'
-
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "mergeForkIdTransition": "0x0",
-        "terminalTotalDifficulty": "0x0"
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
-        "preMergeForkBlock": 0,
-        "terminalTotalDifficulty": 0,
-        "ethash": {}
-    }'
 }
 
 # Adds Capella (Shanghai) fork properties to genesis files
@@ -632,23 +586,9 @@ genesis_add_capella() {
     local tmp_dir=$1
     echo "Adding capella genesis properties"
     local shanghai_time=$(genesis_get_activation_time $CAPELLA_FORK_EPOCH)
-    local shanghai_time_hex="0x$(printf "%x" $shanghai_time)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "shanghaiTime": '"$shanghai_time"'
-    }'
-
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip4895TransitionTimestamp": "'$shanghai_time_hex'",
-        "eip3855TransitionTimestamp": "'$shanghai_time_hex'",
-        "eip3651TransitionTimestamp": "'$shanghai_time_hex'",
-        "eip3860TransitionTimestamp": "'$shanghai_time_hex'"
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
         "shanghaiTime": '"$shanghai_time"'
     }'
 }
@@ -661,7 +601,6 @@ genesis_add_deneb() {
     local tmp_dir=$1
     echo "Adding deneb genesis properties"
     local cancun_time=$(genesis_get_activation_time $DENEB_FORK_EPOCH)
-    local cancun_time_hex="0x$(printf "%x" $cancun_time)"
     local target_blobs_per_block_cancun=3
     local max_blobs_per_block_cancun=6
     local base_fee_update_fraction_cancun=3338477
@@ -678,31 +617,11 @@ genesis_add_deneb() {
         }
     }'
 
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip4844TransitionTimestamp": "'$cancun_time_hex'",
-        "eip4788TransitionTimestamp": "'$cancun_time_hex'",
-        "eip1153TransitionTimestamp": "'$cancun_time_hex'",
-        "eip5656TransitionTimestamp": "'$cancun_time_hex'",
-        "eip6780TransitionTimestamp": "'$cancun_time_hex'"
-    }'
     genesis_add_blob_schedule $tmp_dir '{
         "timestamp": '$cancun_time',
         "target": '"$target_blobs_per_block_cancun"',
         "max": '"$max_blobs_per_block_cancun"',
         "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
-        "cancunTime": '"$cancun_time"'
-    }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule = {
-        "cancun": {
-            "target": '"$target_blobs_per_block_cancun"',
-            "max": '"$max_blobs_per_block_cancun"',
-            "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
-        }
     }'
 }
 
@@ -714,7 +633,6 @@ genesis_add_electra() {
     local tmp_dir=$1
     echo "Adding electra genesis properties"
     local prague_time=$(genesis_get_activation_time $ELECTRA_FORK_EPOCH)
-    local prague_time_hex="0x$(printf "%x" $prague_time)"
 
     # Calculate basefee update fraction if not specified
     if [ -z "$BASEFEE_UPDATE_FRACTION_ELECTRA" ] || [ "$BASEFEE_UPDATE_FRACTION_ELECTRA" == "0" ]; then
@@ -722,11 +640,6 @@ genesis_add_electra() {
         echo "Calculated BASEFEE_UPDATE_FRACTION_ELECTRA: $BASEFEE_UPDATE_FRACTION_ELECTRA"
         analyze_basefee_update_fraction $MAX_BLOBS_PER_BLOCK_ELECTRA $TARGET_BLOBS_PER_BLOCK_ELECTRA $BASEFEE_UPDATE_FRACTION_ELECTRA
     fi
-
-    # Load system contract addresses for Electra
-    local system_contracts=$(cat /apps/el-gen/system-contracts.yaml | yq -c)
-    local eip7002_contract=$(echo "$system_contracts" | jq -r '.eip7002_address')  # Withdrawal requests
-    local eip7251_contract=$(echo "$system_contracts" | jq -r '.eip7251_address')  # Consolidation requests
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
@@ -741,37 +654,11 @@ genesis_add_electra() {
         }
     }'
 
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
-        "eip2537TransitionTimestamp": "'$prague_time_hex'",
-        "eip2935TransitionTimestamp": "'$prague_time_hex'",
-        "eip6110TransitionTimestamp": "'$prague_time_hex'",
-        "eip7002TransitionTimestamp": "'$prague_time_hex'",
-        "eip7251TransitionTimestamp": "'$prague_time_hex'",
-        "eip7623TransitionTimestamp": "'$prague_time_hex'",
-        "eip7702TransitionTimestamp": "'$prague_time_hex'"
-    }'
     genesis_add_blob_schedule $tmp_dir '{
         "timestamp": '$prague_time',
         "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
         "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
         "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
-        "depositContractAddress": "'"$DEPOSIT_CONTRACT_ADDRESS"'",
-        "withdrawalRequestContractAddress": "'"$eip7002_contract"'",
-        "consolidationRequestContractAddress": "'"$eip7251_contract"'",
-        "pragueTime": '"$prague_time"'
-    }'
-    genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-        "prague": {
-            "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-            "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-            "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
-        }
     }'
 }
 
@@ -783,27 +670,9 @@ genesis_add_fulu() {
     local tmp_dir=$1
     echo "Adding fulu genesis properties"
     local osaka_time=$(genesis_get_activation_time $FULU_FORK_EPOCH)
-    local osaka_time_hex="0x$(printf "%x" $osaka_time)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
-        "osakaTime": '"$osaka_time"'
-    }'
-
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7594TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7823TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7825TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7883TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7918TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7934TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7939TransitionTimestamp": "'$osaka_time_hex'",
-        "eip7951TransitionTimestamp": "'$osaka_time_hex'"
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
         "osakaTime": '"$osaka_time"'
     }'
 }
@@ -867,15 +736,6 @@ genesis_add_bpos() {
                     "baseFeeUpdateFraction": '"$fraction"'
                 }
             }'
-
-            genesis_add_json $tmp_dir/besu.json '.config.bpo'$i'Time = '"$activation_time"
-            genesis_add_json $tmp_dir/besu.json '.config.blobSchedule += {
-                "bpo'$i'": {
-                    "target": '"${!target_var}"',
-                    "max": '"${!max_var}"',
-                    "baseFeeUpdateFraction": '"$fraction"'
-                }
-            }'
         fi
     done
 }
@@ -888,35 +748,11 @@ genesis_add_gloas() {
     local tmp_dir=$1
     echo "Adding gloas genesis properties"
     local amsterdam_time=$(genesis_get_activation_time $GLOAS_FORK_EPOCH)
-    local amsterdam_time_hex="0x$(printf "%x" $amsterdam_time)"
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "amsterdamTime": '"$amsterdam_time"'
     }'
-
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip2780TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7708TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7778TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7843TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7928TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7954TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7976TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip7981TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8024TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8037TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8038TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8246TransitionTimestamp": "'$amsterdam_time_hex'",
-        "eip8282TransitionTimestamp": "'$amsterdam_time_hex'"
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
-        "amsterdamTime": '"$amsterdam_time"'
-    }'
-
 }
 
 # Adds Bogota (Heze) fork properties to genesis files
@@ -927,7 +763,6 @@ genesis_add_heze() {
     local tmp_dir=$1
     echo "Adding bogota genesis properties"
     local bogota_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
-    local bogota_time_hex="0x$(printf "%x" $bogota_time)"
     local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $bogota_time)
 
     # genesis.json
@@ -936,16 +771,5 @@ genesis_add_heze() {
     }'
     genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
         "bogota": '"$latest_blob_schedule"'
-    }'
-
-    # chainspec.json
-    genesis_add_json $tmp_dir/chainspec.json '.params += {
-        "eip7805TransitionTimestamp": "'$bogota_time_hex'",
-        "eip8141TransitionTimestamp": "'$bogota_time_hex'"
-    }'
-
-    # besu.json
-    genesis_add_json $tmp_dir/besu.json '.config += {
-        "bogotaTime": '"$bogota_time"'
     }'
 }
