@@ -227,6 +227,11 @@ MAX_TRANSACTIONS_BYTES_PER_INCLUSION_LIST: 8192
 
 BLOB_SCHEDULE: []
 
+# Gas Limit Scheduling (EIP-8261)
+# ---------------------------------------------------------------
+
+GAS_LIMIT_SCHEDULE: []
+
 # Fast Confirmation Rule
 # ---------------------------------------------------------------
 # 25%
