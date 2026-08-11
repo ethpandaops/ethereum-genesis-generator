@@ -87,6 +87,27 @@ build_blob_schedule() {
     fi
 }
 
+# Builds the GAS_LIMIT_SCHEDULE YAML block (EIP-8261) from the
+# GAS_LIMIT_SCHEDULE env var, a JSON array of GPO entries like:
+#   [{"epoch": 256, "gas_limit": 100000000}, ...]
+# Emits `GAS_LIMIT_SCHEDULE: []` when the array is empty.
+build_gas_limit_schedule() {
+    local schedule_json="${GAS_LIMIT_SCHEDULE:-[]}"
+
+    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number") and (.gas_limit | type == "number"))' > /dev/null; then
+        echo "GAS_LIMIT_SCHEDULE must be a JSON array of {\"epoch\": <number>, \"gas_limit\": <number>} entries, got: $schedule_json" >&2
+        return 1
+    fi
+
+    if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
+        echo "GAS_LIMIT_SCHEDULE: []"
+        return
+    fi
+
+    echo "GAS_LIMIT_SCHEDULE:"
+    echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    GAS_LIMIT: \(.gas_limit)"'
+}
+
 gen_cl_config(){
     set -x
     # Consensus layer: Check if genesis already exists
@@ -97,15 +118,21 @@ gen_cl_config(){
         HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
 
-        # Build BLOB_SCHEDULE block and substitute it in place so the
-        # section keeps its position in the template (i.e. above the
-        # Fast Confirmation Rule section).
+        # Build the BLOB_SCHEDULE and GAS_LIMIT_SCHEDULE blocks and
+        # substitute them in place so each section keeps its position
+        # in the template.
         export BLOB_SCHEDULE_YAML="$(build_blob_schedule)"
+        GAS_LIMIT_SCHEDULE_YAML="$(build_gas_limit_schedule)"
+        export GAS_LIMIT_SCHEDULE_YAML
         awk '
-            BEGIN { new_section = ENVIRON["BLOB_SCHEDULE_YAML"] }
-            /^BLOB_SCHEDULE:/ { print new_section; in_blob=1; next }
-            in_blob && /^[[:space:]]/ { next }
-            { in_blob=0; print }
+            BEGIN {
+                blob_section = ENVIRON["BLOB_SCHEDULE_YAML"]
+                gas_section = ENVIRON["GAS_LIMIT_SCHEDULE_YAML"]
+            }
+            /^BLOB_SCHEDULE:/ { print blob_section; in_schedule=1; next }
+            /^GAS_LIMIT_SCHEDULE:/ { print gas_section; in_schedule=1; next }
+            in_schedule && /^[[:space:]]/ { next }
+            { in_schedule=0; print }
         ' /config/cl/config.yaml | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
         envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
 

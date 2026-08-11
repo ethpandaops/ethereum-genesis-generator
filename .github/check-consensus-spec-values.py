@@ -50,6 +50,8 @@ EXCLUDED_FIELDS = {
     "DEPOSIT_CONTRACT_ADDRESS",
     # Blob schedule - explicitly excluded
     "BLOB_SCHEDULE",
+    # Gas limit schedule (EIP-8261) - optional field, not in upstream spec config
+    "GAS_LIMIT_SCHEDULE",
 }
 
 
