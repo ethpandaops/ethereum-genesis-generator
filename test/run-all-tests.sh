@@ -48,6 +48,16 @@ echo "Result:"
 jq -c '.config.blobSchedule | {bpo1, bpo2, bpo3}' output/metadata/genesis.json
 echo ""
 
+echo "=== Test Case 5: FRAMES_ENABLED (Heze off on CL, bogota active on EL) ==="
+echo "Expected: config.yaml HEZE_FORK_EPOCH: 18446744073709551615,"
+echo "          genesis.json has a non-null bogotaTime"
+rm -rf output/metadata output/parsed
+docker run -u 1000:1000 --rm -v $PWD/output:/data -v $PWD/test-cases/case5-frames-enabled.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+grep "^HEZE_FORK_EPOCH:" output/metadata/config.yaml
+jq -c '{bogotaTime: .config.bogotaTime}' output/metadata/genesis.json
+echo ""
+
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
