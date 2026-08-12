@@ -134,7 +134,14 @@ gen_cl_config(){
             in_schedule && /^[[:space:]]/ { next }
             { in_schedule=0; print }
         ' /config/cl/config.yaml | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml
-        envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
+        # FRAMES_ENABLED=true disables the Heze fork on the CL side only:
+        # the CL config gets HEZE_FORK_EPOCH pinned to max uint64, while the
+        # EL genesis still activates bogota at the configured HEZE_FORK_EPOCH.
+        cl_heze_fork_epoch="$HEZE_FORK_EPOCH"
+        if [ "$FRAMES_ENABLED" = "true" ]; then
+            cl_heze_fork_epoch="18446744073709551615"
+        fi
+        HEZE_FORK_EPOCH="$cl_heze_fork_epoch" envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
 
         # Envsubst mnemonics file
         if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
