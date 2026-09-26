@@ -79,6 +79,9 @@ generate_genesis() {
     genesis_add_json $tmp_dir/genesis.json 'if .config.pragueTime == null then . else
         .config.withdrawalRequestContractAddress //= "0x00000961Ef480Eb55e80D19ad83579A64c007002"
         | .config.consolidationRequestContractAddress //= "0x0000BBdDc7CE488642fb579F8B00f3a590007251" end'
+    # eth-clients/mainnet's alloc keys have no 0x prefix, which nethermind's geth-genesis
+    # loader rejects ("hex string without 0x prefix"); geth accepts either.
+    genesis_add_json $tmp_dir/genesis.json '.alloc |= with_entries(.key |= if startswith("0x") then . else "0x" + . end)'
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
