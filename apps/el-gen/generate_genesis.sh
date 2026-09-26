@@ -74,6 +74,12 @@ generate_genesis() {
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
 
+    # besu refuses a chainId 1 genesis (mainnet shadowfork) without the Prague request-contract
+    # addresses, and eth-clients/mainnet's genesis.json has none: fill in the EIP-7002/7251 predeploys.
+    genesis_add_json $tmp_dir/genesis.json 'if .config.pragueTime == null then . else
+        .config.withdrawalRequestContractAddress //= "0x00000961Ef480Eb55e80D19ad83579A64c007002"
+        | .config.consolidationRequestContractAddress //= "0x0000BBdDc7CE488642fb579F8B00f3a590007251" end'
+
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
         echo "Adding precompile allocations..."
