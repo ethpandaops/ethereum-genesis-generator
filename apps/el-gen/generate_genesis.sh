@@ -268,7 +268,8 @@ genesis_load_base_genesis() {
 }
 
 # Calculates the activation timestamp for a given epoch
-# Converts epoch number to Unix timestamp based on genesis delay and slot duration
+# Converts epoch number to Unix timestamp based on genesis delay and slot duration,
+# accounting for slot duration changes in SLOT_DURATION_SCHEDULE (EIP-8198)
 # Args:
 #   $1: Epoch number (0 for immediate activation)
 # Returns:
@@ -283,8 +284,19 @@ genesis_get_activation_time() {
         else
             slots_per_epoch=32
         fi
-        # Convert epoch to timestamp: genesis_time + genesis_delay + (epoch * slots * slot_duration)
-        epoch_delay=$(( $SLOT_DURATION_MS * $slots_per_epoch * $1 / 1000 ))
+        # Convert epoch to timestamp: genesis_time + genesis_delay + sum over each
+        # slot duration era of (epochs in era * slots * slot_duration)
+        local era_start=0 era_duration_ms=$SLOT_DURATION_MS epoch_delay_ms=0
+        local next_epoch next_duration_ms
+        while read -r next_epoch next_duration_ms; do
+            [ -z "$next_epoch" ] && continue
+            [ "$next_epoch" -ge "$1" ] && break
+            epoch_delay_ms=$(( epoch_delay_ms + (next_epoch - era_start) * slots_per_epoch * era_duration_ms ))
+            era_start=$next_epoch
+            era_duration_ms=$next_duration_ms
+        done < <(echo "${SLOT_DURATION_SCHEDULE:-[]}" | jq -r 'sort_by(.epoch) | .[] | "\(.epoch) \(.slot_duration_ms)"')
+        epoch_delay_ms=$(( epoch_delay_ms + ($1 - era_start) * slots_per_epoch * era_duration_ms ))
+        epoch_delay=$(( epoch_delay_ms / 1000 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
 }

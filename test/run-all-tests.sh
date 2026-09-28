@@ -2,6 +2,26 @@
 
 set -e
 
+# Fails the test run when a value does not match the expected one
+assert_eq() {
+    local name=$1 actual=$2 expected=$3
+    if [ "$actual" != "$expected" ]; then
+        echo "❌ $name: expected '$expected', got '$actual'"
+        exit 1
+    fi
+    echo "✅ $name: $actual"
+}
+
+# Creates a fresh, never-used output dir, so a stale genesis.json from a
+# previous case (e.g. lagging bind mount sync on Docker Desktop) can't make
+# the generator skip EL genesis
+fresh_output() {
+    local dir
+    dir=$(mktemp -d "$PWD/output/$1.XXXXXX")
+    chmod 777 "$dir"
+    echo "$dir"
+}
+
 echo "================================"
 echo "Building docker image with tag :master"
 echo "================================"
@@ -56,6 +76,46 @@ docker run -u 1000:1000 --rm -v $PWD/output:/data -v $PWD/test-cases/case5-frame
 echo "Result:"
 grep "^HEZE_FORK_EPOCH:" output/metadata/config.yaml
 jq -c '{bogotaTime: .config.bogotaTime}' output/metadata/genesis.json
+echo ""
+
+echo "=== Test Case 6: EIP-8198 shorter slots, then a BPO ==="
+echo "Expected: amsterdamTime unaffected by the slot change at its own epoch,"
+echo "          bpo1Time counts 2 epochs at 12s and 2 epochs at 6s"
+out=$(fresh_output case6)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case6-shorter-slots.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "788"
+assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
+assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 12000"
+assert_eq "EIP8198_FORK_EPOCH" "$(grep '^EIP8198_FORK_EPOCH:' $out/metadata/config.yaml)" "EIP8198_FORK_EPOCH: 2"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A4 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 - EPOCH: 2 SLOT_DURATION_MS: 6000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 7: EIP-8198 multi-step slot schedule (unsorted input) ==="
+echo "Expected: BPO times sum each slot duration era, schedule sorted by epoch"
+out=$(fresh_output case7)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-multi-step-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1044"
+assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "1556"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A6 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 - EPOCH: 2 SLOT_DURATION_MS: 8000 - EPOCH: 4 SLOT_DURATION_MS: 4000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 8: invalid EIP-8198 slot schedule ==="
+echo "Expected: generation fails and no genesis.json or config.yaml is written"
+out=$(fresh_output case8)
+if docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-invalid-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1; then
+    echo "❌ generation succeeded with an invalid SLOT_DURATION_SCHEDULE"
+    exit 1
+fi
+echo "Result:"
+assert_eq "genesis.json written" "$([ -f $out/metadata/genesis.json ] && echo yes || echo no)" "no"
+assert_eq "config.yaml written" "$([ -f $out/metadata/config.yaml ] && echo yes || echo no)" "no"
+rm -rf "$out"
 echo ""
 
 echo ""
