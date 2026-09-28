@@ -42,6 +42,9 @@ gen_shared_files(){
 gen_el_config(){
     set -x
     if ! [ -f "/data/metadata/genesis.json" ]; then
+        # EL fork times depend on SLOT_DURATION_SCHEDULE, so validate it before
+        # genesis.json is persisted.
+        validate_slot_duration_schedule
         mkdir -p /data/metadata
         source /apps/el-gen/generate_genesis.sh
         generate_genesis /data/metadata
@@ -108,18 +111,27 @@ build_gas_limit_schedule() {
     echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    GAS_LIMIT: \(.gas_limit)"'
 }
 
-# Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198) from the
-# SLOT_DURATION_SCHEDULE env var, a JSON array of slot duration changes like:
+# Validates the SLOT_DURATION_SCHEDULE env var (EIP-8198), a JSON array of slot
+# duration changes like:
 #   [{"epoch": 256, "slot_duration_ms": 10000}, ...]
-# The spec requires the schedule to start at genesis, so an epoch 0 entry with
-# SLOT_DURATION_MS is always emitted first; user entries must have epoch > 0.
+# The epoch 0 entry is always derived from SLOT_DURATION_MS, so user entries
+# must have epoch > 0. Values are integers as they feed EL fork time arithmetic.
+validate_slot_duration_schedule() {
+    local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
+
+    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number" and . == floor) and .epoch > 0 and (.slot_duration_ms | type == "number" and . == floor)) and (map(.epoch) | length == (unique | length))' > /dev/null 2>&1; then
+        echo "SLOT_DURATION_SCHEDULE must be a JSON array of {\"epoch\": <integer > 0>, \"slot_duration_ms\": <integer>} entries with unique epochs, got: $schedule_json" >&2
+        return 1
+    fi
+}
+
+# Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198). The spec requires the
+# schedule to start at genesis, so an epoch 0 entry with SLOT_DURATION_MS is
+# always emitted first, followed by the user entries sorted by epoch.
 build_slot_duration_schedule() {
     local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
 
-    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number") and .epoch > 0 and (.slot_duration_ms | type == "number")) and (map(.epoch) | length == (unique | length))' > /dev/null; then
-        echo "SLOT_DURATION_SCHEDULE must be a JSON array of {\"epoch\": <number > 0>, \"slot_duration_ms\": <number>} entries with unique epochs, got: $schedule_json" >&2
-        return 1
-    fi
+    validate_slot_duration_schedule || return 1
 
     echo "SLOT_DURATION_SCHEDULE:"
     echo "  - EPOCH: 0"
