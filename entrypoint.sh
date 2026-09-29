@@ -106,16 +106,16 @@ build_gas_limit_schedule() {
 # Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198) from the
 # SLOT_DURATION_SCHEDULE env var, a JSON array starting at genesis like:
 #   [{"epoch": 0, "slot_duration_ms": 12000}, {"epoch": 256, "slot_duration_ms": 10000}]
-# Emits a single genesis entry from SLOT_DURATION_MS when the array is empty.
+# Emits `SLOT_DURATION_SCHEDULE: []` when the array is empty.
 build_slot_duration_schedule() {
     local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
 
-    echo "SLOT_DURATION_SCHEDULE:"
     if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
-        echo "  - EPOCH: 0"
-        echo "    SLOT_DURATION_MS: $SLOT_DURATION_MS"
+        echo "SLOT_DURATION_SCHEDULE: []"
         return
     fi
+
+    echo "SLOT_DURATION_SCHEDULE:"
     echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    SLOT_DURATION_MS: \(.slot_duration_ms)"'
 }
 

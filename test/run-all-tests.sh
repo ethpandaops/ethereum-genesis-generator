@@ -115,6 +115,26 @@ assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/
 rm -rf "$out"
 echo ""
 
+echo "=== Test Case 9: default SLOT_DURATION_SCHEDULE (mainnet) ==="
+echo "Expected: single epoch 0 entry at 12000 ms"
+out=$(fresh_output case9)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 10: default SLOT_DURATION_SCHEDULE (minimal) ==="
+echo "Expected: single epoch 0 entry at 6000 ms"
+out=$(fresh_output case10)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-slot-schedule-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 6000 "
+rm -rf "$out"
+echo ""
+
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
