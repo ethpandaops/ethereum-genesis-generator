@@ -58,27 +58,38 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Both jq inputs are staged as files: a shuffled multi-million-validator
+# mapping is several MB of JSON, which does not fit in a single execve
+# argument (Linux caps one argument at MAX_ARG_STRLEN, 128 KiB), so --argjson
+# fails with "jq: Argument list too long".
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir"' EXIT
+
 if [ "$segments_file" = "-" ]; then
-  segments_json="$(cat)"
+  cat > "$work_dir/segments.json"
 else
-  segments_json="$(cat "$segments_file")"
+  cat "$segments_file" > "$work_dir/segments.json"
 fi
 
 # Convert the mapping YAML to JSON, or fall back to an empty list when there is
 # no mapping file. yq (python-yq) transcodes YAML to JSON; "-c" keeps it compact.
 if [ -n "$mapping_file" ] && [ -s "$mapping_file" ]; then
-  mapping_json="$(yq -c '.' "$mapping_file")"
+  yq -c '.' "$mapping_file" > "$work_dir/mapping.json"
 else
-  mapping_json="[]"
+  printf '[]\n' > "$work_dir/mapping.json"
 fi
 
 jq -rn \
-  --argjson mapping "$mapping_json" \
-  --argjson segments "$segments_json" \
+  --slurpfile mapping_docs "$work_dir/mapping.json" \
+  --slurpfile segments_docs "$work_dir/segments.json" \
   --arg main "$main_source" \
   --arg format "$format" '
   # "<start>-<end>" -> {s,e}
   def parse_range($k): ($k | tostring | split("-") | {s: (.[0] | tonumber), e: (.[1] | tonumber)});
+
+  # --slurpfile wraps each input file in a one-element array of documents.
+  ($mapping_docs[0] // []) as $mapping |
+  ($segments_docs[0] // []) as $segments |
 
   ( if ($mapping | length) == 0 then
       # No mapping: key index == on-chain index, emit segments directly.
