@@ -105,16 +105,33 @@ assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A6 '^SLOT_DURATION_SCHEDULE:' $out/m
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 8: invalid EIP-8198 slot schedule ==="
-echo "Expected: generation fails and no genesis.json or config.yaml is written"
+echo "=== Test Case 8: GAS_LIMIT_SCHEDULE with a genesis entry (unsorted input) ==="
+echo "Expected: epoch 0 entry kept, schedule sorted by epoch"
 out=$(fresh_output case8)
-if docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-invalid-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1; then
-    echo "❌ generation succeeded with an invalid SLOT_DURATION_SCHEDULE"
-    exit 1
-fi
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-gas-limit-schedule-genesis.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "genesis.json written" "$([ -f $out/metadata/genesis.json ] && echo yes || echo no)" "no"
-assert_eq "config.yaml written" "$([ -f $out/metadata/config.yaml ] && echo yes || echo no)" "no"
+assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "GAS_LIMIT_SCHEDULE: - EPOCH: 0 GAS_LIMIT: 60000000 - EPOCH: 4 GAS_LIMIT: 100000000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 9: default SLOT_DURATION_SCHEDULE (mainnet) ==="
+echo "Expected: single epoch 0 entry at 12000 ms"
+out=$(fresh_output case9)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 10: default SLOT_DURATION_SCHEDULE (minimal) ==="
+echo "Expected: single epoch 0 entry at 6000 ms"
+out=$(fresh_output case10)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-slot-schedule-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 6000 "
 rm -rf "$out"
 echo ""
 

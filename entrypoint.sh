@@ -42,9 +42,6 @@ gen_shared_files(){
 gen_el_config(){
     set -x
     if ! [ -f "/data/metadata/genesis.json" ]; then
-        # EL fork times depend on SLOT_DURATION_SCHEDULE, so validate it before
-        # genesis.json is persisted.
-        validate_slot_duration_schedule
         mkdir -p /data/metadata
         source /apps/el-gen/generate_genesis.sh
         generate_genesis /data/metadata
@@ -92,15 +89,10 @@ build_blob_schedule() {
 
 # Builds the GAS_LIMIT_SCHEDULE YAML block (EIP-8261) from the
 # GAS_LIMIT_SCHEDULE env var, a JSON array of GPO entries like:
-#   [{"epoch": 256, "gas_limit": 100000000}, ...]
+#   [{"epoch": 0, "gas_limit": 60000000}, {"epoch": 256, "gas_limit": 100000000}, ...]
 # Emits `GAS_LIMIT_SCHEDULE: []` when the array is empty.
 build_gas_limit_schedule() {
     local schedule_json="${GAS_LIMIT_SCHEDULE:-[]}"
-
-    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number") and (.gas_limit | type == "number"))' > /dev/null; then
-        echo "GAS_LIMIT_SCHEDULE must be a JSON array of {\"epoch\": <number>, \"gas_limit\": <number>} entries, got: $schedule_json" >&2
-        return 1
-    fi
 
     if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
         echo "GAS_LIMIT_SCHEDULE: []"
@@ -111,31 +103,19 @@ build_gas_limit_schedule() {
     echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    GAS_LIMIT: \(.gas_limit)"'
 }
 
-# Validates the SLOT_DURATION_SCHEDULE env var (EIP-8198), a JSON array of slot
-# duration changes like:
-#   [{"epoch": 256, "slot_duration_ms": 10000}, ...]
-# The epoch 0 entry is always derived from SLOT_DURATION_MS, so user entries
-# must have epoch > 0. Values are integers as they feed EL fork time arithmetic.
-validate_slot_duration_schedule() {
-    local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
-
-    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number" and . == floor) and .epoch > 0 and (.slot_duration_ms | type == "number" and . == floor)) and (map(.epoch) | length == (unique | length))' > /dev/null 2>&1; then
-        echo "SLOT_DURATION_SCHEDULE must be a JSON array of {\"epoch\": <integer > 0>, \"slot_duration_ms\": <integer>} entries with unique epochs, got: $schedule_json" >&2
-        return 1
-    fi
-}
-
-# Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198). The spec requires the
-# schedule to start at genesis, so an epoch 0 entry with SLOT_DURATION_MS is
-# always emitted first, followed by the user entries sorted by epoch.
+# Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198) from the
+# SLOT_DURATION_SCHEDULE env var, a JSON array starting at genesis like:
+#   [{"epoch": 0, "slot_duration_ms": 12000}, {"epoch": 256, "slot_duration_ms": 10000}]
+# Emits `SLOT_DURATION_SCHEDULE: []` when the array is empty.
 build_slot_duration_schedule() {
     local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
 
-    validate_slot_duration_schedule || return 1
+    if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
+        echo "SLOT_DURATION_SCHEDULE: []"
+        return
+    fi
 
     echo "SLOT_DURATION_SCHEDULE:"
-    echo "  - EPOCH: 0"
-    echo "    SLOT_DURATION_MS: $SLOT_DURATION_MS"
     echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    SLOT_DURATION_MS: \(.slot_duration_ms)"'
 }
 
