@@ -89,15 +89,10 @@ build_blob_schedule() {
 
 # Builds the GAS_LIMIT_SCHEDULE YAML block (EIP-8261) from the
 # GAS_LIMIT_SCHEDULE env var, a JSON array of GPO entries like:
-#   [{"epoch": 256, "gas_limit": 100000000}, ...]
+#   [{"epoch": 0, "gas_limit": 60000000}, {"epoch": 256, "gas_limit": 100000000}, ...]
 # Emits `GAS_LIMIT_SCHEDULE: []` when the array is empty.
 build_gas_limit_schedule() {
     local schedule_json="${GAS_LIMIT_SCHEDULE:-[]}"
-
-    if ! echo "$schedule_json" | jq -e 'type == "array" and all(.[]; (.epoch | type == "number") and (.gas_limit | type == "number"))' > /dev/null; then
-        echo "GAS_LIMIT_SCHEDULE must be a JSON array of {\"epoch\": <number>, \"gas_limit\": <number>} entries, got: $schedule_json" >&2
-        return 1
-    fi
 
     if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
         echo "GAS_LIMIT_SCHEDULE: []"

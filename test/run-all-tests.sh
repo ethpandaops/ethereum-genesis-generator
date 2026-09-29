@@ -105,6 +105,16 @@ assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A6 '^SLOT_DURATION_SCHEDULE:' $out/m
 rm -rf "$out"
 echo ""
 
+echo "=== Test Case 8: GAS_LIMIT_SCHEDULE with a genesis entry (unsorted input) ==="
+echo "Expected: epoch 0 entry kept, schedule sorted by epoch"
+out=$(fresh_output case8)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-gas-limit-schedule-genesis.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "GAS_LIMIT_SCHEDULE: - EPOCH: 0 GAS_LIMIT: 60000000 - EPOCH: 4 GAS_LIMIT: 100000000 "
+rm -rf "$out"
+echo ""
+
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
