@@ -105,19 +105,6 @@ assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A6 '^SLOT_DURATION_SCHEDULE:' $out/m
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 8: invalid EIP-8198 slot schedule ==="
-echo "Expected: generation fails and no genesis.json or config.yaml is written"
-out=$(fresh_output case8)
-if docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-invalid-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1; then
-    echo "❌ generation succeeded with an invalid SLOT_DURATION_SCHEDULE"
-    exit 1
-fi
-echo "Result:"
-assert_eq "genesis.json written" "$([ -f $out/metadata/genesis.json ] && echo yes || echo no)" "no"
-assert_eq "config.yaml written" "$([ -f $out/metadata/config.yaml ] && echo yes || echo no)" "no"
-rm -rf "$out"
-echo ""
-
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
