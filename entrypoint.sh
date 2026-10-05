@@ -20,6 +20,7 @@ then
     source /config/values.env
 fi
 
+export SLOT_DURATION_SCHEDULE="${SLOT_DURATION_SCHEDULE:-[{\"epoch\": 0, \"slot_duration_ms\": ${SLOT_DURATION_MS}\}]}"
 
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"

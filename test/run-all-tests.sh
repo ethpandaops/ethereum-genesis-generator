@@ -135,6 +135,18 @@ assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/m
 rm -rf "$out"
 echo ""
 
+echo "=== Test Case 11: SLOT_DURATION_MS override without SLOT_DURATION_SCHEDULE (mainnet) ==="
+echo "Expected: default schedule follows SLOT_DURATION_MS, fork times use 6s slots"
+out=$(fresh_output case11)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case11-slot-duration-override.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 6000"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 6000 "
+assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "12308"
+rm -rf "$out"
+echo ""
+
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
