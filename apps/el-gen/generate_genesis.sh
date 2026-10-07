@@ -555,6 +555,15 @@ genesis_add_system_contracts() {
         else
             echo -e "  skipping EIP-8141 contracts (DEPLOY_EIP8141_CONTRACTS=${DEPLOY_EIP8141_CONTRACTS})"
         fi
+
+        if [ "${DEPLOY_EIP8250_CONTRACTS:-true}" == "true" ]; then
+            # EIP-8250: Keyed nonce manager
+            target_address=$(echo "$system_contracts" | jq -r '.eip8250_nonce_manager_address')
+            echo -e "  EIP-8250 nonce manager:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8250_nonce_manager')
+        else
+            echo -e "  skipping EIP-8250 contracts (DEPLOY_EIP8250_CONTRACTS=${DEPLOY_EIP8250_CONTRACTS})"
+        fi
     fi
 }
 

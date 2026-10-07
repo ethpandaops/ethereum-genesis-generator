@@ -103,3 +103,12 @@ eip8141_expiry_verifier: {
     "nonce": "1",
     "code": "0x60083614600a575f5ffd5b5f3560c01c4211601657005b5f5ffd"
 }
+
+# EIP-8250: Keyed nonce manager. An ordinary contract created by the keyless
+# deployment transaction in the EIP, not installed by the fork.
+eip8250_nonce_manager_address: "0x8250968C12e01A19d6F667b9B2F3b3A4d0e51cB7"
+eip8250_nonce_manager: {
+    "balance": "0",
+    "nonce": "1",
+    "code": "0x60006000fd"
+}
