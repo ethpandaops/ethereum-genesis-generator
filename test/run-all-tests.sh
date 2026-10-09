@@ -70,12 +70,15 @@ echo ""
 
 echo "=== Test Case 5: FRAMES_ENABLED (Heze off on CL, bogota active on EL) ==="
 echo "Expected: config.yaml HEZE_FORK_EPOCH: 18446744073709551615,"
-echo "          genesis.json has a non-null bogotaTime"
+echo "          genesis.json has a non-null bogotaTime, the EIP-8141 expiry verifier"
+echo "          and the EIP-8250 nonce manager"
 rm -rf output/metadata output/parsed
 docker run -u 1000:1000 --rm -v $PWD/output:/data -v $PWD/test-cases/case5-frames-enabled.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 grep "^HEZE_FORK_EPOCH:" output/metadata/config.yaml
 jq -c '{bogotaTime: .config.bogotaTime}' output/metadata/genesis.json
+jq -c '{expiryVerifier: .alloc["0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf"]}' output/metadata/genesis.json
+jq -c '{nonceManager: .alloc["0x8250968C12e01A19d6F667b9B2F3b3A4d0e51cB7"]}' output/metadata/genesis.json
 echo ""
 
 echo "=== Test Case 6: EIP-8198 shorter slots, then a BPO ==="
