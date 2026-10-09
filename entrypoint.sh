@@ -20,8 +20,6 @@ then
     source /config/values.env
 fi
 
-export SLOT_DURATION_SCHEDULE="${SLOT_DURATION_SCHEDULE:-[{\"epoch\": 0, \"slot_duration_ms\": ${SLOT_DURATION_MS}\}]}"
-
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 
@@ -104,22 +102,6 @@ build_gas_limit_schedule() {
     echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    GAS_LIMIT: \(.gas_limit)"'
 }
 
-# Builds the SLOT_DURATION_SCHEDULE YAML block (EIP-8198) from the
-# SLOT_DURATION_SCHEDULE env var, a JSON array starting at genesis like:
-#   [{"epoch": 0, "slot_duration_ms": 12000}, {"epoch": 256, "slot_duration_ms": 10000}]
-# Emits `SLOT_DURATION_SCHEDULE: []` when the array is empty.
-build_slot_duration_schedule() {
-    local schedule_json="${SLOT_DURATION_SCHEDULE:-[]}"
-
-    if [ "$(echo "$schedule_json" | jq 'length')" -eq 0 ]; then
-        echo "SLOT_DURATION_SCHEDULE: []"
-        return
-    fi
-
-    echo "SLOT_DURATION_SCHEDULE:"
-    echo "$schedule_json" | jq -r 'sort_by(.epoch) | .[] | "  - EPOCH: \(.epoch)\n    SLOT_DURATION_MS: \(.slot_duration_ms)"'
-}
-
 gen_cl_config(){
     set -x
     # Consensus layer: Check if genesis already exists
@@ -130,23 +112,19 @@ gen_cl_config(){
         HUMAN_READABLE_TIMESTAMP=$(date -u -d @"$GENESIS_TIMESTAMP" +"%Y-%b-%d %I:%M:%S %p %Z")
         COMMENT="# $HUMAN_READABLE_TIMESTAMP"
 
-        # Build the BLOB_SCHEDULE, GAS_LIMIT_SCHEDULE and SLOT_DURATION_SCHEDULE blocks and
+        # Build the BLOB_SCHEDULE and GAS_LIMIT_SCHEDULE blocks and
         # substitute them in place so each section keeps its position
         # in the template.
         export BLOB_SCHEDULE_YAML="$(build_blob_schedule)"
         GAS_LIMIT_SCHEDULE_YAML="$(build_gas_limit_schedule)"
         export GAS_LIMIT_SCHEDULE_YAML
-        SLOT_DURATION_SCHEDULE_YAML="$(build_slot_duration_schedule)"
-        export SLOT_DURATION_SCHEDULE_YAML
         awk '
             BEGIN {
                 blob_section = ENVIRON["BLOB_SCHEDULE_YAML"]
                 gas_section = ENVIRON["GAS_LIMIT_SCHEDULE_YAML"]
-                slot_section = ENVIRON["SLOT_DURATION_SCHEDULE_YAML"]
             }
             /^BLOB_SCHEDULE:/ { print blob_section; in_schedule=1; next }
             /^GAS_LIMIT_SCHEDULE:/ { print gas_section; in_schedule=1; next }
-            /^SLOT_DURATION_SCHEDULE:/ { print slot_section; in_schedule=1; next }
             in_schedule && /^[[:space:]]/ { next }
             { in_schedule=0; print }
         ' /config/cl/config.yaml | sed 's/#HUMAN_TIME_PLACEHOLDER/'"$COMMENT"'/' > $tmp_dir/config_temp.yaml

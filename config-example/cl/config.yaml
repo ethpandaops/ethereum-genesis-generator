@@ -110,6 +110,10 @@ PAYLOAD_ATTESTATION_DUE_BPS: $PAYLOAD_ATTESTATION_DUE_BPS
 # 6667 basis points, ~67% of SLOT_DURATION_MS
 INCLUSION_LIST_DUE_BPS: 6667
 
+# EIP8198
+# 10000 milliseconds
+SLOT_DURATION_MS_EIP8198: $SLOT_DURATION_MS_EIP8198
+
 # Validator cycle
 # ---------------------------------------------------------------
 # 2**2 (= 4)
@@ -237,11 +241,6 @@ BLOB_SCHEDULE: []
 # ---------------------------------------------------------------
 
 GAS_LIMIT_SCHEDULE: []
-
-# Slot Duration Scheduling (EIP-8198)
-# ---------------------------------------------------------------
-
-SLOT_DURATION_SCHEDULE: []
 
 # Fast Confirmation Rule
 # ---------------------------------------------------------------
