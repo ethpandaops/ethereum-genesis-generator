@@ -81,24 +81,25 @@ jq -c '{expiryVerifier: .alloc["0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf"]}' o
 jq -c '{nonceManager: .alloc["0x8250968C12e01A19d6F667b9B2F3b3A4d0e51cB7"]}' output/metadata/genesis.json
 echo ""
 
-echo "=== Test Case 6: EIP-8198 shorter slots, then a BPO ==="
-echo "Expected: amsterdamTime before the slot change,"
+echo "=== Test Case 6: Heze shorter slots, then a BPO ==="
+echo "Expected: bogotaTime unaffected by the slot change at its own epoch,"
 echo "          bpo1Time counts 2 epochs at 12s and 2 epochs at 6s"
 out=$(fresh_output case6)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case6-shorter-slots.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "404"
+assert_eq "bogotaTime" "$(jq -r '.config.bogotaTime' $out/metadata/genesis.json)" "788"
 assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 12000"
-assert_eq "EIP8198_FORK_EPOCH" "$(grep '^EIP8198_FORK_EPOCH:' $out/metadata/config.yaml)" "EIP8198_FORK_EPOCH: 2"
-assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 6000"
+assert_eq "HEZE_FORK_EPOCH" "$(grep '^HEZE_FORK_EPOCH:' $out/metadata/config.yaml)" "HEZE_FORK_EPOCH: 2"
+assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 6000"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 7: EIP-8198 with the default 10s slot duration ==="
-echo "Expected: BPO times count 12s slots before EIP8198 and 10s slots after"
+echo "=== Test Case 7: Heze with the default 10s slot duration ==="
+echo "Expected: BPO times count 12s slots before Heze and 10s slots after"
 out=$(fresh_output case7)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-default-eip8198-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-default-heze-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1108"
 assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "2068"
@@ -115,26 +116,26 @@ assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 9: default SLOT_DURATION_MS_EIP8198 (mainnet) ==="
+echo "=== Test Case 9: default SLOT_DURATION_MS_HEZE (mainnet) ==="
 echo "Expected: 10000 ms, no SLOT_DURATION_SCHEDULE"
 out=$(fresh_output case9)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-eip8198-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-heze-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 10000"
+assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 10000"
 assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -c '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml || true)" "0"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 10: default SLOT_DURATION_MS_EIP8198 (minimal) ==="
+echo "=== Test Case 10: default SLOT_DURATION_MS_HEZE (minimal) ==="
 echo "Expected: 5000 ms"
 out=$(fresh_output case10)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-eip8198-slot-duration-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-heze-slot-duration-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 5000"
+assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 5000"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 11: SLOT_DURATION_MS override, EIP8198 not scheduled (mainnet) ==="
+echo "=== Test Case 11: SLOT_DURATION_MS override, Heze not scheduled (mainnet) ==="
 echo "Expected: fork times use 6s slots"
 out=$(fresh_output case11)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case11-slot-duration-override.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1

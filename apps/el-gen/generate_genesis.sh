@@ -269,7 +269,7 @@ genesis_load_base_genesis() {
 
 # Calculates the activation timestamp for a given epoch
 # Converts epoch number to Unix timestamp based on genesis delay and slot duration,
-# accounting for the slot duration change at EIP8198_FORK_EPOCH
+# accounting for the slot duration change at HEZE_FORK_EPOCH on the CL
 # Args:
 #   $1: Epoch number (0 for immediate activation)
 # Returns:
@@ -285,10 +285,10 @@ genesis_get_activation_time() {
             slots_per_epoch=32
         fi
         # Convert epoch to timestamp: genesis_time + genesis_delay + time spent
-        # at SLOT_DURATION_MS before EIP8198 and at SLOT_DURATION_MS_EIP8198 after
+        # at SLOT_DURATION_MS before Heze and at SLOT_DURATION_MS_HEZE after
         local epoch_delay_ms=$(( $1 * slots_per_epoch * SLOT_DURATION_MS ))
-        if [ "$EIP8198_FORK_EPOCH" != "18446744073709551615" ] && [ "$EIP8198_FORK_EPOCH" -lt "$1" ]; then
-            epoch_delay_ms=$(( EIP8198_FORK_EPOCH * slots_per_epoch * SLOT_DURATION_MS + ($1 - EIP8198_FORK_EPOCH) * slots_per_epoch * SLOT_DURATION_MS_EIP8198 ))
+        if [ "$FRAMES_ENABLED" != "true" ] && [ "$HEZE_FORK_EPOCH" != "18446744073709551615" ] && [ "$HEZE_FORK_EPOCH" -lt "$1" ]; then
+            epoch_delay_ms=$(( HEZE_FORK_EPOCH * slots_per_epoch * SLOT_DURATION_MS + ($1 - HEZE_FORK_EPOCH) * slots_per_epoch * SLOT_DURATION_MS_HEZE ))
         fi
         epoch_delay=$(( epoch_delay_ms / 1000 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
