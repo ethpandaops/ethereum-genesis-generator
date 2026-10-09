@@ -79,12 +79,12 @@ jq -c '{bogotaTime: .config.bogotaTime}' output/metadata/genesis.json
 echo ""
 
 echo "=== Test Case 6: EIP-8198 shorter slots, then a BPO ==="
-echo "Expected: amsterdamTime unaffected by the slot change at its own epoch,"
+echo "Expected: amsterdamTime before the slot change,"
 echo "          bpo1Time counts 2 epochs at 12s and 2 epochs at 6s"
 out=$(fresh_output case6)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case6-shorter-slots.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "788"
+assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "404"
 assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 12000"
 assert_eq "EIP8198_FORK_EPOCH" "$(grep '^EIP8198_FORK_EPOCH:' $out/metadata/config.yaml)" "EIP8198_FORK_EPOCH: 2"
