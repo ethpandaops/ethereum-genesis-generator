@@ -545,6 +545,26 @@ genesis_add_system_contracts() {
             echo -e "  skipping EIP-8282 contracts (DEPLOY_EIP8282_CONTRACTS=${DEPLOY_EIP8282_CONTRACTS})"
         fi
     fi
+
+    if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ]; then
+        if [ "${DEPLOY_EIP8141_CONTRACTS:-true}" == "true" ]; then
+            # EIP-8141: Frame transaction expiry verifier
+            target_address=$(echo "$system_contracts" | jq -r '.eip8141_expiry_verifier_address')
+            echo -e "  EIP-8141 expiry verifier:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8141_expiry_verifier')
+        else
+            echo -e "  skipping EIP-8141 contracts (DEPLOY_EIP8141_CONTRACTS=${DEPLOY_EIP8141_CONTRACTS})"
+        fi
+
+        if [ "${DEPLOY_EIP8250_CONTRACTS:-true}" == "true" ]; then
+            # EIP-8250: Keyed nonce manager
+            target_address=$(echo "$system_contracts" | jq -r '.eip8250_nonce_manager_address')
+            echo -e "  EIP-8250 nonce manager:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8250_nonce_manager')
+        else
+            echo -e "  skipping EIP-8250 contracts (DEPLOY_EIP8250_CONTRACTS=${DEPLOY_EIP8250_CONTRACTS})"
+        fi
+    fi
 }
 
 # Deploys well-known, chain-agnostic contracts that are expected at the same
