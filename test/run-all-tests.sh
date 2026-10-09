@@ -82,29 +82,26 @@ jq -c '{nonceManager: .alloc["0x8250968C12e01A19d6F667b9B2F3b3A4d0e51cB7"]}' out
 echo ""
 
 echo "=== Test Case 6: EIP-8198 shorter slots, then a BPO ==="
-echo "Expected: amsterdamTime unaffected by the slot change at its own epoch,"
+echo "Expected: amsterdamTime before the slot change,"
 echo "          bpo1Time counts 2 epochs at 12s and 2 epochs at 6s"
 out=$(fresh_output case6)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case6-shorter-slots.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "788"
+assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "404"
 assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 12000"
 assert_eq "EIP8198_FORK_EPOCH" "$(grep '^EIP8198_FORK_EPOCH:' $out/metadata/config.yaml)" "EIP8198_FORK_EPOCH: 2"
-assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A4 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
-    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 - EPOCH: 2 SLOT_DURATION_MS: 6000 "
+assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 6000"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 7: EIP-8198 multi-step slot schedule (unsorted input) ==="
-echo "Expected: BPO times sum each slot duration era, schedule sorted by epoch"
+echo "=== Test Case 7: EIP-8198 with the default 10s slot duration ==="
+echo "Expected: BPO times count 12s slots before EIP8198 and 10s slots after"
 out=$(fresh_output case7)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-multi-step-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-default-eip8198-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1044"
-assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "1556"
-assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A6 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
-    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 - EPOCH: 2 SLOT_DURATION_MS: 8000 - EPOCH: 4 SLOT_DURATION_MS: 4000 "
+assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1108"
+assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "2068"
 rm -rf "$out"
 echo ""
 
@@ -118,38 +115,33 @@ assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 9: default SLOT_DURATION_SCHEDULE (mainnet) ==="
-echo "Expected: single epoch 0 entry at 12000 ms"
+echo "=== Test Case 9: default SLOT_DURATION_MS_EIP8198 (mainnet) ==="
+echo "Expected: 10000 ms, no SLOT_DURATION_SCHEDULE"
 out=$(fresh_output case9)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-slot-schedule.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-eip8198-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
-    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 12000 "
+assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 10000"
+assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -c '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml || true)" "0"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 10: default SLOT_DURATION_SCHEDULE (minimal) ==="
-echo "Expected: single epoch 0 entry at 6000 ms"
+echo "=== Test Case 10: default SLOT_DURATION_MS_EIP8198 (minimal) ==="
+echo "Expected: 5000 ms"
 out=$(fresh_output case10)
-docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-slot-schedule-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-eip8198-slot-duration-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
-    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 6000 "
+assert_eq "SLOT_DURATION_MS_EIP8198" "$(grep '^SLOT_DURATION_MS_EIP8198:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_EIP8198: 5000"
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 11: SLOT_DURATION_MS override without SLOT_DURATION_SCHEDULE (mainnet) ==="
-echo "Expected: default schedule follows SLOT_DURATION_MS, fork times use 6s slots"
+echo "=== Test Case 11: SLOT_DURATION_MS override, EIP8198 not scheduled (mainnet) ==="
+echo "Expected: fork times use 6s slots"
 out=$(fresh_output case11)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case11-slot-duration-override.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 6000"
-assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -A2 '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
-    "SLOT_DURATION_SCHEDULE: - EPOCH: 0 SLOT_DURATION_MS: 6000 "
 assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "12308"
 rm -rf "$out"
-echo ""
-
 echo ""
 echo "================================"
 echo "✅ All tests complete!"
