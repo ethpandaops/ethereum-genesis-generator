@@ -558,6 +558,15 @@ genesis_add_system_contracts() {
         else
             echo -e "  skipping EIP-8250 contracts (DEPLOY_EIP8250_CONTRACTS=${DEPLOY_EIP8250_CONTRACTS})"
         fi
+
+        if [ "${DEPLOY_EIP8272_CONTRACTS:-true}" == "true" ]; then
+            # EIP-8272: Recent root contract
+            target_address=$(echo "$system_contracts" | jq -r '.eip8272_recent_root_address')
+            echo -e "  EIP-8272 recent root contract:\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8272_recent_root')
+        else
+            echo -e "  skipping EIP-8272 contracts (DEPLOY_EIP8272_CONTRACTS=${DEPLOY_EIP8272_CONTRACTS})"
+        fi
     fi
 }
 
