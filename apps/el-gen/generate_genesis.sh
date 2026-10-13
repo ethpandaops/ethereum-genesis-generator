@@ -431,6 +431,26 @@ genesis_add_allocation() {
     echo "$allocation" | jq -c '.balance |= gsub(" *ETH"; "000000000000000000") | {("'"$address"'"): .}' >> $tmp_dir/allocations.json
 }
 
+genesis_add_system_contract() {
+    local tmp_dir=$1
+    local system_contracts=$2
+    local key=$3
+    local label=$4
+    local target_address=$(echo "$system_contracts" | jq -r ".${key}_address")
+
+    echo -e "  ${label}:\t$target_address"
+    genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c ".${key}")
+}
+
+system_contracts_enabled() {
+    local var=$1
+    if [ "${!var:-true}" == "true" ]; then
+        return 0
+    fi
+    echo -e "  skipping $2 contracts ($var=${!var})"
+    return 1
+}
+
 # Deploys system contracts required by various EIPs
 # Adds deposit contract and fork-specific system contracts (EIP-4788, EIP-2935, etc.)
 # Args:
@@ -501,71 +521,35 @@ genesis_add_system_contracts() {
     fi
 
     if [ ! "$DENEB_FORK_EPOCH" == "18446744073709551615" ]; then
-        # EIP-4788: Beacon block root in the EVM
-        target_address=$(echo "$system_contracts" | jq -r '.eip4788_address')
-        echo -e "  EIP-4788 contract:\t$target_address"
-        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip4788')
+        genesis_add_system_contract $tmp_dir "$system_contracts" eip4788 "EIP-4788 contract"
     fi
 
     if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
-        # EIP-2935: Serve historical block hashes from state
-        target_address=$(echo "$system_contracts" | jq -r '.eip2935_address')
-        echo -e "  EIP-2935 contract:\t$target_address"
-        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip2935')
-
-        # EIP-7002: Execution layer triggerable withdrawals
-        target_address=$(echo "$system_contracts" | jq -r '.eip7002_address')
-        echo -e "  EIP-7002 contract:\t$target_address"
-        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7002')
-
-        # EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-        target_address=$(echo "$system_contracts" | jq -r '.eip7251_address')
-        echo -e "  EIP-7251 contract:\t$target_address"
-        genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip7251')
+        genesis_add_system_contract $tmp_dir "$system_contracts" eip2935 "EIP-2935 contract"
+        genesis_add_system_contract $tmp_dir "$system_contracts" eip7002 "EIP-7002 contract"
+        genesis_add_system_contract $tmp_dir "$system_contracts" eip7251 "EIP-7251 contract"
     fi
 
     if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
-        if [ "${DEPLOY_EIP8282_CONTRACTS:-true}" == "true" ]; then
-            # EIP-8282: Builder deposit requests (request type 0x03)
-            target_address=$(echo "$system_contracts" | jq -r '.eip8282_deposit_address')
-            echo -e "  EIP-8282 deposit contract:\t$target_address"
-            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_deposit')
-
-            # EIP-8282: Builder exit requests (request type 0x04)
-            target_address=$(echo "$system_contracts" | jq -r '.eip8282_exit_address')
-            echo -e "  EIP-8282 exit contract:\t$target_address"
-            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8282_exit')
-        else
-            echo -e "  skipping EIP-8282 contracts (DEPLOY_EIP8282_CONTRACTS=${DEPLOY_EIP8282_CONTRACTS})"
+        if system_contracts_enabled DEPLOY_EIP8282_CONTRACTS EIP-8282; then
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8282_deposit "EIP-8282 deposit contract"
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8282_exit "EIP-8282 exit contract"
         fi
     fi
 
     if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ]; then
-        if [ "${DEPLOY_EIP8141_CONTRACTS:-true}" == "true" ]; then
-            # EIP-8141: Frame transaction expiry verifier
-            target_address=$(echo "$system_contracts" | jq -r '.eip8141_expiry_verifier_address')
-            echo -e "  EIP-8141 expiry verifier:\t$target_address"
-            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8141_expiry_verifier')
-        else
-            echo -e "  skipping EIP-8141 contracts (DEPLOY_EIP8141_CONTRACTS=${DEPLOY_EIP8141_CONTRACTS})"
+        if system_contracts_enabled DEPLOY_EIP8141_CONTRACTS EIP-8141; then
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8141_expiry_verifier "EIP-8141 expiry verifier"
         fi
-
-        if [ "${DEPLOY_EIP8250_CONTRACTS:-true}" == "true" ]; then
-            # EIP-8250: Keyed nonce manager
-            target_address=$(echo "$system_contracts" | jq -r '.eip8250_nonce_manager_address')
-            echo -e "  EIP-8250 nonce manager:\t$target_address"
-            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8250_nonce_manager')
-        else
-            echo -e "  skipping EIP-8250 contracts (DEPLOY_EIP8250_CONTRACTS=${DEPLOY_EIP8250_CONTRACTS})"
+        if system_contracts_enabled DEPLOY_EIP8250_CONTRACTS EIP-8250; then
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8250_nonce_manager "EIP-8250 nonce manager"
         fi
-
-        if [ "${DEPLOY_EIP8272_CONTRACTS:-true}" == "true" ]; then
-            # EIP-8272: Recent root contract
-            target_address=$(echo "$system_contracts" | jq -r '.eip8272_recent_root_address')
-            echo -e "  EIP-8272 recent root contract:\t$target_address"
-            genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c '.eip8272_recent_root')
-        else
-            echo -e "  skipping EIP-8272 contracts (DEPLOY_EIP8272_CONTRACTS=${DEPLOY_EIP8272_CONTRACTS})"
+        if system_contracts_enabled DEPLOY_EIP8272_CONTRACTS EIP-8272; then
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8272_recent_root "EIP-8272 recent root contract"
+        fi
+        if system_contracts_enabled DEPLOY_EIP8253_PRESTATE EIP-8253; then
+            echo -e "  EIP-8253 prestate:\t$(jq length /apps/el-gen/eip8253-prestate.json) accounts"
+            jq -c '.' /apps/el-gen/eip8253-prestate.json >> $tmp_dir/allocations.json
         fi
     fi
 }
