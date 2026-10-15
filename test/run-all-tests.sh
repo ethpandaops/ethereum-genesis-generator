@@ -97,13 +97,13 @@ assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadat
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 7: Heze with the default 10s slot duration ==="
-echo "Expected: BPO times count 12s slots before Heze and 10s slots after"
+echo "=== Test Case 7: Heze with the default 12s slot duration ==="
+echo "Expected: BPO times count 12s slots before and after Heze"
 out=$(fresh_output case7)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-default-heze-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1108"
-assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "2068"
+assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
+assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "2324"
 rm -rf "$out"
 echo ""
 
@@ -118,21 +118,21 @@ rm -rf "$out"
 echo ""
 
 echo "=== Test Case 9: default SLOT_DURATION_MS_HEZE (mainnet) ==="
-echo "Expected: 10000 ms, no SLOT_DURATION_SCHEDULE"
+echo "Expected: 12000 ms, no SLOT_DURATION_SCHEDULE"
 out=$(fresh_output case9)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case9-default-heze-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 10000"
+assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 12000"
 assert_eq "SLOT_DURATION_SCHEDULE" "$(grep -c '^SLOT_DURATION_SCHEDULE:' $out/metadata/config.yaml || true)" "0"
 rm -rf "$out"
 echo ""
 
 echo "=== Test Case 10: default SLOT_DURATION_MS_HEZE (minimal) ==="
-echo "Expected: 5000 ms"
+echo "Expected: 6000 ms"
 out=$(fresh_output case10)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case10-default-heze-slot-duration-minimal.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
-assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 5000"
+assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 6000"
 rm -rf "$out"
 echo ""
 
