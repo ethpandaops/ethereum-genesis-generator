@@ -20,7 +20,6 @@ generate_genesis() {
     has_fork="0"
     has_bpos="0"
     shadowfork_cutoff_time="0"
-    shadowfork_blob_schedule=""
 
     # output directory
     local out_dir=$1
@@ -61,8 +60,6 @@ generate_genesis() {
         echo "  Latest active fork: $has_fork"
         echo "  Latest active BPO:  $has_bpos"
     fi
-
-    echo "[]" > $tmp_dir/blob_schedule.json
 
     # Add additional fork properties
     [ $has_fork -lt 2 ] && genesis_add_bellatrix $tmp_dir
@@ -171,7 +168,6 @@ generate_genesis() {
 #   has_fork: Latest active fork number
 #   has_bpos: Latest active BPO number
 #   shadowfork_cutoff_time: Timestamp for shadowfork cutoff
-#   shadowfork_blob_schedule: Latest active blob schedule
 genesis_load_base_genesis() {
     local network_name=$1
     local tmp_dir=$2
@@ -220,19 +216,14 @@ genesis_load_base_genesis() {
     # determinate latest active fork based on cutoff time and parent network's genesis.json
     if [ "$(cat $tmp_dir/genesis.json | jq ".config.bogotaTime and .config.bogotaTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="8" # heze
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.amsterdamTime and .config.amsterdamTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="7" # gloas
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.osakaTime and .config.osakaTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="6" # fulu
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")" # use prague blob schedule (last named fork with bpo settings)
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.pragueTime and .config.pragueTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="5" # electra
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.prague + { \"timestamp\": .config.pragueTime }")"
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.cancunTime and .config.cancunTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="4" # deneb
-        shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.cancun + { \"timestamp\": .config.cancunTime }")"
     elif [ "$(cat $tmp_dir/genesis.json | jq ".config.shanghaiTime and .config.shanghaiTime < $shadowfork_cutoff_time")" == "true" ]; then
         has_fork="3" # capella
     else
@@ -243,10 +234,6 @@ genesis_load_base_genesis() {
     for ((i=max_bpos; i>=1; i--)); do
         if jq -e ".config.bpo${i}Time != null and .config.bpo${i}Time < $shadowfork_cutoff_time" "$tmp_dir/genesis.json" >/dev/null; then
             has_bpos="$i"
-
-            if [ -z "$shadowfork_blob_schedule" ] || [ "$(jq -r ".timestamp" <<< "$shadowfork_blob_schedule")" -lt "$(jq -r ".config.bpo${i}Time" "$tmp_dir/genesis.json")" ]; then
-                shadowfork_blob_schedule="$(cat $tmp_dir/genesis.json | jq ".config.blobSchedule.bpo${i} + { \"timestamp\": .config.bpo${i}Time }")"
-            fi
             break
         fi
     done
@@ -293,57 +280,6 @@ genesis_get_activation_time() {
         epoch_delay=$(( epoch_delay_ms / 1000 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
-}
-
-# Retrieves the active blob schedule for a given timestamp
-# Searches through all blob schedules to find the most recent one before the timestamp
-# Args:
-#   $1: Temporary directory containing blob_schedule.json
-#   $2: Timestamp to find active schedule for
-# Returns:
-#   JSON object containing blob schedule parameters (target, max, baseFeeUpdateFraction)
-genesis_get_blob_schedule() {
-    local tmp_dir=$1
-    local timestamp=$2
-
-    # get latest active blob schedule based on timestamp
-    local active_blob_schedule="$shadowfork_blob_schedule"
-
-    local matching_blob_schedule=$(jq --argjson t "$timestamp" '
-        (map(select(.timestamp <= $t)) | sort_by(.timestamp) | last)
-    ' $tmp_dir/blob_schedule.json)
-
-    if [ "$matching_blob_schedule" != "null" ]; then
-        active_blob_schedule="$matching_blob_schedule"
-    fi
-
-    # remove timestamp field from returned schedule (genesis blobSchedule format)
-    active_blob_schedule=$(echo "$active_blob_schedule" | jq "del(.timestamp)")
-
-    echo "$active_blob_schedule"
-}
-
-# Adds a new blob schedule entry to the blob schedule tracking file
-# Ensures entries are ordered by timestamp and prevents duplicates
-# Args:
-#   $1: Temporary directory containing blob_schedule.json
-#   $2: JSON object with blob schedule (must include timestamp field)
-genesis_add_blob_schedule() {
-    local tmp_dir=$1
-    local blob_schedule=$2
-
-    NEW_BLOB_SCHEDULE="$blob_schedule" \
-    genesis_add_json "$tmp_dir/blob_schedule.json" '
-        (env.NEW_BLOB_SCHEDULE | fromjson) as $n
-        | (.[-1]?.timestamp // -1) as $last
-        | if $n.timestamp > $last then
-            . + [$n]
-          elif $n.timestamp == $last then
-            .[:-1] + [$n]
-          else
-            error("new entry has lower timestamp than latest: \($n.timestamp) < \($last)")
-          end
-    '
 }
 
 # Calculates the base fee update fraction for blob pricing
@@ -635,13 +571,6 @@ genesis_add_deneb() {
             "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
         }
     }'
-
-    genesis_add_blob_schedule $tmp_dir '{
-        "timestamp": '$cancun_time',
-        "target": '"$target_blobs_per_block_cancun"',
-        "max": '"$max_blobs_per_block_cancun"',
-        "baseFeeUpdateFraction": '"$base_fee_update_fraction_cancun"'
-    }'
 }
 
 # Adds Electra (Prague) fork properties to genesis files
@@ -671,13 +600,6 @@ genesis_add_electra() {
             "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
             "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
         }
-    }'
-
-    genesis_add_blob_schedule $tmp_dir '{
-        "timestamp": '$prague_time',
-        "target": '"$TARGET_BLOBS_PER_BLOCK_ELECTRA"',
-        "max": '"$MAX_BLOBS_PER_BLOCK_ELECTRA"',
-        "baseFeeUpdateFraction": '"$BASEFEE_UPDATE_FRACTION_ELECTRA"'
     }'
 }
 
@@ -740,13 +662,6 @@ genesis_add_bpos() {
             echo "Adding BPO $i at epoch $bpo_epoch (target: ${!target_var}, max: ${!max_var}, fraction: $fraction)"
             local activation_time=$(genesis_get_activation_time $bpo_epoch)
 
-            genesis_add_blob_schedule $tmp_dir '{
-                "timestamp": '"$activation_time"',
-                "target": '"${!target_var}"',
-                "max": '"${!max_var}"',
-                "baseFeeUpdateFraction": '"$fraction"'
-            }'
-
             genesis_add_json $tmp_dir/genesis.json '.config.bpo'$i'Time = '"$activation_time"
             genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
                 "bpo'$i'": {
@@ -782,13 +697,9 @@ genesis_add_heze() {
     local tmp_dir=$1
     echo "Adding bogota genesis properties"
     local bogota_time=$(genesis_get_activation_time $HEZE_FORK_EPOCH)
-    local latest_blob_schedule=$(genesis_get_blob_schedule $tmp_dir $bogota_time)
 
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "bogotaTime": '"$bogota_time"'
-    }'
-    genesis_add_json $tmp_dir/genesis.json '.config.blobSchedule += {
-        "bogota": '"$latest_blob_schedule"'
     }'
 }
