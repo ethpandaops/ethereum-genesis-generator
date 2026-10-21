@@ -84,13 +84,17 @@ echo ""
 
 echo "=== Test Case 6: Heze shorter slots, then a BPO ==="
 echo "Expected: bogotaTime unaffected by the slot change at its own epoch,"
-echo "          bpo1Time counts 2 epochs at 12s and 2 epochs at 6s"
+echo "          a scaled BPO at Heze, and the given BPO moved to bpo2 with"
+echo "          bpo2Time counting 2 epochs at 12s and 2 epochs at 6s"
 out=$(fresh_output case6)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case6-shorter-slots.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "404"
 assert_eq "bogotaTime" "$(jq -r '.config.bogotaTime' $out/metadata/genesis.json)" "788"
-assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "1172"
+assert_eq "bpo1Time" "$(jq -r '.config.bpo1Time' $out/metadata/genesis.json)" "788"
+assert_eq "bpo1" "$(jq -c '.config.blobSchedule.bpo1' $out/metadata/genesis.json)" '{"target":3,"max":5,"baseFeeUpdateFraction":5007716}'
+assert_eq "bpo2Time" "$(jq -r '.config.bpo2Time' $out/metadata/genesis.json)" "1172"
+assert_eq "bpo2" "$(jq -c '.config.blobSchedule.bpo2 | {target, max}' $out/metadata/genesis.json)" '{"target":8,"max":12}'
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 12000"
 assert_eq "HEZE_FORK_EPOCH" "$(grep '^HEZE_FORK_EPOCH:' $out/metadata/config.yaml)" "HEZE_FORK_EPOCH: 2"
 assert_eq "SLOT_DURATION_MS_HEZE" "$(grep '^SLOT_DURATION_MS_HEZE:' $out/metadata/config.yaml)" "SLOT_DURATION_MS_HEZE: 6000"
@@ -143,6 +147,41 @@ docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case11-slot-durati
 echo "Result:"
 assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.yaml)" "SLOT_DURATION_MS: 6000"
 assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "12308"
+rm -rf "$out"
+echo ""
+echo "=== Test Case 12: Heze slot duration change scales the BPO and gas limit ==="
+echo "Expected: BPO_3 at Heze with 11/17, gas limit 150000000 at Heze"
+out=$(fresh_output case12)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case12-heze-slot-duration-scaling.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "bpo3Time" "$(jq -r '.config.bpo3Time' $out/metadata/genesis.json)" "1940"
+assert_eq "bpo3" "$(jq -c '.config.blobSchedule.bpo3' $out/metadata/genesis.json)" '{"target":11,"max":17,"baseFeeUpdateFraction":12241084}'
+assert_eq "BLOB_SCHEDULE" "$(grep -A4 '^BLOB_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "BLOB_SCHEDULE: - EPOCH: 0 MAX_BLOBS_PER_BLOCK: 21 - EPOCH: 5 MAX_BLOBS_PER_BLOCK: 17 "
+assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "GAS_LIMIT_SCHEDULE: - EPOCH: 0 GAS_LIMIT: 200000000 - EPOCH: 5 GAS_LIMIT: 150000000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 13: explicit BPO and gas limit at Heze ==="
+echo "Expected: given entries kept, nothing scaled"
+out=$(fresh_output case13)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case13-heze-slot-duration-explicit.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "bpo3" "$(jq -c '.config.blobSchedule.bpo3 | {target, max}' $out/metadata/genesis.json)" '{"target":12,"max":18}'
+assert_eq "bpo4" "$(jq -c '.config.blobSchedule.bpo4' $out/metadata/genesis.json)" "null"
+assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A2 '^GAS_LIMIT_SCHEDULE:' $out/metadata/config.yaml | tr -s ' \n' ' ')" \
+    "GAS_LIMIT_SCHEDULE: - EPOCH: 5 GAS_LIMIT: 120000000 "
+rm -rf "$out"
+echo ""
+
+echo "=== Test Case 14: Heze at genesis with a different slot duration ==="
+echo "Expected: nothing scaled"
+out=$(fresh_output case14)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case14-heze-genesis-slot-duration.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "bpo3" "$(jq -c '.config.blobSchedule.bpo3' $out/metadata/genesis.json)" "null"
+assert_eq "GAS_LIMIT_SCHEDULE" "$(grep '^GAS_LIMIT_SCHEDULE:' $out/metadata/config.yaml)" "GAS_LIMIT_SCHEDULE: []"
 rm -rf "$out"
 echo ""
 echo "================================"
