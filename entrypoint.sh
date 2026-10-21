@@ -20,6 +20,106 @@ then
     source /config/values.env
 fi
 
+# Schedules a BPO and a GAS_LIMIT_SCHEDULE entry at HEZE_FORK_EPOCH scaled by
+# SLOT_DURATION_MS_HEZE / SLOT_DURATION_MS, unless one is already set there.
+schedule_heze_slot_duration_scaling() {
+    local far_future="18446744073709551615"
+    local old_ms="$SLOT_DURATION_MS"
+    local new_ms="$SLOT_DURATION_MS_HEZE"
+    local heze="$HEZE_FORK_EPOCH"
+
+    if [ "$new_ms" == "$old_ms" ] || [ "$heze" == "0" ] || [ "$heze" == "$far_future" ] || [ "$FRAMES_ENABLED" == "true" ]; then
+        return
+    fi
+
+    schedule_heze_slot_duration_bpo "$far_future" "$old_ms" "$new_ms" "$heze"
+    if [ "$GLOAS_FORK_EPOCH" != "$far_future" ]; then
+        schedule_heze_slot_duration_gas_limit "$old_ms" "$new_ms" "$heze"
+    fi
+}
+
+schedule_heze_slot_duration_bpo() {
+    local far_future=$1 old_ms=$2 new_ms=$3 heze=$4
+    local bpos=()
+
+    for i in {1..5}; do
+        local var_epoch="BPO_${i}_EPOCH"
+        local var_target="BPO_${i}_TARGET_BLOBS"
+        local var_max="BPO_${i}_MAX_BLOBS"
+        local var_fraction="BPO_${i}_BASE_FEE_UPDATE_FRACTION"
+        [ "${!var_epoch}" == "$heze" ] && return
+        if [ -n "${!var_epoch}" ] && [ "${!var_epoch}" != "$far_future" ]; then
+            bpos+=("${!var_epoch} ${!var_target} ${!var_max} ${!var_fraction:-0}")
+        fi
+    done
+
+    if [ "${#bpos[@]}" -eq 5 ]; then
+        echo "WARNING: SLOT_DURATION_MS_HEZE ($new_ms) differs from SLOT_DURATION_MS ($old_ms) but all BPOs are in use, so no BPO is scheduled at HEZE_FORK_EPOCH ($heze)" >&2
+        return
+    fi
+
+    local prev_target="$TARGET_BLOBS_PER_BLOCK_ELECTRA"
+    local prev_max="$MAX_BLOBS_PER_BLOCK_ELECTRA"
+    local prev_fraction="$BASEFEE_UPDATE_FRACTION_ELECTRA"
+    local sorted=()
+    mapfile -t sorted < <(printf '%s\n' "${bpos[@]}" | sort -s -n -k1,1)
+    for bpo in "${sorted[@]}"; do
+        read -r epoch target max fraction <<< "$bpo"
+        if [ "$epoch" -lt "$heze" ]; then
+            prev_target=$target
+            prev_max=$max
+            prev_fraction=$fraction
+        fi
+    done
+    if [ "$prev_fraction" == "0" ]; then
+        prev_fraction=$(awk -v m="$prev_max" 'BEGIN { printf "%d", m * 131072 / 0.23556607131276688 + 0.5 }')
+    fi
+
+    local new_target=$(( (2 * prev_target * new_ms + old_ms) / (2 * old_ms) ))
+    [ "$new_target" -lt 1 ] && new_target=1
+    local new_max=$(( (2 * prev_max * new_target + prev_target) / (2 * prev_target) ))
+    local new_fraction=$(( (2 * prev_fraction * new_target * old_ms + prev_target * new_ms) / (2 * prev_target * new_ms) ))
+
+    mapfile -t sorted < <(printf '%s\n' "${bpos[@]}" "$heze $new_target $new_max $new_fraction" | sort -s -n -k1,1)
+    local i=1
+    for bpo in "${sorted[@]}"; do
+        read -r epoch target max fraction <<< "$bpo"
+        export BPO_${i}_EPOCH="$epoch" BPO_${i}_TARGET_BLOBS="$target" BPO_${i}_MAX_BLOBS="$max" BPO_${i}_BASE_FEE_UPDATE_FRACTION="$fraction"
+        i=$((i + 1))
+    done
+    for ((; i<=5; i++)); do
+        export BPO_${i}_EPOCH="$far_future"
+    done
+
+    echo "Scheduled a BPO at HEZE_FORK_EPOCH $heze for ${old_ms}ms -> ${new_ms}ms slots: target $prev_target -> $new_target, max $prev_max -> $new_max, base fee update fraction $prev_fraction -> $new_fraction" >&2
+}
+
+schedule_heze_slot_duration_gas_limit() {
+    local old_ms=$1 new_ms=$2 heze=$3
+    local schedule="${GAS_LIMIT_SCHEDULE:-[]}"
+
+    if [ "$(echo "$schedule" | jq --argjson e "$heze" 'any(.[]; .epoch == $e)')" == "true" ]; then
+        return
+    fi
+
+    local prev
+    prev=$(echo "$schedule" | jq --argjson e "$heze" '[.[] | select(.epoch < $e)] | sort_by(.epoch) | last | .gas_limit // empty')
+    if [ -z "$prev" ]; then
+        prev="$GENESIS_GASLIMIT"
+        if [ "$GLOAS_FORK_EPOCH" -lt "$heze" ]; then
+            schedule=$(echo "$schedule" | jq -c --argjson e "$GLOAS_FORK_EPOCH" --argjson g "$prev" '. + [{"epoch": $e, "gas_limit": $g}]')
+        fi
+    fi
+
+    local gas_limit=$(( (2 * prev * new_ms + old_ms) / (2 * old_ms) ))
+    GAS_LIMIT_SCHEDULE=$(echo "$schedule" | jq -c --argjson e "$heze" --argjson g "$gas_limit" '. + [{"epoch": $e, "gas_limit": $g}] | sort_by(.epoch)')
+    export GAS_LIMIT_SCHEDULE
+
+    echo "Scheduled gas limit $prev -> $gas_limit at HEZE_FORK_EPOCH $heze for ${old_ms}ms -> ${new_ms}ms slots" >&2
+}
+
+schedule_heze_slot_duration_scaling
+
 SERVER_ENABLED="${SERVER_ENABLED:-false}"
 SERVER_PORT="${SERVER_PORT:-8000}"
 
