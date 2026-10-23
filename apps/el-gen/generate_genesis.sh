@@ -484,8 +484,8 @@ genesis_add_system_contracts() {
             genesis_add_system_contract $tmp_dir "$system_contracts" eip8272_recent_root "EIP-8272 recent root contract"
         fi
         if system_contracts_enabled DEPLOY_EIP8253_PRESTATE EIP-8253; then
-            echo -e "  EIP-8253 prestate:\t$(jq length /apps/el-gen/eip8253-prestate.json) accounts"
-            jq -c '.' /apps/el-gen/eip8253-prestate.json >> $tmp_dir/allocations.json
+            echo -e "  EIP-8253 prestate:\t$(echo "$system_contracts" | jq '.eip8253_prestate | length') accounts"
+            echo "$system_contracts" | jq -c '.eip8253_prestate' >> $tmp_dir/allocations.json
         fi
     fi
 }
