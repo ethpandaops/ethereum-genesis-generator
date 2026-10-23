@@ -114,6 +114,19 @@ jobs:
             --our-config output/metadata/config.yaml \
             --spec-config /tmp/spec-${{ matrix.preset }}.yaml
 
+  check-system-contract-sources:
+    name: Check system contract sources
+    if: github.event_name != 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install pyyaml
+        run: pip install pyyaml --quiet
+      - name: Compare vendored system contracts against their pinned sources
+        run: python3 .github/check-system-contract-sources.py
+
   manifest:
     needs:
       - prepare
