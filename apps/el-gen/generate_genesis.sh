@@ -486,6 +486,8 @@ genesis_add_system_contracts() {
         if system_contracts_enabled DEPLOY_EIP8253_PRESTATE EIP-8253; then
             echo -e "  EIP-8253 prestate:\t$(jq length /apps/el-gen/eip8253-prestate.json) accounts"
             jq -c '.' /apps/el-gen/eip8253-prestate.json >> $tmp_dir/allocations.json
+            # EIP-8253 takes the accounts to bump from chain config
+            genesis_add_json $tmp_dir/genesis.json '.config.zeroNonceStorageAccounts = '"$(jq -c 'keys_unsorted' /apps/el-gen/eip8253-prestate.json)"
         fi
     fi
 }
