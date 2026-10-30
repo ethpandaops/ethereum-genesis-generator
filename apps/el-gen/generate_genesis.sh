@@ -483,6 +483,9 @@ genesis_add_system_contracts() {
         if system_contracts_enabled DEPLOY_EIP8272_CONTRACTS EIP-8272; then
             genesis_add_system_contract $tmp_dir "$system_contracts" eip8272_recent_root "EIP-8272 recent root contract"
         fi
+        if system_contracts_enabled DEPLOY_EIP8148_CONTRACTS EIP-8148; then
+            genesis_add_system_contract $tmp_dir "$system_contracts" eip8148_sweep_threshold "EIP-8148 sweep threshold contract"
+        fi
         if system_contracts_enabled DEPLOY_EIP8253_PRESTATE EIP-8253; then
             echo -e "  EIP-8253 prestate:\t$(jq length /apps/el-gen/eip8253-prestate.json) accounts"
             jq -c '.' /apps/el-gen/eip8253-prestate.json >> $tmp_dir/allocations.json
