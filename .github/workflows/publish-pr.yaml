@@ -1,0 +1,207 @@
+name: Publish reviewed PR image
+
+on:
+  workflow_run:
+    workflows: ['Validate PR image']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: publish-reviewed-pr-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_REPOSITORY: ethpandaops/ethereum-genesis-generator
+
+jobs:
+  authorize:
+    name: Authorize reviewed commit
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      source_sha: ${{ steps.authorize.outputs.source_sha }}
+      target_tag: ${{ steps.authorize.outputs.target_tag }}
+      immutable_tag: ${{ steps.authorize.outputs.immutable_tag }}
+    steps:
+      - name: Require current maintainer approval and label
+        id: authorize
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            if (!/^[0-9a-f]{40}$/.test(run.head_sha)) {
+              core.setFailed('The validation run did not resolve to a full commit SHA');
+              return;
+            }
+
+            const candidateNumbers = new Set(
+              (run.pull_requests ?? []).map((pull) => pull.number),
+            );
+            if (candidateNumbers.size === 0) {
+              const openPulls = await github.paginate(github.rest.pulls.list, {
+                owner,
+                repo,
+                state: 'open',
+                head: `${run.head_repository.owner.login}:${run.head_branch}`,
+                per_page: 100,
+              });
+              for (const pull of openPulls) {
+                candidateNumbers.add(pull.number);
+              }
+            }
+
+            const matchingPulls = [];
+            for (const pullNumber of candidateNumbers) {
+              const { data: pull } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber,
+              });
+              if (
+                pull.state === 'open' &&
+                pull.head.sha === run.head_sha &&
+                pull.base.repo.full_name === `${owner}/${repo}` &&
+                pull.head.repo?.full_name === run.head_repository.full_name
+              ) {
+                matchingPulls.push(pull);
+              }
+            }
+            if (matchingPulls.length !== 1) {
+              core.setFailed('The validation run must resolve to one current pull request');
+              return;
+            }
+
+            const pull = matchingPulls[0];
+            if (!pull.labels.some((label) => label.name === 'build-docker-image')) {
+              core.info('The build-docker-image label is not present; publication is not requested');
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pull.number,
+              per_page: 100,
+            });
+            const latestDecisiveReview = new Map();
+            for (const review of reviews) {
+              if (!['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) {
+                continue;
+              }
+              const previous = latestDecisiveReview.get(review.user.login);
+              if (!previous || review.id > previous.id) {
+                latestDecisiveReview.set(review.user.login, review);
+              }
+            }
+
+            const approvers = [];
+            for (const review of latestDecisiveReview.values()) {
+              if (review.state !== 'APPROVED' || review.commit_id !== run.head_sha) {
+                continue;
+              }
+              const permission = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner,
+                repo,
+                username: review.user.login,
+              });
+              if (['admin', 'maintain', 'write'].includes(permission.data.permission)) {
+                approvers.push(review.user.login);
+              }
+            }
+            if (approvers.length === 0) {
+              core.setFailed('The validated commit must have a current approval from a maintainer');
+              return;
+            }
+
+            const branchTag = pull.head.ref.replaceAll('/', '-');
+            if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/.test(branchTag)) {
+              core.setFailed('The PR branch name cannot be represented as a Docker tag');
+              return;
+            }
+
+            core.info(`Publishing ${run.head_sha}, approved by ${approvers.join(', ')}`);
+            core.setOutput('source_sha', run.head_sha);
+            core.setOutput('target_tag', `ethpandaops/ethereum-genesis-generator:${branchTag}`);
+            core.setOutput(
+              'immutable_tag',
+              `ethpandaops/ethereum-genesis-generator:sha-${run.head_sha}`,
+            );
+
+  publish:
+    name: Publish approved commit
+    needs: authorize
+    if: needs.authorize.outputs.source_sha != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download amd64 image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: image-linux-amd64
+          path: /tmp/images
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Download arm64 image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: image-linux-arm64
+          path: /tmp/images
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Verify and load built images
+        shell: bash
+        run: |
+          (cd /tmp/images && sha256sum -c image-linux-amd64.tar.gz.sha256)
+          (cd /tmp/images && sha256sum -c image-linux-arm64.tar.gz.sha256)
+          docker load --input /tmp/images/image-linux-amd64.tar.gz
+          docker load --input /tmp/images/image-linux-arm64.tar.gz
+      - name: Log in to Docker Hub
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Push architecture images and digest-bound manifest
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ needs.authorize.outputs.source_sha }}
+          TARGET_TAG: ${{ needs.authorize.outputs.target_tag }}
+          IMMUTABLE_TAG: ${{ needs.authorize.outputs.immutable_tag }}
+        run: |
+          push_platform() {
+            local slug="$1"
+            local source="ethereum-genesis-generator:$SOURCE_SHA-$slug"
+            local target="$IMMUTABLE_TAG-$slug"
+            local output digest
+
+            docker tag "$source" "$target"
+            output="$(docker push "$target")"
+            printf '%s\n' "$output" >&2
+            digest="$(printf '%s\n' "$output" | sed -n 's/.*digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | tail -n 1)"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "Could not determine digest for $target" >&2
+              return 1
+            }
+            printf '%s' "$digest"
+          }
+
+          amd64_digest="$(push_platform linux-amd64)"
+          arm64_digest="$(push_platform linux-arm64)"
+
+          docker buildx imagetools create --dry-run \
+            --tag "$IMMUTABLE_TAG" \
+            --tag "$TARGET_TAG" \
+            "$IMAGE_REPOSITORY@$amd64_digest" \
+            "$IMAGE_REPOSITORY@$arm64_digest"
+          docker buildx imagetools create \
+            --tag "$IMMUTABLE_TAG" \
+            --tag "$TARGET_TAG" \
+            "$IMAGE_REPOSITORY@$amd64_digest" \
+            "$IMAGE_REPOSITORY@$arm64_digest"

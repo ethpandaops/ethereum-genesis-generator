@@ -1,0 +1,30 @@
+name: Check publication boundary
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'runners.yaml'
+      - 'platforms.yaml'
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/**'
+      - 'runners.yaml'
+      - 'platforms.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  publication-boundary:
+    name: validate PR and publication separation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check publication workflow boundaries
+        run: python3 .github/check-publication-boundary.py

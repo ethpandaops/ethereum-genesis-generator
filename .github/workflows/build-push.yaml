@@ -1,80 +1,131 @@
-name: Build docker image
+name: Build and publish docker image
+
 on:
   push:
     branches:
       - master
     tags:
       - '**'
-  pull_request:
-  pull_request_target:
-    types: [labeled]  # runs in base-branch context with secrets, needed to push images from fork PRs
   schedule:
     - cron: '0 8 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  IMAGE_REPOSITORY: ethpandaops/ethereum-genesis-generator
 
 jobs:
   prepare:
+    name: Resolve immutable source
     runs-on: ubuntu-latest
     outputs:
-      platforms: ${{ steps.setup.outputs.platforms }}
-      tag: ${{ steps.resolve_tag.outputs.tag }}
+      source_sha: ${{ steps.resolve.outputs.source_sha }}
+      target_tag: ${{ steps.resolve.outputs.target_tag }}
+      immutable_tag: ${{ steps.resolve.outputs.immutable_tag }}
+      publish: ${{ steps.resolve.outputs.publish }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve image metadata
+        id: metadata
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Prepare Matrix
-        id: setup
-        uses: ./.github/actions/prepare
-      - name: Resolve tag
-        id: resolve_tag
+          images: ethpandaops/ethereum-genesis-generator
+          flavor: latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=sha
+            type=match,event=tag,pattern=^v\d+\.\d+\.\d+$,group=0
+            type=match,event=tag,pattern=^verkle-gen-v\d+\.\d+\.\d+$,group=0
+            type=match,event=tag,pattern=^ephemery-v\d+\.\d+\.\d+$,group=0
+      - name: Resolve publication policy
+        id: resolve
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SOURCE_SHA: ${{ github.sha }}
+          METADATA_VERSION: ${{ steps.metadata.outputs.version }}
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
-            branch_name="${GITHUB_HEAD_REF}"
-            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
-            echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Source must resolve to a full commit SHA" >&2
+            exit 1
+          }
+
+          target_tag=""
+          publish=false
+          if [[ "$EVENT_NAME" == push || "$EVENT_NAME" == workflow_dispatch ]]; then
+            target_tag="$IMAGE_REPOSITORY:$METADATA_VERSION"
+            publish=true
           fi
 
-  deploy:
-    needs:
-      - prepare
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "target_tag=$target_tag" >> "$GITHUB_OUTPUT"
+          echo "immutable_tag=$IMAGE_REPOSITORY:sha-$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: prepare
+    permissions:
+      contents: read
     runs-on: ${{ matrix.runner }}
     strategy:
+      fail-fast: false
       matrix:
-        include: ${{fromJson(needs.prepare.outputs.platforms)}}
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            slug: linux-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            slug: linux-arm64
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout immutable source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: ./.github/actions/deploy
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Build image without credentials
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
-          platform: ${{ matrix.platform }}
-          tag: ${{ needs.prepare.outputs.tag }}
-          push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
-          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
-          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
-      - name: Export image artifact
-        if: matrix.platform == 'linux/amd64'
-        run: docker save "${{ needs.prepare.outputs.tag }}-linux-amd64" | gzip > /tmp/image.tar.gz
+          context: .
+          file: Dockerfile
+          tags: ethereum-genesis-generator:${{ needs.prepare.outputs.source_sha }}-${{ matrix.slug }}
+          push: false
+          load: true
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=build-${{ matrix.slug }}
+          cache-to: type=gha,scope=build-${{ matrix.slug }},mode=max
+      - name: Export checksummed image
+        shell: bash
+        env:
+          IMAGE: ethereum-genesis-generator:${{ needs.prepare.outputs.source_sha }}-${{ matrix.slug }}
+          SLUG: ${{ matrix.slug }}
+        run: |
+          docker save "$IMAGE" | gzip > "/tmp/image-$SLUG.tar.gz"
+          (cd /tmp && sha256sum "image-$SLUG.tar.gz" > "image-$SLUG.tar.gz.sha256")
       - name: Upload image artifact
-        if: matrix.platform == 'linux/amd64'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: docker-image
-          path: /tmp/image.tar.gz
+          name: image-${{ matrix.slug }}
+          path: |
+            /tmp/image-${{ matrix.slug }}.tar.gz
+            /tmp/image-${{ matrix.slug }}.tar.gz.sha256
           retention-days: 1
+          compression-level: 0
 
   check-genesis-output:
     name: Check consensus spec values (${{ matrix.preset }})
     needs:
       - prepare
-      - deploy
+      - build
     continue-on-error: true
     runs-on: ubuntu-latest
     strategy:
@@ -82,18 +133,24 @@ jobs:
       matrix:
         preset: [mainnet, minimal]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout immutable source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Download image artifact
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Download amd64 image artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: docker-image
-          path: /tmp
-      - name: Load Docker image
+          name: image-linux-amd64
+          path: /tmp/image
+      - name: Verify and load Docker image
+        shell: bash
         run: |
-          docker load < /tmp/image.tar.gz
-          docker tag "${{ needs.prepare.outputs.tag }}-linux-amd64" ethereum-genesis-generator:ci-test
+          (cd /tmp/image && sha256sum -c image-linux-amd64.tar.gz.sha256)
+          docker load --input /tmp/image/image-linux-amd64.tar.gz
+          docker tag \
+            "ethereum-genesis-generator:${{ needs.prepare.outputs.source_sha }}-linux-amd64" \
+            ethereum-genesis-generator:ci-test
       - name: Run genesis (${{ matrix.preset }})
         run: |
           mkdir -p output
@@ -114,20 +171,72 @@ jobs:
             --our-config output/metadata/config.yaml \
             --spec-config /tmp/spec-${{ matrix.preset }}.yaml
 
-  manifest:
+  publish:
+    name: Publish checksummed images
     needs:
       - prepare
-      - deploy
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
+      - build
+    if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download amd64 image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: ./.github/actions/manifest
+          name: image-linux-amd64
+          path: /tmp/images
+      - name: Download arm64 image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          tag: ${{ needs.prepare.outputs.tag }}
-          repository: ethpandaops/ethereum-genesis-generator
-          platforms: ${{ needs.prepare.outputs.platforms }}
-          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
-          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+          name: image-linux-arm64
+          path: /tmp/images
+      - name: Verify and load built images
+        shell: bash
+        run: |
+          (cd /tmp/images && sha256sum -c image-linux-amd64.tar.gz.sha256)
+          (cd /tmp/images && sha256sum -c image-linux-arm64.tar.gz.sha256)
+          docker load --input /tmp/images/image-linux-amd64.tar.gz
+          docker load --input /tmp/images/image-linux-arm64.tar.gz
+      - name: Log in to Docker Hub
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Push architecture images and digest-bound manifest
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          TARGET_TAG: ${{ needs.prepare.outputs.target_tag }}
+          IMMUTABLE_TAG: ${{ needs.prepare.outputs.immutable_tag }}
+        run: |
+          push_platform() {
+            local slug="$1"
+            local source="ethereum-genesis-generator:$SOURCE_SHA-$slug"
+            local target="$IMMUTABLE_TAG-$slug"
+            local output digest
+
+            docker tag "$source" "$target"
+            output="$(docker push "$target")"
+            printf '%s\n' "$output" >&2
+            digest="$(printf '%s\n' "$output" | sed -n 's/.*digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | tail -n 1)"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "Could not determine digest for $target" >&2
+              return 1
+            }
+            printf '%s' "$digest"
+          }
+
+          amd64_digest="$(push_platform linux-amd64)"
+          arm64_digest="$(push_platform linux-arm64)"
+
+          docker buildx imagetools create --dry-run \
+            --tag "$IMMUTABLE_TAG" \
+            --tag "$TARGET_TAG" \
+            "$IMAGE_REPOSITORY@$amd64_digest" \
+            "$IMAGE_REPOSITORY@$arm64_digest"
+          docker buildx imagetools create \
+            --tag "$IMMUTABLE_TAG" \
+            --tag "$TARGET_TAG" \
+            "$IMAGE_REPOSITORY@$amd64_digest" \
+            "$IMAGE_REPOSITORY@$arm64_digest"
