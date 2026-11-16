@@ -255,8 +255,7 @@ genesis_load_base_genesis() {
 }
 
 # Calculates the activation timestamp for a given epoch
-# Converts epoch number to Unix timestamp based on genesis delay and slot duration,
-# accounting for the slot duration change at HEZE_FORK_EPOCH on the CL
+# Converts epoch number to Unix timestamp based on genesis delay and slot duration
 # Args:
 #   $1: Epoch number (0 for immediate activation)
 # Returns:
@@ -271,13 +270,8 @@ genesis_get_activation_time() {
         else
             slots_per_epoch=32
         fi
-        # Convert epoch to timestamp: genesis_time + genesis_delay + time spent
-        # at SLOT_DURATION_MS before Heze and at SLOT_DURATION_MS_HEZE after
-        local epoch_delay_ms=$(( $1 * slots_per_epoch * SLOT_DURATION_MS ))
-        if [ "$FRAMES_ENABLED" != "true" ] && [ "$HEZE_FORK_EPOCH" != "18446744073709551615" ] && [ "$HEZE_FORK_EPOCH" -lt "$1" ]; then
-            epoch_delay_ms=$(( HEZE_FORK_EPOCH * slots_per_epoch * SLOT_DURATION_MS + ($1 - HEZE_FORK_EPOCH) * slots_per_epoch * SLOT_DURATION_MS_HEZE ))
-        fi
-        epoch_delay=$(( epoch_delay_ms / 1000 ))
+        # Convert epoch to timestamp: genesis_time + genesis_delay + (epoch * slots_per_epoch * slot_duration)
+        epoch_delay=$(( $1 * slots_per_epoch * SLOT_DURATION_MS / 1000 ))
         echo $(( $GENESIS_TIMESTAMP + $GENESIS_DELAY + $epoch_delay ))
     fi
 }
