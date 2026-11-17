@@ -70,6 +70,7 @@ generate_genesis() {
                            [ ! "$FULU_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_bpos $tmp_dir 1 $max_bpos
     [ $has_fork -lt 7 ] && [ ! "$GLOAS_FORK_EPOCH"     == "18446744073709551615" ] && genesis_add_gloas $tmp_dir
     [ $has_fork -lt 8 ] && [ ! "$HEZE_FORK_EPOCH"      == "18446744073709551615" ] && genesis_add_heze $tmp_dir
+                           [ ! "$DAISUGI_FORK_EPOCH"   == "18446744073709551615" ] && genesis_add_daisugi $tmp_dir
 
     if [ "$is_shadowfork" == "0" ]; then
         # Initialize allocations with precompiles
@@ -467,13 +468,17 @@ genesis_add_system_contracts() {
         fi
     fi
 
-    if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ]; then
+    # Daisugi runs EIP-8141 and EIP-8250 without Heze (EL bogota), so both forks deploy these two.
+    if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ] || [ ! "$DAISUGI_FORK_EPOCH" == "18446744073709551615" ]; then
         if system_contracts_enabled DEPLOY_EIP8141_CONTRACTS EIP-8141; then
             genesis_add_system_contract $tmp_dir "$system_contracts" eip8141_expiry_verifier "EIP-8141 expiry verifier"
         fi
         if system_contracts_enabled DEPLOY_EIP8250_CONTRACTS EIP-8250; then
             genesis_add_system_contract $tmp_dir "$system_contracts" eip8250_nonce_manager "EIP-8250 nonce manager"
         fi
+    fi
+
+    if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ]; then
         if system_contracts_enabled DEPLOY_EIP8272_CONTRACTS EIP-8272; then
             genesis_add_system_contract $tmp_dir "$system_contracts" eip8272_recent_root "EIP-8272 recent root contract"
         fi
@@ -697,5 +702,22 @@ genesis_add_heze() {
     # genesis.json
     genesis_add_json $tmp_dir/genesis.json '.config += {
         "bogotaTime": '"$bogota_time"'
+    }'
+}
+
+# Daisugi (PQ devnets): an Electra-based fork whose EL side is Nethermind's EIP-8141 / EIP-8288 prototype.
+# EIP-8141 (frame transactions) is active from the genesis block, EIP-8288 (proof-carrying payloads)
+# from the Daisugi fork boundary. Neither changes the genesis block itself.
+genesis_add_daisugi() {
+    local tmp_dir=$1
+    echo "Adding daisugi genesis properties"
+    # the genesis timestamp is a decimal or hex string, $(( )) reads both
+    local eip8141_time=$(( $(jq -r '.timestamp' $tmp_dir/genesis.json) ))
+    local eip8288_time=$(genesis_get_activation_time $DAISUGI_FORK_EPOCH)
+
+    # genesis.json
+    genesis_add_json $tmp_dir/genesis.json '.config += {
+        "eip8141PrototypeTime": '"$eip8141_time"',
+        "eip8288PrototypeTime": '"$eip8288_time"'
     }'
 }
