@@ -61,6 +61,7 @@ Variable | Description
 `PQ_FORK_VERSION` | Fork version of the `pq` fork. Default: `0xe0000000`.
 `XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys and VRF roots (64 bytes per key index). Only the needed range is fetched; missing keys are derived.
 `XMSS_PUBKEY_CACHE` | Directory with the same file layout, read before the URL and updated with newly fetched or derived keys.
+`CL_ADDITIONAL_VALIDATORS` | Keys are derived for mnemonic validators only. Each line of this file must carry its own keys in two extra columns, `<pubkey>:<withdrawal credentials>:[<balance>]:<xmss pubkey>:<vrf root>`; generation fails for a validator without them.
 `DEPLOY_EIP7002_CONTRACTS`, `DEPLOY_EIP7251_CONTRACTS`, `DEPLOY_EIP8282_CONTRACTS` | Set to `false` to leave the execution request system contracts out of the execution genesis. Execution clients reject every block when a request contract has no code, so use `stub` to put an inert contract (a single `STOP`) at the address instead: the system call succeeds and no request can ever be emitted.
 
 ### Shadow Fork
