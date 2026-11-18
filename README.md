@@ -51,17 +51,17 @@ Chain-agnostic contracts that live at the same address on (nearly) every EVM cha
 
 The set is data-driven from [`apps/el-gen/well-known-contracts.yaml`](apps/el-gen/well-known-contracts.yaml) — add a contract by appending an entry there, no code change needed. Toggle the feature with `PRELOAD_WELL_KNOWN_CONTRACTS` (default `true`). An `ADDITIONAL_PRELOADED_CONTRACTS` entry for the same address still overrides the default.
 
-### Post-quantum key registry (EIP-8450)
+### Post-quantum genesis (`pq` fork)
 
-Setting `EIP8450_FORK_EPOCH=0` (with all earlier forks at genesis) builds a genesis state with the EIP-8450 key registry, where every genesis validator and builder holds a leanXMSS public key derived from the mnemonic. Deriving a key takes a few CPU seconds, so precomputed keys can be supplied:
+Setting `PQ_FORK_EPOCH=0` (with Gloas at genesis and Heze not scheduled) builds the genesis state of the consensus-specs `pq` feature fork: validators and builders are identified by leanXMSS public keys derived from the validator mnemonics, validators carry a VRF root, and there are no sync committees. Deriving the keys takes a few CPU seconds per validator, so large validator sets should point `XMSS_PUBKEY_URL` at precomputed keys.
 
 Variable | Description
 --- | ---
-`EIP8450_FORK_EPOCH` | Set to `0` to enable the registry at genesis. Default: disabled.
-`EIP8450_FORK_VERSION` | Fork version of the registry fork. Default: `0xe8450000`.
-`XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys (32 bytes per key index). Only the needed range is fetched; missing keys are derived.
-`XMSS_VALIDATOR_PUBKEYS` | Set to `true` to use each validator's leanXMSS public key (zero-padded to 48 bytes) as its validator public key, for networks whose clients sign with leanXMSS instead of BLS. Default: `false`.
+`PQ_FORK_EPOCH` | Set to `0` to start the network on the `pq` fork. Default: disabled.
+`PQ_FORK_VERSION` | Fork version of the `pq` fork. Default: `0xe0000000`.
+`XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys and VRF roots (64 bytes per key index). Only the needed range is fetched; missing keys are derived.
 `XMSS_PUBKEY_CACHE` | Directory with the same file layout, read before the URL and updated with newly fetched or derived keys.
+`DEPLOY_EIP7002_CONTRACTS`, `DEPLOY_EIP7251_CONTRACTS`, `DEPLOY_EIP8282_CONTRACTS` | Set to `false` to leave the execution request system contracts out of the execution genesis. Execution clients reject every block when a request contract has no code, so use `stub` to put an inert contract (a single `STOP`) at the address instead: the system call succeeds and no request can ever be emitted.
 
 ### Shadow Fork
 If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
