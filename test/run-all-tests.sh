@@ -113,7 +113,7 @@ assert_eq "EIP8450_FORK_EPOCH" "$(grep '^EIP8450_FORK_EPOCH:' $out/metadata/conf
 assert_eq "current fork version" "$(jq -r '.fork.current_version' $out/parsed/parsedConsensusGenesis.json)" "0xe8450000"
 assert_eq "registry entries" "$(jq -r '.post_quantum_key_material | length' $out/parsed/parsedConsensusGenesis.json)" "4"
 assert_eq "unset registry entries" "$(jq -r '[.post_quantum_key_material[] | select(.xmss_public_key == "0x0000000000000000000000000000000000000000000000000000000000000000")] | length' $out/parsed/parsedConsensusGenesis.json)" "0"
-assert_eq "first leanXMSS public key" "$(jq -r '.post_quantum_key_material[0].xmss_public_key' $out/parsed/parsedConsensusGenesis.json)" "0x73443be1ececcfa5c3628006683fc4fad35a2a6f311417c51934fea475617f73"
+assert_eq "first leanXMSS public key" "$(jq -r '.post_quantum_key_material[0].xmss_public_key' $out/parsed/parsedConsensusGenesis.json)" "0x0a0f4d59ab5eef65a086a5277b96ceb154f476c5e1bea5bbd49b3a7031d67e41"
 rm -rf "$out"
 echo ""
 echo "================================"

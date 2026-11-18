@@ -60,6 +60,7 @@ Variable | Description
 `EIP8450_FORK_EPOCH` | Set to `0` to enable the registry at genesis. Default: disabled.
 `EIP8450_FORK_VERSION` | Fork version of the registry fork. Default: `0xe8450000`.
 `XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys (32 bytes per key index). Only the needed range is fetched; missing keys are derived.
+`XMSS_VALIDATOR_PUBKEYS` | Set to `true` to use each validator's leanXMSS public key (zero-padded to 48 bytes) as its validator public key, for networks whose clients sign with leanXMSS instead of BLS. Default: `false`.
 `XMSS_PUBKEY_CACHE` | Directory with the same file layout, read before the URL and updated with newly fetched or derived keys.
 
 ### Shadow Fork

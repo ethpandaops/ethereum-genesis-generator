@@ -194,6 +194,10 @@ gen_cl_config(){
           genesis_args+=(--xmss-pubkey-cache "$XMSS_PUBKEY_CACHE")
         fi
 
+        if [ "$XMSS_VALIDATOR_PUBKEYS" = "true" ]; then
+          genesis_args+=(--xmss-validator-pubkeys)
+        fi
+
         /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
         echo "Genesis block number: $(jq -r '.latest_execution_payload_header.block_number' /data/parsed/parsedConsensusGenesis.json)"
