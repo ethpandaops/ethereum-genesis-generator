@@ -51,6 +51,17 @@ Chain-agnostic contracts that live at the same address on (nearly) every EVM cha
 
 The set is data-driven from [`apps/el-gen/well-known-contracts.yaml`](apps/el-gen/well-known-contracts.yaml) — add a contract by appending an entry there, no code change needed. Toggle the feature with `PRELOAD_WELL_KNOWN_CONTRACTS` (default `true`). An `ADDITIONAL_PRELOADED_CONTRACTS` entry for the same address still overrides the default.
 
+### Post-quantum key registry (EIP-8450)
+
+Setting `EIP8450_FORK_EPOCH=0` (with all earlier forks at genesis) builds a genesis state with the EIP-8450 key registry, where every genesis validator and builder holds a leanXMSS public key derived from the mnemonic. Deriving a key takes a few CPU seconds, so precomputed keys can be supplied:
+
+Variable | Description
+--- | ---
+`EIP8450_FORK_EPOCH` | Set to `0` to enable the registry at genesis. Default: disabled.
+`EIP8450_FORK_VERSION` | Fork version of the registry fork. Default: `0xe8450000`.
+`XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys (32 bytes per key index). Only the needed range is fetched; missing keys are derived.
+`XMSS_PUBKEY_CACHE` | Directory with the same file layout, read before the URL and updated with newly fetched or derived keys.
+
 ### Shadow Fork
 If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
 transactions. This can be done with the below call for example:

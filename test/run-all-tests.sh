@@ -103,6 +103,19 @@ assert_eq "SLOT_DURATION_MS" "$(grep '^SLOT_DURATION_MS:' $out/metadata/config.y
 assert_eq "amsterdamTime" "$(jq -r '.config.amsterdamTime' $out/metadata/genesis.json)" "12308"
 rm -rf "$out"
 echo ""
+
+echo "=== Test Case 8: EIP-8450 post-quantum key registry at genesis ==="
+echo "Expected: every genesis validator has a leanXMSS public key"
+out=$(fresh_output case8)
+docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-eip8450-pq-keys.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
+echo "Result:"
+assert_eq "EIP8450_FORK_EPOCH" "$(grep '^EIP8450_FORK_EPOCH:' $out/metadata/config.yaml)" "EIP8450_FORK_EPOCH: 0"
+assert_eq "current fork version" "$(jq -r '.fork.current_version' $out/parsed/parsedConsensusGenesis.json)" "0xe8450000"
+assert_eq "registry entries" "$(jq -r '.post_quantum_key_material | length' $out/parsed/parsedConsensusGenesis.json)" "4"
+assert_eq "unset registry entries" "$(jq -r '[.post_quantum_key_material[] | select(.xmss_public_key == "0x0000000000000000000000000000000000000000000000000000000000000000")] | length' $out/parsed/parsedConsensusGenesis.json)" "0"
+assert_eq "first leanXMSS public key" "$(jq -r '.post_quantum_key_material[0].xmss_public_key' $out/parsed/parsedConsensusGenesis.json)" "0x73443be1ececcfa5c3628006683fc4fad35a2a6f311417c51934fea475617f73"
+rm -rf "$out"
+echo ""
 echo "================================"
 echo "✅ All tests complete!"
 echo "================================"
