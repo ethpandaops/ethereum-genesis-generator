@@ -51,6 +51,19 @@ Chain-agnostic contracts that live at the same address on (nearly) every EVM cha
 
 The set is data-driven from [`apps/el-gen/well-known-contracts.yaml`](apps/el-gen/well-known-contracts.yaml) — add a contract by appending an entry there, no code change needed. Toggle the feature with `PRELOAD_WELL_KNOWN_CONTRACTS` (default `true`). An `ADDITIONAL_PRELOADED_CONTRACTS` entry for the same address still overrides the default.
 
+### Post-quantum genesis (`pq` fork)
+
+Setting `PQ_FORK_EPOCH=0` (with Gloas at genesis and Heze not scheduled) builds the genesis state of the consensus-specs `pq` feature fork: validators and builders are identified by leanXMSS public keys derived from the validator mnemonics, validators carry a VRF root, and there are no sync committees. Deriving the keys takes a few CPU seconds per validator, so large validator sets should point `XMSS_PUBKEY_URL` at precomputed keys.
+
+Variable | Description
+--- | ---
+`PQ_FORK_EPOCH` | Set to `0` to start the network on the `pq` fork. Default: disabled.
+`PQ_FORK_VERSION` | Fork version of the `pq` fork. Default: `0xe0000000`.
+`XMSS_PUBKEY_URL` | Base URL holding `<mnemonic fingerprint>.bin` files of precomputed leanXMSS public keys and VRF roots (64 bytes per key index). Only the needed range is fetched; missing keys are derived.
+`XMSS_PUBKEY_CACHE` | Directory with the same file layout, read before the URL and updated with newly fetched or derived keys.
+`CL_ADDITIONAL_VALIDATORS` | Keys are derived for mnemonic validators only. Each line of this file must carry its own keys in two extra columns, `<pubkey>:<withdrawal credentials>:[<balance>]:<xmss pubkey>:<vrf root>`; generation fails for a validator without them.
+`DEPLOY_EIP7002_CONTRACTS`, `DEPLOY_EIP7251_CONTRACTS`, `DEPLOY_EIP8282_CONTRACTS` | Set to `false` to leave the execution request system contracts out of the execution genesis. Execution clients reject every block when a request contract has no code, so use `stub` to put an inert contract (a single `STOP`) at the address instead: the system call succeeds and no request can ever be emitted.
+
 ### Shadow Fork
 If shadow fork from file is the preferred option, then please ensure the latest block `json` response is collected along with
 transactions. This can be done with the below call for example:

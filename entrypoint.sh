@@ -136,6 +136,9 @@ gen_cl_config(){
             cl_heze_fork_epoch="18446744073709551615"
         fi
         HEZE_FORK_EPOCH="$cl_heze_fork_epoch" envsubst < $tmp_dir/config_temp.yaml > /data/metadata/config.yaml
+        if [ "$PQ_FORK_EPOCH" != "18446744073709551615" ]; then
+            printf '\n# PQ\nPQ_FORK_VERSION: %s\nPQ_FORK_EPOCH: %s\nUNREGISTERED_VALIDATOR_WITHDRAWABILITY_DELAY: %s\nATTESTATION_SUBNET_COUNT_PQ: %s\n' "$PQ_FORK_VERSION" "$PQ_FORK_EPOCH" "$UNREGISTERED_VALIDATOR_WITHDRAWABILITY_DELAY" "$ATTESTATION_SUBNET_COUNT_PQ" >> /data/metadata/config.yaml
+        fi
 
         # Envsubst mnemonics file
         if [ "$WITHDRAWAL_TYPE" == "0x00" ]; then
@@ -182,6 +185,15 @@ gen_cl_config(){
         if [ "$SHUFFLE_VALIDATORS" = "true" ]; then
           genesis_args+=(--shuffle-validators)
         fi
+
+        if [ -n "$XMSS_PUBKEY_URL" ]; then
+          genesis_args+=(--xmss-pubkey-url "$XMSS_PUBKEY_URL")
+        fi
+
+        if [ -n "$XMSS_PUBKEY_CACHE" ]; then
+          genesis_args+=(--xmss-pubkey-cache "$XMSS_PUBKEY_CACHE")
+        fi
+
 
         /usr/local/bin/eth-genesis-state-generator "${genesis_args[@]}"
         echo "Genesis args: ${genesis_args[@]}"
