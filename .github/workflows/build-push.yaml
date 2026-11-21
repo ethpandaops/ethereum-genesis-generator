@@ -32,11 +32,15 @@ jobs:
       - name: Resolve tag
         id: resolve_tag
         shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          # PR builds are tagged pr-<number>, never with the PR's branch name: a
+          # PR (from a fork, too) could otherwise name its branch after any
+          # existing tag, such as master, and overwrite it. The image mirror
+          # only accepts pr-* tags from pull_request_target builds.
           if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
-            branch_name="${GITHUB_HEAD_REF}"
-            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
-            echo "tag=ghcr.io/ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+            echo "tag=ghcr.io/ethpandaops/ethereum-genesis-generator:pr-${PR_NUMBER}" >> $GITHUB_OUTPUT
           else
             echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
           fi
