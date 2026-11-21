@@ -37,8 +37,7 @@ jobs:
         run: |
           # PR builds are tagged pr-<number>, never with the PR's branch name: a
           # PR (from a fork, too) could otherwise name its branch after any
-          # existing tag, such as master, and overwrite it. The image mirror
-          # only accepts pr-* tags from pull_request_target builds.
+          # existing tag, such as master, and overwrite it.
           if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
             echo "tag=ghcr.io/ethpandaops/ethereum-genesis-generator:pr-${PR_NUMBER}" >> $GITHUB_OUTPUT
           else
