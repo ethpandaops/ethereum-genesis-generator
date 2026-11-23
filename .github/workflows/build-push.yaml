@@ -32,11 +32,14 @@ jobs:
       - name: Resolve tag
         id: resolve_tag
         shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          # PR builds are tagged pr-<number>, never with the PR's branch name: a
+          # PR (from a fork, too) could otherwise name its branch after any
+          # existing tag, such as master, and overwrite it.
           if [[ "${{ github.event_name }}" == "pull_request_target" || "${{ github.event_name }}" == "pull_request" ]]; then
-            branch_name="${GITHUB_HEAD_REF}"
-            branch_name="$(echo "$branch_name" | sed 's/\//-/g')"
-            echo "tag=ethpandaops/ethereum-genesis-generator:$branch_name" >> $GITHUB_OUTPUT
+            echo "tag=ghcr.io/ethpandaops/ethereum-genesis-generator:pr-${PR_NUMBER}" >> $GITHUB_OUTPUT
           else
             echo "tag=${{ steps.setup.outputs.tag }}" >> $GITHUB_OUTPUT
           fi
@@ -45,6 +48,11 @@ jobs:
     needs:
       - prepare
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     strategy:
       matrix:
         include: ${{fromJson(needs.prepare.outputs.platforms)}}
@@ -53,12 +61,18 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/deploy
+        id: deploy
         with:
           platform: ${{ matrix.platform }}
           tag: ${{ needs.prepare.outputs.tag }}
           push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
-          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
-          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Attest and mirror to Docker Hub
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
+        uses: ethpandaops/actions/mirror-image@dab9cb304b6a1dd648e2f1acef6169f7095f515e
+        with:
+          tags: ${{ needs.prepare.outputs.tag }}-${{ matrix.slug }}
+          digest: ${{ steps.deploy.outputs.digest }}
+          mirror-url: ${{ secrets.IMAGE_MIRROR_URL }}
       - name: Export image artifact
         if: matrix.platform == 'linux/amd64'
         run: docker save "${{ needs.prepare.outputs.tag }}-linux-amd64" | gzip > /tmp/image.tar.gz
@@ -120,14 +134,25 @@ jobs:
       - deploy
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'build-docker-image')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: ./.github/actions/manifest
+        id: manifest
         with:
           tag: ${{ needs.prepare.outputs.tag }}
           repository: ethpandaops/ethereum-genesis-generator
           platforms: ${{ needs.prepare.outputs.platforms }}
-          DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
-          DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Attest and mirror to Docker Hub
+        uses: ethpandaops/actions/mirror-image@dab9cb304b6a1dd648e2f1acef6169f7095f515e
+        with:
+          tags: ${{ needs.prepare.outputs.tag }}
+          digest: ${{ steps.manifest.outputs.digest }}
+          attest-platforms: "false"
+          mirror-url: ${{ secrets.IMAGE_MIRROR_URL }}
