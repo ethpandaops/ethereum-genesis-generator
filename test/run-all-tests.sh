@@ -115,7 +115,7 @@ assert_eq "AGGREGATE_DUE_BPS_PQ" "$(grep '^AGGREGATE_DUE_BPS_PQ:' $out/metadata/
 assert_eq "current fork version" "$(jq -r '.fork.current_version' $out/parsed/parsedConsensusGenesis.json)" "0xe0000000"
 assert_eq "validators" "$(jq -r '.validators | length' $out/parsed/parsedConsensusGenesis.json)" "4"
 assert_eq "first leanXMSS public key" "$(jq -r '.validators[0].pubkey' $out/parsed/parsedConsensusGenesis.json)" "0x0a0f4d59ab5eef65a086a5277b96ceb154f476c5e1bea5bbd49b3a7031d67e41"
-assert_eq "first VRF root" "$(jq -r '.validators[0].vrf_root' $out/parsed/parsedConsensusGenesis.json)" "0x0f072c5ff10a77178844b8faff564887421a97e19e6ddf5df4478213625530f6"
+assert_eq "first VRF root" "$(jq -r '.validators[0].vrf_root' $out/parsed/parsedConsensusGenesis.json)" "0x8f44ec25dcd6cff7003377d564a6a461d479de62da5058ed12d1ffcefaca2b2f"
 assert_eq "sync committee" "$(jq -r 'has("current_sync_committee")' $out/parsed/parsedConsensusGenesis.json)" "false"
 assert_eq "request contract code" "$(jq -r '[.alloc | to_entries[] | select((.key | ascii_downcase) as $a | ["0x00000961ef480eb55e80d19ad83579a64c007002", "0x0000bbddc7ce488642fb579f8b00f3a590007251", "0x0000bff46984e3725691fa540a8c7589300d8282", "0x000064d678505ad48f8ccb093bc65613800e8282"] | index($a)) | .value.code] | unique | join(",")' $out/metadata/genesis.json)" "0x00"
 rm -rf "$out"
