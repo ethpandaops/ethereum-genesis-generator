@@ -223,8 +223,6 @@ MIN_SLOTS_FOR_INCLUSION_LISTS_REQUESTS: 1
 # 2**13 (= 8,192) bytes
 MAX_TRANSACTIONS_BYTES_PER_INCLUSION_LIST: 8192
 
-MIN_BLOB_DATA_RETENTION_MS: $MIN_BLOB_DATA_RETENTION_MS
-
 
 # Blob Scheduling
 # ---------------------------------------------------------------

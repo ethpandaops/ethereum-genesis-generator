@@ -96,7 +96,7 @@ assert_eq "GAS_LIMIT_SCHEDULE" "$(grep -A4 '^GAS_LIMIT_SCHEDULE:' $out/metadata/
 rm -rf "$out"
 echo ""
 
-echo "=== Test Case 7: SLOT_DURATION_MS override, Heze not scheduled (mainnet) ==="
+echo "=== Test Case 7: SLOT_DURATION_MS override (mainnet) ==="
 echo "Expected: fork times use 6s slots"
 out=$(fresh_output case7)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case7-slot-duration-override.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
