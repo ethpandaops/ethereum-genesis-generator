@@ -372,6 +372,28 @@ genesis_add_system_contract() {
     genesis_add_allocation $tmp_dir $target_address $(echo "$system_contracts" | jq -c ".${key}")
 }
 
+genesis_add_request_contract() {
+    local tmp_dir=$1
+    local system_contracts=$2
+    local key=$3
+    local label=$4
+    local var=$5
+
+    case "${!var:-true}" in
+        true)
+            genesis_add_system_contract $tmp_dir "$system_contracts" $key "$label"
+            ;;
+        stub)
+            local target_address=$(echo "$system_contracts" | jq -r ".${key}_address")
+            echo -e "  ${label} (stub):\t$target_address"
+            genesis_add_allocation $tmp_dir $target_address '{"balance":"0","nonce":"1","code":"0x00"}'
+            ;;
+        *)
+            echo -e "  skipping ${label} ($var=${!var})"
+            ;;
+    esac
+}
+
 system_contracts_enabled() {
     local var=$1
     if [ "${!var:-true}" == "true" ]; then
@@ -456,15 +478,13 @@ genesis_add_system_contracts() {
 
     if [ ! "$ELECTRA_FORK_EPOCH" == "18446744073709551615" ]; then
         genesis_add_system_contract $tmp_dir "$system_contracts" eip2935 "EIP-2935 contract"
-        genesis_add_system_contract $tmp_dir "$system_contracts" eip7002 "EIP-7002 contract"
-        genesis_add_system_contract $tmp_dir "$system_contracts" eip7251 "EIP-7251 contract"
+        genesis_add_request_contract $tmp_dir "$system_contracts" eip7002 "EIP-7002 contract" DEPLOY_EIP7002_CONTRACTS
+        genesis_add_request_contract $tmp_dir "$system_contracts" eip7251 "EIP-7251 contract" DEPLOY_EIP7251_CONTRACTS
     fi
 
     if [ ! "$GLOAS_FORK_EPOCH" == "18446744073709551615" ]; then
-        if system_contracts_enabled DEPLOY_EIP8282_CONTRACTS EIP-8282; then
-            genesis_add_system_contract $tmp_dir "$system_contracts" eip8282_deposit "EIP-8282 deposit contract"
-            genesis_add_system_contract $tmp_dir "$system_contracts" eip8282_exit "EIP-8282 exit contract"
-        fi
+        genesis_add_request_contract $tmp_dir "$system_contracts" eip8282_deposit "EIP-8282 deposit contract" DEPLOY_EIP8282_CONTRACTS
+        genesis_add_request_contract $tmp_dir "$system_contracts" eip8282_exit "EIP-8282 exit contract" DEPLOY_EIP8282_CONTRACTS
     fi
 
     if [ ! "$HEZE_FORK_EPOCH" == "18446744073709551615" ]; then
