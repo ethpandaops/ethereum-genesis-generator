@@ -110,6 +110,8 @@ out=$(fresh_output case8)
 docker run -u 1000:1000 --rm -v $out:/data -v $PWD/test-cases/case8-pq-genesis.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
 echo "Result:"
 assert_eq "PQ_FORK_EPOCH" "$(grep '^PQ_FORK_EPOCH:' $out/metadata/config.yaml)" "PQ_FORK_EPOCH: 0"
+assert_eq "AGGREGATOR_DELAY_BPS" "$(grep '^AGGREGATOR_DELAY_BPS:' $out/metadata/config.yaml)" "AGGREGATOR_DELAY_BPS: 500"
+assert_eq "AGGREGATE_DUE_BPS_PQ" "$(grep '^AGGREGATE_DUE_BPS_PQ:' $out/metadata/config.yaml)" "AGGREGATE_DUE_BPS_PQ: 6000"
 assert_eq "current fork version" "$(jq -r '.fork.current_version' $out/parsed/parsedConsensusGenesis.json)" "0xe0000000"
 assert_eq "validators" "$(jq -r '.validators | length' $out/parsed/parsedConsensusGenesis.json)" "4"
 assert_eq "first leanXMSS public key" "$(jq -r '.validators[0].pubkey' $out/parsed/parsedConsensusGenesis.json)" "0x0a0f4d59ab5eef65a086a5277b96ceb154f476c5e1bea5bbd49b3a7031d67e41"
