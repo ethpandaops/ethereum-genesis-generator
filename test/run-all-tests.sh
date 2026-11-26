@@ -71,7 +71,8 @@ echo ""
 echo "=== Test Case 5: FRAMES_ENABLED (Heze off on CL, bogota active on EL) ==="
 echo "Expected: config.yaml HEZE_FORK_EPOCH: 18446744073709551615,"
 echo "          genesis.json has a non-null bogotaTime, the EIP-8141 expiry verifier,"
-echo "          the EIP-8250 nonce manager, the EIP-8272 recent root contract"
+echo "          the EIP-8250 nonce manager, the EIP-8272 recent root contract,"
+echo "          the EIP-8148 sweep threshold contract"
 echo "          and the 28 EIP-8253 accounts in config.zeroNonceStorageAccounts"
 rm -rf output/metadata output/parsed
 docker run -u 1000:1000 --rm -v $PWD/output:/data -v $PWD/test-cases/case5-frames-enabled.env:/config/values.env ethpandaops/ethereum-genesis-generator:master all > /dev/null 2>&1
@@ -81,6 +82,7 @@ jq -c '{bogotaTime: .config.bogotaTime}' output/metadata/genesis.json
 jq -c '{expiryVerifier: .alloc["0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf"]}' output/metadata/genesis.json
 jq -c '{nonceManager: .alloc["0x8250968C12e01A19d6F667b9B2F3b3A4d0e51cB7"]}' output/metadata/genesis.json
 jq -c '{recentRoot: .alloc["0x8272D9679689Ea2f307140CdF9002D27dC00Ffff"]}' output/metadata/genesis.json
+jq -c '{sweepThreshold: .alloc["0x00003560fC19181eD4576a690F3e63271f008148"] | {nonce, storage}}' output/metadata/genesis.json
 assert_eq "zeroNonceStorageAccounts" "$(jq -r '.config.zeroNonceStorageAccounts | length' output/metadata/genesis.json)" "28"
 echo ""
 
